@@ -372,19 +372,5 @@ package-lock.json
 # End of https://www.toptal.com/developers/gitignore/api/intellij+all,webstorm+all,visualstudiocode,node,git,solidity,soliditytruffle
 
 
-coverage.json
-coverage/
-node_modules/
-.changelog
-.DS_Store
-test/artifacts
-test/cache
-temp
-.nyc_output/
 .npmrc
-
-/lib/**/*.js
-/lib/**/*.map
-
-!/lib/instrumentation/**/*.js
-!/lib/instrumentation/**/*.map
+dist/

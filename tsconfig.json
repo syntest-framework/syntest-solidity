@@ -5,6 +5,8 @@
     "sourceMap": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
+    "declaration": true,
+    "outDir": "./dist",
     "lib": [
       "dom",
       "es7",
@@ -12,7 +14,10 @@
       "es2015.collection"
     ]
   },
-  "include": ["lib/**/*"],
+  "include": [
+    "lib/**/*",
+    "plugins/**/*"
+  ],
   "exclude": [
     "node_modules"
   ]

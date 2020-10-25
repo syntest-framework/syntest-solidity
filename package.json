@@ -2,7 +2,11 @@
   "name": "syntest-solidity",
   "version": "0.0.1",
   "description": "",
-  "main": "index.js",
+  "main": "plugins/truffle.plugin.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "syntest-solidity": "./plugins/bin.js"
+  },
   "scripts": {
     "tsc:w": "tsc -w",
     "lint": "eslint --ext .ts src test/unit --fix",
@@ -16,7 +20,27 @@
   },
   "author": "",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "@solidity-parser/parser": "^0.6.0",
+    "@truffle/provider": "^0.1.17",
+    "chalk": "^2.4.2",
+    "death": "^1.1.0",
+    "detect-port": "^1.3.0",
+    "fs-extra": "^8.1.0",
+    "ganache-cli": "6.9.0",
+    "ghost-testrpc": "^0.0.2",
+    "global-modules": "^2.0.0",
+    "globby": "^10.0.1",
+    "jsonschema": "^1.2.4",
+    "lodash": "^4.17.15",
+    "node-emoji": "^1.10.0",
+    "pify": "^4.0.1",
+    "recursive-readdir": "^2.2.2",
+    "sc-istanbul": "^0.4.5",
+    "shelljs": "^0.8.3",
+    "syntest-framework": "file:../syntest-framework",
+    "web3": "1.2.6"
+  },
   "devDependencies": {
     "@babel/core": "^7.12.3",
     "@babel/preset-env": "^7.12.1",
