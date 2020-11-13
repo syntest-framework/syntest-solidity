@@ -13,9 +13,11 @@ import {Uint} from 'syntest-framework'
 import {Address} from 'syntest-framework'
 import {Gene} from "syntest-framework";
 import {GeneOptionManager} from "syntest-framework";
+import {StringGene} from "syntest-framework";
 import {Constructor} from "syntest-framework";
 import {getSetting} from "syntest-framework";
 import {PrimitiveGene} from "syntest-framework";
+
 
 /**
  * SolidityRandomSampler class
@@ -84,6 +86,8 @@ export class SolidityRandomSampler extends Sampler {
             } else {
                 return Fixed.getRandom()
             }
+        } else if (type.includes('string')) {
+            return StringGene.getRandom()
         }
 
         throw new Error('Unknown type text!')
