@@ -1,5 +1,3 @@
-import {Sampler} from 'syntest-framework'
-
 import {prng} from 'syntest-framework'
 import {Individual} from 'syntest-framework'
 
@@ -16,7 +14,7 @@ import {GeneOptionManager} from "syntest-framework";
 import {StringGene} from "syntest-framework";
 import {Constructor} from "syntest-framework";
 import {getSetting} from "syntest-framework";
-import {PrimitiveGene} from "syntest-framework";
+import {SoliditySampler} from "./SoliditySampler";
 
 
 /**
@@ -24,7 +22,7 @@ import {PrimitiveGene} from "syntest-framework";
  *
  * @author Dimitri Stallenberg
  */
-export class SolidityRandomSampler extends Sampler {
+export class SolidityRandomSampler extends SoliditySampler {
     /**
      * Constructor
      */
@@ -49,7 +47,7 @@ export class SolidityRandomSampler extends Sampler {
         // check depth to decide whether to pick a variable
         if (depth >= getSetting("max_depth")) {
             // TODO or take an already available variable
-            return this.sampleVariable(depth, type)
+            return this.sampleGene(depth, type)
         }
 
         if (this.geneOptionsObject.possibleActions.filter((a) => a.type === type).length && prng.nextBoolean(getSetting("sample_func_as_arg"))) {
@@ -61,33 +59,38 @@ export class SolidityRandomSampler extends Sampler {
             // Pick variable
             // TODO or take an already available variable
 
-            return this.sampleVariable(depth, type)
+            return this.sampleGene(depth, type)
         }
     }
 
-    sampleVariable(depth: number, type: string): PrimitiveGene<any> {
-        // TODO constructor types
-        if (type === 'bool') {
-            return Bool.getRandom()
-        } else if (type === 'address') {
-            return Address.getRandom()
-        } else if (type.includes('int')) {
-            if (type.includes('uint')) {
-                return Uint.getRandom()
+    sampleGene(depth: number, type: string, geneType= 'primitive'): Gene {
+        if (geneType === 'primitive') {
+            if (type === 'bool') {
+                return Bool.getRandom()
+            } else if (type === 'address') {
+                return Address.getRandom()
+            } else if (type.includes('int')) {
+                if (type.includes('uint')) {
+                    return Uint.getRandom()
 
-            } else {
-                return Int.getRandom()
+                } else {
+                    return Int.getRandom()
 
+                }
+            } else if (type.includes('fixed')) {
+                if (type.includes('ufixed')) {
+                    return Ufixed.getRandom()
+
+                } else {
+                    return Fixed.getRandom()
+                }
+            } else if (type.includes('string')) {
+                return StringGene.getRandom()
             }
-        } else if (type.includes('fixed')) {
-            if (type.includes('ufixed')) {
-                return Ufixed.getRandom()
-
-            } else {
-                return Fixed.getRandom()
-            }
-        } else if (type.includes('string')) {
-            return StringGene.getRandom()
+        } else if (type === 'functionCall') {
+            return this.sampleFunctionCall(depth, type)
+        } else if (type === 'constructor') {
+            return this.sampleConstructor(depth)
         }
 
         throw new Error('Unknown type text!')

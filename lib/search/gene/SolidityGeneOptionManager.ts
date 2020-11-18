@@ -1,4 +1,4 @@
-import {ArgumentDescription, FunctionDescription, GeneOptionManager} from "syntest-framework";
+import { ActionDescription, GeneOptionManager} from "syntest-framework";
 
 /**
  * @author Dimitri Stallenberg
@@ -23,7 +23,7 @@ export class SolidityGeneOptionManager extends GeneOptionManager {
      *
      * @returns {[]} A list of function call descriptions
      */
-    getPossibleActionsFromAPI (): FunctionDescription[] {
+    getPossibleActions (): FunctionDescription[] {
         let possibleTargets: FunctionDescription[] = []
 
         const fnMap = this.target.instrumented.fnMap
@@ -82,3 +82,15 @@ export class SolidityGeneOptionManager extends GeneOptionManager {
         return possibleTargets
     }
 }
+export interface FunctionDescription extends ActionDescription {
+    name: string,
+    type: string,
+    args: ArgumentDescription[],
+}
+
+export interface ArgumentDescription {
+    type: string
+    bits?: number
+    decimals?: number
+}
+
