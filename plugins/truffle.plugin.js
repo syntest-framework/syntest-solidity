@@ -82,6 +82,7 @@ async function plugin(config){
     } = utils.assembleFiles(config, skipFiles);
 
     targets = api.instrument(targets);
+    console.log(targets)
     utils.reportSkipped(config, skipped);
 
     // Filesystem & Compiler Re-configuration
@@ -110,6 +111,8 @@ async function plugin(config){
     await api.onCompileComplete(config);
 
     setConfig(utils.loadSyntestJS(config))
+    console.log(config)
+    console.log(JSON.stringify(config, null, 2))
 
     // // TODO do this for each and every of the targets
     const stringifier = new SolidityTruffleStringifier(targets[1].instrumented.contractName)
