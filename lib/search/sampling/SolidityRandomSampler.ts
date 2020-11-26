@@ -1,4 +1,4 @@
-import {prng} from 'syntest-framework'
+import {prng, StringGene} from 'syntest-framework'
 import {Individual} from 'syntest-framework'
 
 import {FunctionCall} from 'syntest-framework'
@@ -12,7 +12,7 @@ import {Address} from 'syntest-framework'
 import {Gene} from "syntest-framework";
 import {GeneOptionManager} from "syntest-framework";
 import {Constructor} from "syntest-framework";
-import {getSetting} from "syntest-framework";
+import {getProperty} from "syntest-framework";
 import {SoliditySampler} from "./SoliditySampler";
 
 /**
@@ -43,12 +43,12 @@ export class SolidityRandomSampler extends SoliditySampler {
 
     sampleArgument (depth: number, type: string): Gene {
         // check depth to decide whether to pick a variable
-        if (depth >= getSetting("max_depth")) {
+        if (depth >= getProperty("max_depth")) {
             // TODO or take an already available variable
             return this.sampleGene(depth, type)
         }
 
-        if (this.geneOptionsObject.possibleActions.filter((a) => a.type === type).length && prng.nextBoolean(getSetting("sample_func_as_arg"))) {
+        if (this.geneOptionsObject.possibleActions.filter((a) => a.type === type).length && prng.nextBoolean(getProperty("sample_func_as_arg"))) {
             // Pick function
             // TODO or take an already available functionCall
 
@@ -67,6 +67,8 @@ export class SolidityRandomSampler extends SoliditySampler {
                 return Bool.getRandom()
             } else if (type === 'address') {
                 return Address.getRandom()
+            } else if (type === 'string') {
+                return StringGene.getRandom()
             } else if (type.includes('int')) {
                 if (type.includes('uint')) {
                     return Uint.getRandom()
@@ -83,13 +85,13 @@ export class SolidityRandomSampler extends SoliditySampler {
                     return Fixed.getRandom()
                 }
             }
-        } else if (type === 'functionCall') {
+        } else if (geneType === 'functionCall') {
             return this.sampleFunctionCall(depth, type)
-        } else if (type === 'constructor') {
+        } else if (geneType === 'constructor') {
             return this.sampleConstructor(depth)
         }
 
-        throw new Error('Unknown type text!')
+        throw new Error(`Unknown type ${type} ${geneType}!`)
     }
 
     sampleFunctionCall (depth: number, type: string): FunctionCall {
