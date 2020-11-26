@@ -7,7 +7,7 @@ const death = require('death');
 const path = require('path');
 const Web3 = require('web3');
 
-const {setConfig, Fitness, createAlgorithmFromConfig, createCriterionFromConfig} = require('syntest-framework')
+const {setupLogger, processConfig, Fitness, createAlgorithmFromConfig, createCriterionFromConfig} = require('syntest-framework')
 
 const {SolidityRandomSampler} = require('../dist/search/sampling/SolidityRandomSampler')
 const {SolidityRunner} = require("../dist/runner/SolidityRunner");
@@ -32,6 +32,9 @@ async function plugin(config){
     death(utils.finish.bind(null, config, api)); // Catch interrupt signals
 
     config = truffleUtils.normalizeConfig(config);
+
+    await processConfig(utils.loadSyntestJS(config), config.getCwd)
+    await setupLogger()
 
     ui = new PluginUI(config.logger.log);
 
@@ -82,7 +85,7 @@ async function plugin(config){
     } = utils.assembleFiles(config, skipFiles);
 
     targets = api.instrument(targets);
-    console.log(targets)
+
     utils.reportSkipped(config, skipped);
 
     // Filesystem & Compiler Re-configuration
@@ -109,10 +112,6 @@ async function plugin(config){
     // Compile Instrumented Contracts
     await truffle.contracts.compile(config);
     await api.onCompileComplete(config);
-
-    setConfig(utils.loadSyntestJS(config))
-    console.log(config)
-    console.log(JSON.stringify(config, null, 2))
 
     // // TODO do this for each and every of the targets
     const stringifier = new SolidityTruffleStringifier(targets[1].instrumented.contractName)

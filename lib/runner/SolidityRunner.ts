@@ -1,4 +1,4 @@
-import {logger} from "syntest-framework";
+import {getLogger} from "syntest-framework";
 import {Datapoint, Runner} from "syntest-framework";
 import {SuiteBuilder} from "syntest-framework";
 import {Individual} from "syntest-framework";
@@ -41,7 +41,7 @@ export class SolidityRunner extends Runner{
         }
 
         if (failures) {
-            logger.error('Test case has failed!')
+            getLogger().error('Test case has failed!')
             process.exit(1)
         }
 
