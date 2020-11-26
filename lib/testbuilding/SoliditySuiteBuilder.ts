@@ -59,12 +59,12 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
             let testPath = path.resolve(this.config.testDir, `test-${i}.js`)
             let additionalAssertions: { [key: string]: string } = {}
             // extract the log statements
-            let dir = await fs.readdirSync(`${population[i].getId()}`)
+            let dir = await fs.readdirSync(`${population[i].id}`)
             dir.forEach((file: string) => {
-                additionalAssertions[file] = fs.readFileSync(`${population[i].getId()}/${file}`)
+                additionalAssertions[file] = fs.readFileSync(`${population[i].id}/${file}`)
             })
-            await this.clearDirectory(`${population[i].getId()}`, /.*/g)
-            await fs.rmdirSync(`${population[i].getId()}`)
+            await this.clearDirectory(`${population[i].id}`, /.*/g)
+            await fs.rmdirSync(`${population[i].id}`)
 
             await this.writeTest(testPath, population[i], false, additionalAssertions)
         }
