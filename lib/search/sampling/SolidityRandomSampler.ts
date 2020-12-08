@@ -63,7 +63,7 @@ export class SolidityRandomSampler extends Sampler {
         }
     }
 
-    sampleVariable(depth: number, type: string): PrimitiveGene {
+    sampleVariable(depth: number, type: string): PrimitiveGene<any> {
         // TODO constructor types
         if (type === 'bool') {
             return Bool.getRandom()

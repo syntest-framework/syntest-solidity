@@ -5,7 +5,7 @@
   "main": "plugins/truffle.plugin.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "syntest-solidity": "./plugins/bin.js"
+    "syntest-solidity": "plugins/bin.js"
   },
   "scripts": {
     "tsc:w": "tsc -w",
