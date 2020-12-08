@@ -17,7 +17,7 @@ export class SolidityTruffleStringifier extends Stringifier {
     stringifyGene(gene: Gene): string {
 
         if (gene instanceof PrimitiveGene) {
-            return `const ${gene.getVarName()} = ${(gene as PrimitiveGene).value}`
+            return `const ${gene.getVarName()} = ${(gene as PrimitiveGene<any>).value}`
         } else if (gene instanceof Constructor) {
             let formattedArgs = (gene as Constructor).args
                 .map((a: Gene) => this.stringifyGene(a))
@@ -63,7 +63,7 @@ export class SolidityTruffleStringifier extends Stringifier {
             testString += `\t\t${this.stringifyGene(gene)}\n`
 
             if (gene instanceof PrimitiveGene) {
-                assertions += `\t\tassert.equal(${gene.getVarName()}, ${gene.getValue()})\n`
+                assertions += `\t\tassert.equal(${gene.getVarName()}, ${gene.value})\n`
             } else if (addLogs && gene instanceof FunctionCall) {
                 testString += `\t\tfs.appendFileSync('${individual.getId()}/${gene.getVarName()}', ${gene.getVarName()})\n`
             }
