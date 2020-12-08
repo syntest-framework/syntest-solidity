@@ -8,6 +8,7 @@
     "syntest-solidity": "./plugins/bin.js"
   },
   "scripts": {
+    "tsc": "tsc",
     "tsc:w": "tsc -w",
     "lint": "eslint --ext .ts src test/unit --fix",
     "test": "jest",
