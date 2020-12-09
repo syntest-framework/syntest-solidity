@@ -11,7 +11,6 @@ import {Uint} from 'syntest-framework'
 import {Address} from 'syntest-framework'
 import {Gene} from "syntest-framework";
 import {GeneOptionManager} from "syntest-framework";
-import {StringGene} from "syntest-framework";
 import {Constructor} from "syntest-framework";
 import {getProperty} from "syntest-framework";
 import {SoliditySampler} from "./SoliditySampler";
