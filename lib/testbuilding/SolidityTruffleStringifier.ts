@@ -16,7 +16,7 @@ export class SolidityTruffleStringifier implements Stringifier {
     stringifyGene(gene: Gene): string {
 
         if (gene instanceof PrimitiveGene) {
-            return `const ${gene.varName} = ${(gene as PrimitiveGene).value}`
+            return `const ${gene.varName} = ${(gene as PrimitiveGene<any>).value}`
         } else if (gene instanceof Constructor) {
             let formattedArgs = (gene as Constructor).args
                 .map((a: Gene) => this.stringifyGene(a))
@@ -24,14 +24,18 @@ export class SolidityTruffleStringifier implements Stringifier {
 
             return `const ${gene.varName} = await ${(gene as Constructor).constructorName}.deployed(${formattedArgs});`
         } else if (gene instanceof FunctionCall) {
-            let formattedArgs = (gene as FunctionCall).args
+            let functionGene = (gene as FunctionCall)
+            let args = functionGene.getChildren()
+            let instance = args.shift()
+
+            let formattedArgs = args
                 .map((a: Gene) => a.varName)
                 .join(', ')
 
             if (gene.type !== 'none') {
-                return `const ${gene.varName} = await ${(gene as FunctionCall).instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
+                return `const ${gene.varName} = await ${instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
             }
-            return `await ${(gene as FunctionCall).instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
+            return `await ${instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
         }
 
         return "";
