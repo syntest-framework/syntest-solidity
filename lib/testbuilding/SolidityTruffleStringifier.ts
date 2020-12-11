@@ -24,8 +24,10 @@ export class SolidityTruffleStringifier implements Stringifier {
 
             return `const ${gene.varName} = await ${(gene as Constructor).constructorName}.deployed(${formattedArgs});`
         } else if (gene instanceof FunctionCall) {
-            let args = (gene as FunctionCall).getChildren()
-            let instance = args.shift() as Constructor
+            let functionGene = (gene as FunctionCall)
+            let args = functionGene.getChildren()
+            let instance = args.shift()
+
             let formattedArgs = args
                 .map((a: Gene) => a.varName)
                 .join(', ')

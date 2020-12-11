@@ -27,6 +27,8 @@ export class SolidityRunner extends Runner{
         await this.suiteBuilder.writeTest(testPath, individual)
 
         this.config.test_files = await truffleUtils.getTestFilePaths(this.config);
+        console.log(this.config)
+        console.log(JSON.stringify(this.config.test_files))
 
         // Reset instrumentation data (no hits)
         this.api.resetInstrumentationData()
@@ -35,12 +37,14 @@ export class SolidityRunner extends Runner{
         // Run tests
 
         try {
+            this.truffle.test.run()
             failures = await this.truffle.test.run(this.config)
         } catch (e) {
             // TODO
         }
 
         if (failures) {
+            // TODO maybe not stop? could be a bug that has been found
             getLogger().error('Test case has failed!')
             process.exit(1)
         }
