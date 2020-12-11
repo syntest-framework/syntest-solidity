@@ -32,6 +32,9 @@ export class SolidityTruffleStringifier implements Stringifier {
                 .map((a: Gene) => a.varName)
                 .join(', ')
 
+            if (instance === undefined)
+                throw new Error("This never happens, but we have to do it because the compiler is dumb")
+
             if (gene.type !== 'none') {
                 return `const ${gene.varName} = await ${instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
             }
