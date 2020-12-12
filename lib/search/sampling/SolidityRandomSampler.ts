@@ -15,7 +15,6 @@ import {Constructor} from "syntest-framework";
 import {getProperty} from "syntest-framework";
 import {SoliditySampler} from "./SoliditySampler";
 
-
 /**
  * SolidityRandomSampler class
  *

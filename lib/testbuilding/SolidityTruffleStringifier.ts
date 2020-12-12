@@ -24,14 +24,21 @@ export class SolidityTruffleStringifier implements Stringifier {
 
             return `const ${gene.varName} = await ${(gene as Constructor).constructorName}.deployed(${formattedArgs});`
         } else if (gene instanceof FunctionCall) {
-            let formattedArgs = (gene as FunctionCall).args
+            let functionGene = (gene as FunctionCall)
+            let args = functionGene.getChildren()
+            let instance = args.shift()
+
+            let formattedArgs = args
                 .map((a: Gene) => a.varName)
                 .join(', ')
 
+            if (instance === undefined)
+                throw new Error("This never happens, but we have to do it because the compiler is dumb")
+
             if (gene.type !== 'none') {
-                return `const ${gene.varName} = await ${(gene as FunctionCall).instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
+                return `const ${gene.varName} = await ${instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
             }
-            return `await ${(gene as FunctionCall).instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
+            return `await ${instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
         }
 
         return "";

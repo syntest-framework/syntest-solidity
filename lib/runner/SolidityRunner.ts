@@ -41,6 +41,7 @@ export class SolidityRunner extends Runner{
         }
 
         if (failures) {
+            // TODO maybe not stop? could be a bug that has been found
             getLogger().error('Test case has failed!')
             process.exit(1)
         }
