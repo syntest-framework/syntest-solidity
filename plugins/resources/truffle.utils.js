@@ -1,9 +1,12 @@
+// import {getLogger} from "syntest-framework";
+
 const PluginUI = require('./truffle.ui');
 const globalModules = require('global-modules');
 const TruffleProvider = require('@truffle/provider');
 const recursive = require('recursive-readdir');
 const globby = require('globby');
 const path = require('path');
+const {getLogger} = require('syntest-framework')
 
 // =============================
 // Truffle Specific Plugin Utils
@@ -16,8 +19,6 @@ const path = require('path');
  */
 async function getTestFilePaths(config){
   let target;
-  let ui = new PluginUI(config.logger.log);
-
 
   // Handle --file <path|glob> cli option (subset of tests)
   (typeof config.file === 'string')
@@ -28,7 +29,7 @@ async function getTestFilePaths(config){
   const solregex = /.*\.(sol)$/;
   const hasSols = target.filter(f => f.match(solregex) != null);
 
-  if (hasSols.length > 0) ui.report('sol-tests', [hasSols.length]);
+  if (hasSols.length > 0) getLogger().info('sol-tests ' + [hasSols.length]);
 
   // Return list of test files
   const testregex = /.*\.(js|ts|es|es6|jsx)$/;
@@ -48,15 +49,13 @@ async function getTestFilePaths(config){
  * @param {SolidityCoverage} api
  */
 function setNetwork(config, api){
-  const ui = new PluginUI(config.logger.log);
-
   // --network <network-name>
   if (config.network){
     const network = config.networks[config.network];
 
     // Check network:
     if (!network){
-      throw new Error(ui.generate('no-network', [config.network]));
+      throw new Error('no-network ' + [config.network]);
     }
 
     // Check network id
@@ -66,7 +65,7 @@ function setNetwork(config, api){
       if (api.providerOptions.network_id &&
           api.providerOptions.network_id !== parseInt(network.network_id)){
 
-        ui.report('id-clash', [ parseInt(network.network_id) ]);
+        getLogger().info('id-clash ' + [ parseInt(network.network_id) ]);
       }
 
       // Prefer network defined id.
@@ -78,13 +77,13 @@ function setNetwork(config, api){
 
     // Check port: use solcoverjs || default if undefined
     if (!network.port) {
-      ui.report('no-port', [api.port]);
+      getLogger().info('no-port ' + [api.port]);
       network.port = api.port;
     }
 
     // Warn: port conflicts
     if (api.port !== api.defaultPort && api.port !== network.port){
-      ui.report('port-clash', [ network.port ])
+      getLogger().info('port-clash ' + [ network.port ])
     }
 
     // Prefer network port if defined;
@@ -146,14 +145,12 @@ function setOuterConfigKeys(config, api, id){
  * @return {Module}
  */
 function loadLibrary(config){
-  const ui = new PluginUI(config.logger.log);
-
   // Local
   try {
     if (config.useGlobalTruffle || config.usePluginTruffle) throw null;
 
     const lib = require("truffle");
-    ui.report('lib-local');
+    getLogger().info('lib-local');
     return lib;
 
   } catch(err) {};
@@ -164,7 +161,7 @@ function loadLibrary(config){
 
     const globalTruffle = path.join(globalModules, 'truffle');
     const lib = require(globalTruffle);
-    ui.report('lib-global');
+    getLogger().info('lib-global');
     return lib;
 
   } catch(err) {};
@@ -173,11 +170,11 @@ function loadLibrary(config){
   try {
     if (config.forceLibFailure) throw null; // For err unit testing
 
-    ui.report('lib-warn');
+    getLogger().info('lib-warn');
     return require("./truffle.library")
 
   } catch(err) {
-    throw new Error(ui.generate('lib-fail', [err]));
+    throw new Error('lib-fail ' + [err]);
   };
 
 }

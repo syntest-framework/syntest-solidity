@@ -1,4 +1,4 @@
-import {prng, StringGene} from 'syntest-framework'
+import {ObjectFunctionCall, prng, StringGene} from 'syntest-framework'
 import {Individual} from 'syntest-framework'
 
 import {FunctionCall} from 'syntest-framework'
@@ -105,6 +105,6 @@ export class SolidityRandomSampler extends SoliditySampler {
 
         let constructor = this.sampleConstructor(depth + 1)
 
-        return new FunctionCall(constructor, action.name, action.type, prng.uniqueId(), args)
+        return new ObjectFunctionCall(constructor, action.name, action.type, prng.uniqueId(), args)
     }
 }

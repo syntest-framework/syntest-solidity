@@ -9,11 +9,11 @@ const Web3 = require('web3');
 
 const {setupLogger, processConfig, Fitness, createAlgorithmFromConfig, createCriterionFromConfig} = require('syntest-framework')
 
-const {SolidityRandomSampler} = require('../dist/search/sampling/SolidityRandomSampler')
-const {SolidityRunner} = require("../dist/runner/SolidityRunner");
-const {SoliditySuiteBuilder} = require("../dist/testbuilding/SoliditySuiteBuilder");
-const {SolidityGeneOptionManager} = require("../dist/search/gene/SolidityGeneOptionManager");
-const {SolidityTruffleStringifier} = require("../dist/testbuilding/SolidityTruffleStringifier");
+const {SolidityRandomSampler} = require('../dist/lib/search/sampling/SolidityRandomSampler')
+const {SolidityRunner} = require("../dist/lib/runner/SolidityRunner");
+const {SoliditySuiteBuilder} = require("../dist/lib/testbuilding/SoliditySuiteBuilder");
+const {SolidityGeneOptionManager} = require("../dist/lib/search/gene/SolidityGeneOptionManager");
+const {SolidityTruffleStringifier} = require("../dist/lib/testbuilding/SolidityTruffleStringifier");
 
 /**
  * Truffle Plugin: `truffle run coverage [options]`
