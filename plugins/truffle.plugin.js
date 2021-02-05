@@ -1,3 +1,5 @@
+const {guessCWD, loadConfig, setupOptions} = require("syntest-framework");
+
 const API = require('./../lib/api');
 const utils = require('./resources/plugin.utils');
 const truffleUtils = require('./resources/truffle.utils');
@@ -14,6 +16,8 @@ const {SolidityRunner} = require("../dist/lib/runner/SolidityRunner");
 const {SoliditySuiteBuilder} = require("../dist/lib/testbuilding/SoliditySuiteBuilder");
 const {SolidityGeneOptionManager} = require("../dist/lib/search/gene/SolidityGeneOptionManager");
 const {SolidityTruffleStringifier} = require("../dist/lib/testbuilding/SolidityTruffleStringifier");
+
+const program = 'syntest-solidity'
 
 /**
  * Truffle Plugin: `truffle run coverage [options]`
@@ -33,15 +37,23 @@ async function plugin(config){
 
     config = truffleUtils.normalizeConfig(config);
 
-    await processConfig(utils.loadSyntestJS(config), config.getCwd)
-    await setupLogger()
+    await guessCWD(null)
+
+    const additionalOptions = {} // TODO
+    setupOptions(program, additionalOptions)
+
+    const args = process.argv.slice(process.argv.indexOf(program) + 1)
+    const myConfig = loadConfig(args)
+
+    processConfig(myConfig, args)
+    setupLogger()
 
     ui = new PluginUI(config.logger.log);
 
     if(config.help) return ui.report('help');    // Exit if --help
 
     truffle = truffleUtils.loadLibrary(config);
-    api = new API(utils.loadSyntestJS(config));
+    api = new API(myConfig);
 
     truffleUtils.setNetwork(config, api);
 
@@ -113,7 +125,7 @@ async function plugin(config){
     await truffle.contracts.compile(config);
     await api.onCompileComplete(config);
 
-    // // TODO do this for each and every of the targets
+    // TODO do this for each and every of the targets
     const stringifier = new SolidityTruffleStringifier(targets[1].instrumented.contractName)
     const suiteBuilder = new SoliditySuiteBuilder(stringifier, api, truffle, config, targets[1])
     const runner = new SolidityRunner(suiteBuilder, api, truffle, config)

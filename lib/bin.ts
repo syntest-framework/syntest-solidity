@@ -35,12 +35,11 @@ async function start () {
 
     truffleConfig = truffleUtils.normalizeConfig(truffleConfig);
 
-
     death(utils.finish.bind(null, truffleConfig)); // Catch interrupt signals
 
     await guessCWD(null)
 
-    const additionalOptions = {}
+    const additionalOptions = {} // TODO
     setupOptions(program, additionalOptions)
 
     const args = process.argv.slice(process.argv.indexOf(program) + 1)
@@ -52,9 +51,7 @@ async function start () {
     const truffle = truffleUtils.loadLibrary(truffleConfig);
     const api = new API(config);
 
-
     truffleUtils.setNetwork(truffleConfig, api);
-
 
     // Server launch
     const client = api.client || truffle.ganache;
