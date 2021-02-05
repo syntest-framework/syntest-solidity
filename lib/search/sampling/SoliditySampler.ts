@@ -1,6 +1,4 @@
-import {Sampler} from 'syntest-framework'
-
-import {FunctionCall} from 'syntest-framework'
+import {ObjectFunctionCall, Sampler} from 'syntest-framework'
 
 import {Gene} from "syntest-framework";
 import {GeneOptionManager} from "syntest-framework";
@@ -20,6 +18,6 @@ export abstract class SoliditySampler extends Sampler {
     }
 
     abstract sampleConstructor (depth: number): Constructor
-    abstract sampleFunctionCall (depth: number, type: string): FunctionCall
+    abstract sampleObjectFunctionCall (depth: number, type: string): ObjectFunctionCall
     abstract sampleArgument (depth: number, type: string): Gene
 }

@@ -1,7 +1,6 @@
-import {Stringifier} from "syntest-framework";
+import {ObjectFunctionCall, Stringifier} from "syntest-framework";
 import {Gene} from "syntest-framework";
 import {PrimitiveGene} from "syntest-framework";
-import {FunctionCall} from "syntest-framework";
 import {Individual} from "syntest-framework";
 import {Constructor} from "syntest-framework";
 
@@ -18,22 +17,22 @@ export class SolidityTruffleStringifier implements Stringifier {
         if (gene instanceof PrimitiveGene) {
             return `const ${gene.varName} = ${(gene as PrimitiveGene<any>).value}`
         } else if (gene instanceof Constructor) {
-            let formattedArgs = (gene as Constructor).args
+            const formattedArgs = (gene as Constructor).args
                 .map((a: Gene) => this.stringifyGene(a))
                 .join(', ')
 
             return `const ${gene.varName} = await ${(gene as Constructor).constructorName}.deployed(${formattedArgs});`
-        } else if (gene instanceof FunctionCall) {
-            let args = (gene as FunctionCall).getChildren()
-            let instance = args.shift() as Constructor
-            let formattedArgs = args
+        } else if (gene instanceof ObjectFunctionCall) {
+            const args = (gene as ObjectFunctionCall).getChildren()
+            const instance = args.shift() as Constructor
+            const formattedArgs = args
                 .map((a: Gene) => a.varName)
                 .join(', ')
 
             if (gene.type !== 'none') {
-                return `const ${gene.varName} = await ${instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
+                return `const ${gene.varName} = await ${instance.varName}.${(gene as ObjectFunctionCall).functionName}.call(${formattedArgs});`
             }
-            return `await ${instance.varName}.${(gene as FunctionCall).functionName}.call(${formattedArgs});`
+            return `await ${instance.varName}.${(gene as ObjectFunctionCall).functionName}.call(${formattedArgs});`
         }
 
         return "";
@@ -43,37 +42,37 @@ export class SolidityTruffleStringifier implements Stringifier {
         let testString = ''
         let assertions = ''
 
-        let stack: Gene[] = []
-        let queue: Gene[] = [individual.root]
+        const stack: Gene[] = []
+        const queue: Gene[] = [individual.root]
 
         if (addLogs) {
-            testString += `\n\nawait fs.mkdirSync('${individual.id}', { recursive: true })\n`
+            testString += `\t\tawait fs.mkdirSync('${individual.id}', { recursive: true })\n`
         }
 
         while (queue.length) {
-            let current: Gene = queue.splice(0, 1)[0]
+            const current: Gene = queue.splice(0, 1)[0]
             stack.push(current)
 
-            for (let child of current.getChildren()) {
+            for (const child of current.getChildren()) {
                 queue.push(child)
             }
         }
 
         while (stack.length) {
-            let gene = stack.pop()!!
+            const gene = stack.pop()!
             testString += `\t\t${this.stringifyGene(gene)}\n`
 
             if (gene instanceof PrimitiveGene) {
                 assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`
-            } else if (addLogs && gene instanceof FunctionCall) {
-                testString += `\t\tfs.appendFileSync('${individual.id}/${gene.varName}', ${gene.varName})\n`
+            } else if (addLogs && gene instanceof ObjectFunctionCall) {
+                testString += `\t\tawait fs.writeFileSync('${individual.id}/${gene.varName}', '' + ${gene.varName})\n`
             }
         }
 
         testString += '\n'
 
         if (additionalAssertions) {
-            for (let variableName of Object.keys(additionalAssertions)) {
+            for (const variableName of Object.keys(additionalAssertions)) {
                 assertions += `\t\tassert.equal(${variableName}, ${additionalAssertions[variableName]})\n`
             }
         }

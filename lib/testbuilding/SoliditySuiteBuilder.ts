@@ -39,7 +39,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
 
     async createTests (population: Individual[]) {
         for (let i = 0; i < population.length; i++) {
-            let testPath = path.resolve(this.config.testDir, `test-${i}.js`)
+            const testPath = path.resolve(this.config.testDir, `test-${i}.js`)
 
             await this.writeTest(testPath, population[i], true)
         }
@@ -56,10 +56,10 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         await this.clearDirectory(this.config.testDir)
 
         for (let i = 0; i < population.length; i++) {
-            let testPath = path.resolve(this.config.testDir, `test-${i}.js`)
-            let additionalAssertions: { [key: string]: string } = {}
+            const testPath = path.resolve(this.config.testDir, `test-${i}.js`)
+            const additionalAssertions: { [key: string]: string } = {}
             // extract the log statements
-            let dir = await fs.readdirSync(`${population[i].id}`)
+            const dir = await fs.readdirSync(`${population[i].id}`)
             dir.forEach((file: string) => {
                 additionalAssertions[file] = fs.readFileSync(`${population[i].id}/${file}`)
             })

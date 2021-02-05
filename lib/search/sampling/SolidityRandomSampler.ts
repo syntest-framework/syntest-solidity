@@ -1,8 +1,6 @@
 import {ObjectFunctionCall, prng, StringGene} from 'syntest-framework'
 import {Individual} from 'syntest-framework'
 
-import {FunctionCall} from 'syntest-framework'
-
 import {Bool} from 'syntest-framework'
 import {Fixed} from 'syntest-framework'
 import {Ufixed} from 'syntest-framework'
@@ -28,9 +26,9 @@ export class SolidityRandomSampler extends SoliditySampler {
         super(geneOptionsObject)
     }
 
-    sampleIndividual () {
-        let action = prng.pickOne(this.geneOptionsObject.possibleActions)
-        let root = this.sampleFunctionCall(0, action.type)
+    sampleIndividual (): Individual {
+        const action = prng.pickOne(this.geneOptionsObject.possibleActions)
+        const root = this.sampleObjectFunctionCall(0, action.type)
 
         return new Individual(root)
     }
@@ -52,7 +50,7 @@ export class SolidityRandomSampler extends SoliditySampler {
             // Pick function
             // TODO or take an already available functionCall
 
-            return this.sampleFunctionCall(depth, type)
+            return this.sampleObjectFunctionCall(depth, type)
         } else {
             // Pick variable
             // TODO or take an already available variable
@@ -86,7 +84,7 @@ export class SolidityRandomSampler extends SoliditySampler {
                 }
             }
         } else if (geneType === 'functionCall') {
-            return this.sampleFunctionCall(depth, type)
+            return this.sampleObjectFunctionCall(depth, type)
         } else if (geneType === 'constructor') {
             return this.sampleConstructor(depth)
         }
@@ -94,16 +92,16 @@ export class SolidityRandomSampler extends SoliditySampler {
         throw new Error(`Unknown type ${type} ${geneType}!`)
     }
 
-    sampleFunctionCall (depth: number, type: string): FunctionCall {
-        let action = prng.pickOne(this.geneOptionsObject.possibleActions.filter((a) => a.type === type))
+    sampleObjectFunctionCall (depth: number, type: string): ObjectFunctionCall {
+        const action = prng.pickOne(this.geneOptionsObject.possibleActions.filter((a) => a.type === type))
 
-        let args: Gene[] = []
+        const args: Gene[] = []
 
-        for (let arg of action.args) {
+        for (const arg of action.args) {
             args.push(this.sampleArgument(depth + 1, arg.type))
         }
 
-        let constructor = this.sampleConstructor(depth + 1)
+        const constructor = this.sampleConstructor(depth + 1)
 
         return new ObjectFunctionCall(constructor, action.name, action.type, prng.uniqueId(), args)
     }

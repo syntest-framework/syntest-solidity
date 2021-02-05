@@ -126,10 +126,10 @@ async function start () {
     // Run tests
     try {
         const failures = await truffle.test.run(truffleConfig)
-        getLogger().log(failures)
+        getLogger().info(failures)
     } catch (e) {
         const error = e.stack;
-        getLogger().log(error)
+        getLogger().info(error)
     }
     await api.onTestsComplete(truffleConfig)
 
