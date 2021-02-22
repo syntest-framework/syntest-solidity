@@ -6,14 +6,7 @@ import {Constructor} from "syntest-framework";
 
 export class SolidityTruffleStringifier implements Stringifier {
 
-    private contract: string
-
-    constructor(contract: string) {
-        this.contract = contract
-    }
-
     stringifyGene(gene: Gene): string {
-
         if (gene instanceof PrimitiveGene) {
             return `const ${gene.varName} = ${(gene as PrimitiveGene<any>).value}`
         } else if (gene instanceof Constructor) {
@@ -77,7 +70,8 @@ export class SolidityTruffleStringifier implements Stringifier {
             }
         }
 
-        return `\tit('test for ${this.contract}', async () => {\n`
+        // TODO target name
+        return `\tit('test for ...', async () => {\n`
             + `${testString}`
             + `${assertions}`
             + `\t});`

@@ -4,18 +4,20 @@ import { ActionDescription, GeneOptionManager} from "syntest-framework";
  * @author Dimitri Stallenberg
  */
 export class SolidityGeneOptionManager extends GeneOptionManager {
-    private target: any;
+    private contract: string;
+    private functionMap: any
 
     /**
      * Constructor
      */
-    constructor(target: any) {
+    constructor(contract: string, functionMap: any) {
         super()
-        this.target = target
+        this.contract = contract;
+        this.functionMap = functionMap;
     }
 
     getConstructorName () {
-        return this.target.instrumented.contractName
+        return this.contract
     }
 
     /**
@@ -26,7 +28,7 @@ export class SolidityGeneOptionManager extends GeneOptionManager {
     getPossibleActions (): FunctionDescription[] {
         let possibleTargets: FunctionDescription[] = []
 
-        const fnMap = this.target.instrumented.fnMap
+        const fnMap = this.functionMap
         for (let key of Object.keys(fnMap)) {
             let fn = fnMap[key]
 

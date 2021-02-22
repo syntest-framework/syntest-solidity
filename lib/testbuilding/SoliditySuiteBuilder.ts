@@ -14,19 +14,18 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     private api: any
     private truffle: any
     private config: any
-    private target: any
 
-    constructor(stringifier: Stringifier, api: any, truffle: any, config: any, target: any) {
+    constructor(stringifier: Stringifier, api: any, truffle: any, config: any) {
         super(stringifier)
         this.api = api
         this.truffle = truffle
         this.config = config
-        this.target = target
     }
 
     async writeTest (filePath: string, individual: Individual, addLogs = false, additionalAssertions: { [key: string]: string } = {}) {
+        // TODO target name
         let test = `const MetaCoin = artifacts.require("MetaCoin");\n\n`
-            + `contract('${this.target['instrumented']['contractName']}', (accounts) => {\n`
+            + `contract('...', (accounts) => {\n`
             + this.stringifier.stringifyIndividual(individual, addLogs, additionalAssertions)
             + `\n})`
 
