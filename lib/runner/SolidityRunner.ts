@@ -23,8 +23,8 @@ export class SolidityRunner extends Runner{
     async runTest(individual: Individual): Promise<Datapoint[]> {
         // TODO very stupid but we have to create actual files for truffle to run...
 
-        let testPath = path.resolve(this.config.testDir, 'tempTest.js')
-        await this.suiteBuilder.writeTest(testPath, individual)
+        const testPath = path.resolve(this.config.testDir, 'tempTest.js')
+        await this.suiteBuilder.writeTest(testPath, individual, "TODO")
 
         this.config.test_files = await truffleUtils.getTestFilePaths(this.config);
 

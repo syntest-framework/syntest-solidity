@@ -166,16 +166,16 @@ function loadLibrary(config){
 
   } catch(err) {};
 
-  // Plugin Copy @ v 5.0.31
-  try {
-    if (config.forceLibFailure) throw null; // For err unit testing
-
-    getLogger().info('lib-warn');
-    return require("./truffle.library")
-
-  } catch(err) {
-    throw new Error('lib-fail ' + [err]);
-  };
+  // // Plugin Copy @ v 5.0.31
+  // try {
+  //   if (config.forceLibFailure) throw null; // For err unit testing
+  //
+  //   getLogger().info('lib-warn');
+  //   return require("./truffle.library")
+  //
+  // } catch(err) {
+  //   throw new Error('lib-fail ' + [err]);
+  // };
 
 }
 

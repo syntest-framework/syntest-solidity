@@ -1,4 +1,4 @@
-import {Individual} from "syntest-framework";
+import {Individual, Objective} from "syntest-framework";
 import {SuiteBuilder} from "syntest-framework";
 import {Stringifier} from "syntest-framework";
 
@@ -22,25 +22,35 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         this.config = config
     }
 
-    async writeTest (filePath: string, individual: Individual, addLogs = false, additionalAssertions: { [key: string]: string } = {}) {
-        // TODO target name
-        let test = `const MetaCoin = artifacts.require("MetaCoin");\n\n`
-            + `contract('...', (accounts) => {\n`
-            + this.stringifier.stringifyIndividual(individual, addLogs, additionalAssertions)
-            + `\n})`
 
-        if (addLogs) {
-            test = `const fs = require('fs');\n\n` + test
-        }
-
-        await fs.writeFileSync(filePath, test)
+    async writeTest (filePath: string, individual: Individual, targetName: string, addLogs = false, additionalAssertions?: Map<Individual, { [p: string]: string }>) {
+        await fs.writeFileSync(filePath, this.stringifier.stringifyIndividual(individual, targetName, addLogs, additionalAssertions))
     }
 
-    async createTests (population: Individual[]) {
-        for (let i = 0; i < population.length; i++) {
-            const testPath = path.resolve(this.config.testDir, `test-${i}.js`)
+    async createSuite (archive: Map<Objective, Individual>) {
+        const reducedArchive = new Map<string, Individual[]>()
 
-            await this.writeTest(testPath, population[i], true)
+        for (const key of archive.keys()) {
+            const targetName = key.target.split("/").pop()!.split(".")[0]!
+
+            if (!reducedArchive.has(targetName)) {
+                reducedArchive.set(targetName, [])
+            }
+
+            if (reducedArchive.get(targetName)!.includes(<Individual>archive.get(key))) {
+                // skip duplicate individuals (i.e. individuals which cover multiple objectives
+                continue
+            }
+
+            reducedArchive.get(targetName)!.push(<Individual>archive.get(key))
+        }
+
+
+        for (const key of reducedArchive.keys()) {
+            for (const individual of reducedArchive.get(key)!) {
+                const testPath = path.resolve(this.config.testDir, `test${key}${individual.id}.js`)
+                await this.writeTest(testPath, individual, "", true)
+            }
         }
 
         this.config.test_files = await truffleUtils.getTestFilePaths(this.config);
@@ -54,19 +64,28 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         // Create final tests files with additional assertions
         await this.clearDirectory(this.config.testDir)
 
-        for (let i = 0; i < population.length; i++) {
-            const testPath = path.resolve(this.config.testDir, `test-${i}.js`)
-            const additionalAssertions: { [key: string]: string } = {}
-            // extract the log statements
-            const dir = await fs.readdirSync(`${population[i].id}`)
-            dir.forEach((file: string) => {
-                additionalAssertions[file] = fs.readFileSync(`${population[i].id}/${file}`)
-            })
-            await this.clearDirectory(`${population[i].id}`, /.*/g)
-            await fs.rmdirSync(`${population[i].id}`)
 
-            await this.writeTest(testPath, population[i], false, additionalAssertions)
+        for (const key of reducedArchive.keys()) {
+            const assertions = new Map()
+
+            for (const individual of reducedArchive.get(key)!) {
+                const additionalAssertions: { [key: string]: string } = {}
+                // extract the log statements
+                const dir = await fs.readdirSync(`temp_logs/${individual.id}`)
+                dir.forEach((file: string) => {
+                    additionalAssertions[file] = fs.readFileSync(`temp_logs/${individual.id}/${file}`)
+                })
+                await this.clearDirectory(`temp_logs/${individual.id}`, /.*/g)
+                await fs.rmdirSync(`temp_logs/${individual.id}`)
+
+                assertions.set(individual, additionalAssertions)
+            }
+
+            const testPath = path.resolve(this.config.testDir, `test-${key}.js`)
+            await fs.writeFileSync(testPath, this.stringifier.stringifyIndividual(reducedArchive.get(key)!, `${key}`, false, assertions))
         }
+
+        await fs.rmdirSync(`temp_logs`)
 
         this.api.resetInstrumentationData()
     }

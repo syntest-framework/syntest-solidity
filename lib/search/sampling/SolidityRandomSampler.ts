@@ -8,10 +8,10 @@ import {Int} from 'syntest-framework'
 import {Uint} from 'syntest-framework'
 import {Address} from 'syntest-framework'
 import {Gene} from "syntest-framework";
-import {GeneOptionManager} from "syntest-framework";
 import {Constructor} from "syntest-framework";
 import {getProperty} from "syntest-framework";
 import {SoliditySampler} from "./SoliditySampler";
+import {SolidityTarget} from "../objective/SolidityTarget";
 
 /**
  * SolidityRandomSampler class
@@ -22,22 +22,22 @@ export class SolidityRandomSampler extends SoliditySampler {
     /**
      * Constructor
      */
-    constructor(geneOptionsObject: GeneOptionManager) {
-        super(geneOptionsObject)
+    constructor(target: SolidityTarget) {
+        super(target)
     }
 
     sampleIndividual (): Individual {
-        const action = prng.pickOne(this.geneOptionsObject.possibleActions)
-        const root = this.sampleObjectFunctionCall(0, action.type)
+        const action = prng.pickOne(this.target.getPossibleActions('function'))
+        const root = this.sampleObjectFunctionCall(0, action.returnType)
 
         return new Individual(root)
     }
 
     sampleConstructor (depth: number): Constructor {
+        const action = prng.pickOne(this.target.getPossibleActions('constructor'))
         // TODO arguments for constructors
-        return new Constructor(this.geneOptionsObject.getConstructorName(), `${this.geneOptionsObject.getConstructorName()}Object`, prng.uniqueId(), [])
+        return new Constructor(action.name, `${action.name}Object`, prng.uniqueId(), [])
     }
-
 
     sampleArgument (depth: number, type: string): Gene {
         // check depth to decide whether to pick a variable
@@ -46,7 +46,7 @@ export class SolidityRandomSampler extends SoliditySampler {
             return this.sampleGene(depth, type)
         }
 
-        if (this.geneOptionsObject.possibleActions.filter((a) => a.type === type).length && prng.nextBoolean(getProperty("sample_func_as_arg"))) {
+        if (this.target.getPossibleActions().filter((a) => a.type === type).length && prng.nextBoolean(getProperty("sample_func_as_arg"))) {
             // Pick function
             // TODO or take an already available functionCall
 
@@ -93,7 +93,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
 
     sampleObjectFunctionCall (depth: number, type: string): ObjectFunctionCall {
-        const action = prng.pickOne(this.geneOptionsObject.possibleActions.filter((a) => a.type === type))
+        const action = prng.pickOne(this.target.getPossibleActions('function', type))
 
         const args: Gene[] = []
 
@@ -103,6 +103,6 @@ export class SolidityRandomSampler extends SoliditySampler {
 
         const constructor = this.sampleConstructor(depth + 1)
 
-        return new ObjectFunctionCall(constructor, action.name, action.type, prng.uniqueId(), args)
+        return new ObjectFunctionCall(constructor, action.name, action.returnType, prng.uniqueId(), args)
     }
 }

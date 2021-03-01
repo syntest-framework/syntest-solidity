@@ -14,8 +14,8 @@ import {
 import {SolidityTruffleStringifier} from "./testbuilding/SolidityTruffleStringifier";
 import {SoliditySuiteBuilder} from "./testbuilding/SoliditySuiteBuilder";
 import {SolidityRunner} from "./runner/SolidityRunner";
-import {SolidityGeneOptionManager} from "./search/gene/SolidityGeneOptionManager";
 import {SolidityRandomSampler} from "./search/sampling/SolidityRandomSampler";
+import {SolidityTarget} from "./index";
 
 const API = require('./api.js');
 const utils = require('../plugins/resources/plugin.utils');
@@ -101,23 +101,41 @@ async function start () {
     await truffle.contracts.compile(truffleConfig);
     await api.onCompileComplete(truffleConfig);
 
-    // // TODO do this for each and every of the targets
-    const stringifier = new SolidityTruffleStringifier(targets[1].instrumented.contractName)
-    const suiteBuilder = new SoliditySuiteBuilder(stringifier, api, truffle, truffleConfig, targets[1])
-    const runner = new SolidityRunner(suiteBuilder, api, truffle, truffleConfig)
 
-    const FitnessObject = new Fitness(targets[1].instrumented.cfg, runner)
-    const GeneOptionsObject = new SolidityGeneOptionManager(targets[1])
-    const Sampler = new SolidityRandomSampler(GeneOptionsObject)
+    const stringifier = new SolidityTruffleStringifier()
+    const suiteBuilder = new SoliditySuiteBuilder(stringifier, api, truffle, config)
 
-    const algorithm = createAlgorithmFromConfig(FitnessObject, GeneOptionsObject, Sampler)
+    const finalArchive = new Map()
 
-    await suiteBuilder.clearDirectory(truffleConfig.testDir)
+    for (const target of targets) {
+        getLogger().debug(`Testing target: ${target.relativePath}`)
+        if (getProperty("exclude").includes(target.relativePath)) {
+            continue
+        }
 
-    // This searches for a covering population
-    const population = await algorithm.search(createCriterionFromConfig())
+        const targetName = target.instrumented.contractName
+        const targetCFG = target.instrumented.cfg
+        const targetFnMap = target.instrumented.fnMap
 
-    await suiteBuilder.createTests(population)
+        const actualTarget = new SolidityTarget(targetName, targetCFG, targetFnMap)
+
+        const runner = new SolidityRunner(suiteBuilder, api, truffle, config)
+
+        const FitnessObject = new Fitness(runner, actualTarget)
+        const Sampler = new SolidityRandomSampler(actualTarget)
+        const algorithm = createAlgorithmFromConfig(actualTarget, FitnessObject, Sampler)
+
+        await suiteBuilder.clearDirectory(config.testDir)
+
+        // This searches for a covering population
+        const archive = await algorithm.search(createCriterionFromConfig())
+
+        for (const key of archive.keys()) {
+            finalArchive.set(key, archive.get(key))
+        }
+    }
+
+    await suiteBuilder.createSuite(finalArchive)
 
     truffleConfig.test_files = await truffleUtils.getTestFilePaths(truffleConfig);
     // Run tests
