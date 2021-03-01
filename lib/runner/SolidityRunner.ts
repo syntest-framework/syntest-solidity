@@ -1,10 +1,10 @@
-import {getLogger} from "syntest-framework";
+import {getLogger, getProperty} from "syntest-framework";
 import {Datapoint, Runner} from "syntest-framework";
 import {SuiteBuilder} from "syntest-framework";
 import {Individual} from "syntest-framework";
+import * as path from "path";
 
 const truffleUtils = require('../../plugins/resources/truffle.utils');
-const path = require('path')
 
 export class SolidityRunner extends Runner{
 
@@ -23,10 +23,11 @@ export class SolidityRunner extends Runner{
     async runTest(individual: Individual): Promise<Datapoint[]> {
         // TODO very stupid but we have to create actual files for truffle to run...
 
-        let testPath = path.resolve(this.config.testDir, 'tempTest.js')
-        await this.suiteBuilder.writeTest(testPath, individual)
+        const testPath = path.join(getProperty("temp_test_directory"), 'tempTest.js')
+        await this.suiteBuilder.writeTest(testPath, individual, "TODO")
 
-        this.config.test_files = await truffleUtils.getTestFilePaths(this.config);
+        this.config.testDir = path.resolve(getProperty("temp_test_directory"))
+        this.config.test_files = await truffleUtils.getTestFilePaths(this.config)
 
         // Reset instrumentation data (no hits)
         this.api.resetInstrumentationData()
@@ -46,15 +47,15 @@ export class SolidityRunner extends Runner{
             process.exit(1)
         }
 
-        let datapoints = this.api.getInstrumentationData()
+        const datapoints = this.api.getInstrumentationData()
 
         this.api.resetInstrumentationData()
         // Remove test file
         await this.suiteBuilder.deleteTest(testPath)
 
-        let finalpoints = []
+        const finalpoints = []
 
-        for (let key of Object.keys(datapoints)) {
+        for (const key of Object.keys(datapoints)) {
             finalpoints.push(datapoints[key])
         }
 

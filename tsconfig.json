@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es5",
+    "target": "es6",
     "sourceMap": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
     "declaration": true,
     "outDir": "./dist",
+    "downlevelIteration": true,
+    "allowJs": true,
     "lib": [
       "dom",
       "es7",
@@ -15,10 +17,9 @@
     ]
   },
   "include": [
-    "lib/**/*",
-    "plugins/**/*"
+    "lib/**/*"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules/**/*"
   ]
 }

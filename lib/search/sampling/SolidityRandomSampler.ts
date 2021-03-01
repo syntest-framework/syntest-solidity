@@ -1,7 +1,5 @@
-import {prng, StringGene} from 'syntest-framework'
+import {ObjectFunctionCall, prng, StringGene} from 'syntest-framework'
 import {Individual} from 'syntest-framework'
-
-import {FunctionCall} from 'syntest-framework'
 
 import {Bool} from 'syntest-framework'
 import {Fixed} from 'syntest-framework'
@@ -10,10 +8,10 @@ import {Int} from 'syntest-framework'
 import {Uint} from 'syntest-framework'
 import {Address} from 'syntest-framework'
 import {Gene} from "syntest-framework";
-import {GeneOptionManager} from "syntest-framework";
 import {Constructor} from "syntest-framework";
 import {getProperty} from "syntest-framework";
 import {SoliditySampler} from "./SoliditySampler";
+import {SolidityTarget} from "../objective/SolidityTarget";
 
 /**
  * SolidityRandomSampler class
@@ -24,22 +22,22 @@ export class SolidityRandomSampler extends SoliditySampler {
     /**
      * Constructor
      */
-    constructor(geneOptionsObject: GeneOptionManager) {
-        super(geneOptionsObject)
+    constructor(target: SolidityTarget) {
+        super(target)
     }
 
-    sampleIndividual () {
-        let action = prng.pickOne(this.geneOptionsObject.possibleActions)
-        let root = this.sampleFunctionCall(0, action.type)
+    sampleIndividual (): Individual {
+        const action = prng.pickOne(this.target.getPossibleActions('function'))
+        const root = this.sampleObjectFunctionCall(0, action.returnType)
 
         return new Individual(root)
     }
 
     sampleConstructor (depth: number): Constructor {
+        const action = prng.pickOne(this.target.getPossibleActions('constructor'))
         // TODO arguments for constructors
-        return new Constructor(this.geneOptionsObject.getConstructorName(), `${this.geneOptionsObject.getConstructorName()}Object`, prng.uniqueId(), [])
+        return new Constructor(action.name, `${action.name}Object`, prng.uniqueId(), [])
     }
-
 
     sampleArgument (depth: number, type: string): Gene {
         // check depth to decide whether to pick a variable
@@ -48,11 +46,11 @@ export class SolidityRandomSampler extends SoliditySampler {
             return this.sampleGene(depth, type)
         }
 
-        if (this.geneOptionsObject.possibleActions.filter((a) => a.type === type).length && prng.nextBoolean(getProperty("sample_func_as_arg"))) {
+        if (this.target.getPossibleActions().filter((a) => a.type === type).length && prng.nextBoolean(getProperty("sample_func_as_arg"))) {
             // Pick function
             // TODO or take an already available functionCall
 
-            return this.sampleFunctionCall(depth, type)
+            return this.sampleObjectFunctionCall(depth, type)
         } else {
             // Pick variable
             // TODO or take an already available variable
@@ -88,7 +86,7 @@ export class SolidityRandomSampler extends SoliditySampler {
                 return StringGene.getRandom()
             }
         } else if (geneType === 'functionCall') {
-            return this.sampleFunctionCall(depth, type)
+            return this.sampleObjectFunctionCall(depth, type)
         } else if (geneType === 'constructor') {
             return this.sampleConstructor(depth)
         }
@@ -96,17 +94,17 @@ export class SolidityRandomSampler extends SoliditySampler {
         throw new Error(`Unknown type ${type} ${geneType}!`)
     }
 
-    sampleFunctionCall (depth: number, type: string): FunctionCall {
-        let action = prng.pickOne(this.geneOptionsObject.possibleActions.filter((a) => a.type === type))
+    sampleObjectFunctionCall (depth: number, type: string): ObjectFunctionCall {
+        const action = prng.pickOne(this.target.getPossibleActions('function', type))
 
-        let args: Gene[] = []
+        const args: Gene[] = []
 
-        for (let arg of action.args) {
+        for (const arg of action.args) {
             args.push(this.sampleArgument(depth + 1, arg.type))
         }
 
-        let constructor = this.sampleConstructor(depth + 1)
+        const constructor = this.sampleConstructor(depth + 1)
 
-        return new FunctionCall(constructor, action.name, action.type, prng.uniqueId(), args)
+        return new ObjectFunctionCall(constructor, action.name, action.returnType, prng.uniqueId(), args)
     }
 }
