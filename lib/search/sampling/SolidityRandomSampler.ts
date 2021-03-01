@@ -82,6 +82,8 @@ export class SolidityRandomSampler extends SoliditySampler {
                 } else {
                     return Fixed.getRandom()
                 }
+            } else if (type.includes('string')) {
+                return StringGene.getRandom()
             }
         } else if (geneType === 'functionCall') {
             return this.sampleObjectFunctionCall(depth, type)

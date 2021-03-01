@@ -118,6 +118,7 @@ async function plugin(config){
 
     config.all = true;
     config.compilers.solc.settings.optimizer.enabled = false;
+    config.quiet = true
 
     // Compile Instrumented Contracts
     await truffle.contracts.compile(config);
