@@ -1,8 +1,9 @@
-import {ObjectFunctionCall, Stringifier} from "syntest-framework";
+import {getProperty, ObjectFunctionCall, Stringifier} from "syntest-framework";
 import {Gene} from "syntest-framework";
 import {PrimitiveGene} from "syntest-framework";
 import {Individual} from "syntest-framework";
 import {Constructor} from "syntest-framework";
+import * as path from "path";
 
 export class SolidityTruffleStringifier implements Stringifier {
 
@@ -57,7 +58,7 @@ export class SolidityTruffleStringifier implements Stringifier {
             const queue: Gene[] = [ind.root]
 
             if (addLogs) {
-                testString += `\t\tawait fs.mkdirSync('temp_logs/${ind.id}', { recursive: true })\n`
+                testString += `\t\tawait fs.mkdirSync('${path.join(getProperty('temp_log_directory'), ind.id)}', { recursive: true })\n`
             }
 
             while (queue.length) {
@@ -76,7 +77,7 @@ export class SolidityTruffleStringifier implements Stringifier {
                 if (gene instanceof PrimitiveGene) {
                     assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`
                 } else if (addLogs && gene instanceof ObjectFunctionCall) {
-                    testString += `\t\tawait fs.writeFileSync('temp_logs/${ind.id}/${gene.varName}', '' + ${gene.varName})\n`
+                    testString += `\t\tawait fs.writeFileSync('${path.join(getProperty('temp_log_directory'), ind.id, gene.varName)}', '' + ${gene.varName})\n`
                 }
 
                 const importString: string = this.getImport(gene)

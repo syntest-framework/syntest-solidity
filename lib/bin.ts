@@ -8,7 +8,8 @@ import {
     processConfig,
     setupLogger,
     Fitness,
-    createAlgorithmFromConfig, createCriterionFromConfig, getLogger
+    createAlgorithmFromConfig, createCriterionFromConfig, getLogger,
+    createDirectoryStructure, deleteTempDirectories
 } from "syntest-framework";
 
 import {SolidityTruffleStringifier} from "./testbuilding/SolidityTruffleStringifier";
@@ -16,12 +17,12 @@ import {SoliditySuiteBuilder} from "./testbuilding/SoliditySuiteBuilder";
 import {SolidityRunner} from "./runner/SolidityRunner";
 import {SolidityRandomSampler} from "./search/sampling/SolidityRandomSampler";
 import {SolidityTarget} from "./index";
+import * as path from "path";
 
 const API = require('./api.js');
 const utils = require('../plugins/resources/plugin.utils');
 const truffleUtils = require('../plugins/resources/truffle.utils');
 const Web3 = require('web3');
-const path = require('path');
 const death = require('death');
 const TruffleConfig = require("@truffle/config");
 
@@ -101,6 +102,7 @@ async function start () {
     await truffle.contracts.compile(truffleConfig);
     await api.onCompileComplete(truffleConfig);
 
+    await createDirectoryStructure()
 
     const stringifier = new SolidityTruffleStringifier()
     const suiteBuilder = new SoliditySuiteBuilder(stringifier, api, truffle, config)
@@ -125,7 +127,7 @@ async function start () {
         const Sampler = new SolidityRandomSampler(actualTarget)
         const algorithm = createAlgorithmFromConfig(actualTarget, FitnessObject, Sampler)
 
-        await suiteBuilder.clearDirectory(config.testDir)
+        await suiteBuilder.clearDirectory(getProperty("temp_test_directory"))
 
         // This searches for a covering population
         const archive = await algorithm.search(createCriterionFromConfig())
@@ -136,6 +138,8 @@ async function start () {
     }
 
     await suiteBuilder.createSuite(finalArchive)
+
+    await deleteTempDirectories()
 
     truffleConfig.test_files = await truffleUtils.getTestFilePaths(truffleConfig);
     // Run tests

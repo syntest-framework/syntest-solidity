@@ -1,4 +1,5 @@
-const {guessCWD, loadConfig, setupOptions} = require("syntest-framework");
+const {guessCWD, loadConfig, setupOptions, createDirectoryStructure, deleteTempDirectories} = require("syntest-framework");
+const {drawGraph, setupLogger, getLogger, getProperty, processConfig, Fitness, createAlgorithmFromConfig, createCriterionFromConfig} = require('syntest-framework')
 
 const API = require('./../lib/api');
 const utils = require('./resources/plugin.utils');
@@ -9,7 +10,6 @@ const death = require('death');
 const path = require('path');
 const Web3 = require('web3');
 
-const {Target, Individual, Objective, setupLogger, getLogger, getProperty, processConfig, Fitness, createAlgorithmFromConfig, createCriterionFromConfig} = require('syntest-framework')
 
 const {SolidityTarget, SolidityRandomSampler, SolidityRunner, SoliditySuiteBuilder, SolidityTruffleStringifier} = require('../dist/index')
 
@@ -43,6 +43,8 @@ async function plugin(config){
 
     processConfig(myConfig, args)
     setupLogger()
+
+    config.testDir = getProperty("temp_test_directory")
 
     ui = new PluginUI(config.logger.log);
 
@@ -121,6 +123,8 @@ async function plugin(config){
     await truffle.contracts.compile(config);
     await api.onCompileComplete(config);
 
+    await createDirectoryStructure()
+
     const stringifier = new SolidityTruffleStringifier()
     const suiteBuilder = new SoliditySuiteBuilder(stringifier, api, truffle, config)
 
@@ -136,6 +140,8 @@ async function plugin(config){
       const targetCFG = target.instrumented.cfg
       const targetFnMap = target.instrumented.fnMap
 
+      drawGraph(targetCFG, path.join(getProperty("cfg_directory"), `${targetName}.svg`))
+
       const actualTarget = new SolidityTarget(targetName, targetCFG, targetFnMap)
 
       const runner = new SolidityRunner(suiteBuilder, api, truffle, config)
@@ -144,7 +150,7 @@ async function plugin(config){
       const Sampler = new SolidityRandomSampler(actualTarget)
       const algorithm = createAlgorithmFromConfig(actualTarget, FitnessObject, Sampler)
 
-      await suiteBuilder.clearDirectory(config.testDir)
+      await suiteBuilder.clearDirectory(getProperty("temp_test_directory"))
 
       // This searches for a covering population
       let archive = await algorithm.search(createCriterionFromConfig())
@@ -156,7 +162,11 @@ async function plugin(config){
 
     await suiteBuilder.createSuite(finalArchive)
 
-    config.test_files = await truffleUtils.getTestFilePaths(config);
+    await deleteTempDirectories()
+
+    config.test_files = await truffleUtils.getTestFilePaths({
+      testDir: path.resolve(getProperty("final_suite_directory"))
+    });
     // Run tests
     try {
       failures = await truffle.test.run(config)
