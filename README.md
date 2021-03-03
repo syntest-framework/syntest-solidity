@@ -1,4 +1,7 @@
 # syntest-solidity
+
+[![](https://github.com/syntest-framework/syntest-solidity/actions/workflows/node.js.yml/badge.svg)](https://github.com/syntest-framework/syntest-solidity/actions/workflows/node.js.yml)
+
 A tool to generate synthetic tests for the Solidity platform
 
 # How to use
