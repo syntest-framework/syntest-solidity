@@ -74,8 +74,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
                 const dir = await readdirSync(path.join(getProperty("temp_log_directory"), individual.id))
 
                 for (const file of dir) {
-                    additionalAssertions[file] = await readFileSync(path.join(getProperty("temp_log_directory"), individual.id, file))
-
+                    additionalAssertions[file] = await readFileSync(path.join(getProperty("temp_log_directory"), individual.id, file), 'utf8')
                 }
 
                 await this.clearDirectory(path.join(getProperty("temp_log_directory"), individual.id), /.*/g)
