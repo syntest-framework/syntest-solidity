@@ -1,4 +1,4 @@
-const UI = require('../../lib/instrumentation/ui').UI;
+const UI = require('../../lib/instrumentation/ui');
 
 /**
  * Truffle Plugin logging
