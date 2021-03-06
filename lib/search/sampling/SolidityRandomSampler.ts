@@ -84,6 +84,8 @@ export class SolidityRandomSampler extends SoliditySampler {
                 }
             } else if (type.includes('string')) {
                 return StringGene.getRandom()
+            } else if (type == "") {
+                throw new Error(`THERE U GO!`)
             }
         } else if (geneType === 'functionCall') {
             return this.sampleObjectFunctionCall(depth, type)
@@ -100,7 +102,8 @@ export class SolidityRandomSampler extends SoliditySampler {
         const args: Gene[] = []
 
         for (const arg of action.args) {
-            args.push(this.sampleArgument(depth + 1, arg.type))
+            if (arg.type != "")
+                args.push(this.sampleArgument(depth + 1, arg.type))
         }
 
         const constructor = this.sampleConstructor(depth + 1)
