@@ -1,7 +1,7 @@
 import {getLogger, getProperty} from "syntest-framework";
 import {Datapoint, Runner} from "syntest-framework";
 import {SuiteBuilder} from "syntest-framework";
-import {Individual} from "syntest-framework";
+import {TestCase} from "syntest-framework";
 import * as path from "path";
 
 const truffleUtils = require('../../plugins/resources/truffle.utils');
@@ -20,11 +20,11 @@ export class SolidityRunner extends Runner{
     }
 
 
-    async runTest(individual: Individual): Promise<Datapoint[]> {
+    async runTest(testCase: TestCase): Promise<Datapoint[]> {
         // TODO very stupid but we have to create actual files for truffle to run...
 
         const testPath = path.join(getProperty("temp_test_directory"), 'tempTest.js')
-        await this.suiteBuilder.writeTest(testPath, individual, "TODO")
+        await this.suiteBuilder.writeTest(testPath, testCase, "TODO")
 
         this.config.testDir = path.resolve(getProperty("temp_test_directory"))
         this.config.test_files = await truffleUtils.getTestFilePaths(this.config)

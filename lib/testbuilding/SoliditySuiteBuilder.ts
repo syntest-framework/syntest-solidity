@@ -1,4 +1,4 @@
-import {getProperty, Individual, Objective} from "syntest-framework";
+import {getProperty, TestCase, Objective} from "syntest-framework";
 import {SuiteBuilder} from "syntest-framework";
 import {Stringifier} from "syntest-framework";
 import {writeFileSync, readdirSync, rmdirSync, readFileSync} from 'fs'
@@ -23,12 +23,12 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     }
 
 
-    async writeTest (filePath: string, individual: Individual, targetName: string, addLogs = false, additionalAssertions?: Map<Individual, { [p: string]: string }>) {
-        await writeFileSync(filePath, this.stringifier.stringifyIndividual(individual, targetName, addLogs, additionalAssertions))
+    async writeTest (filePath: string, testCase: TestCase, targetName: string, addLogs = false, additionalAssertions?: Map<TestCase, { [p: string]: string }>) {
+        await writeFileSync(filePath, this.stringifier.stringifyIndividual(testCase, targetName, addLogs, additionalAssertions))
     }
 
-    async createSuite (archive: Map<Objective, Individual>) {
-        const reducedArchive = new Map<string, Individual[]>()
+    async createSuite (archive: Map<Objective, TestCase>) {
+        const reducedArchive = new Map<string, TestCase[]>()
 
         for (const key of archive.keys()) {
             const targetName = key.target.split("/").pop()!.split(".")[0]!
@@ -37,19 +37,19 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
                 reducedArchive.set(targetName, [])
             }
 
-            if (reducedArchive.get(targetName)!.includes(<Individual>archive.get(key))) {
+            if (reducedArchive.get(targetName)!.includes(<TestCase>archive.get(key))) {
                 // skip duplicate individuals (i.e. individuals which cover multiple objectives
                 continue
             }
 
-            reducedArchive.get(targetName)!.push(<Individual>archive.get(key))
+            reducedArchive.get(targetName)!.push(<TestCase>archive.get(key))
         }
 
 
         for (const key of reducedArchive.keys()) {
-            for (const individual of reducedArchive.get(key)!) {
-                const testPath = path.join(getProperty("temp_test_directory"), `test${key}${individual.id}.js`)
-                await this.writeTest(testPath, individual, "", true)
+            for (const testCase of reducedArchive.get(key)!) {
+                const testPath = path.join(getProperty("temp_test_directory"), `test${key}${testCase.id}.js`)
+                await this.writeTest(testPath, testCase, "", true)
             }
         }
 
@@ -68,19 +68,19 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         for (const key of reducedArchive.keys()) {
             const assertions = new Map()
 
-            for (const individual of reducedArchive.get(key)!) {
+            for (const testCase of reducedArchive.get(key)!) {
                 const additionalAssertions: { [key: string]: string } = {}
                 // extract the log statements
-                const dir = await readdirSync(path.join(getProperty("temp_log_directory"), individual.id))
+                const dir = await readdirSync(path.join(getProperty("temp_log_directory"), testCase.id))
 
                 for (const file of dir) {
-                    additionalAssertions[file] = await readFileSync(path.join(getProperty("temp_log_directory"), individual.id, file), 'utf8')
+                    additionalAssertions[file] = await readFileSync(path.join(getProperty("temp_log_directory"), testCase.id, file), 'utf8')
                 }
 
-                await this.clearDirectory(path.join(getProperty("temp_log_directory"), individual.id), /.*/g)
-                await rmdirSync(path.join(getProperty("temp_log_directory"), individual.id))
+                await this.clearDirectory(path.join(getProperty("temp_log_directory"), testCase.id), /.*/g)
+                await rmdirSync(path.join(getProperty("temp_log_directory"), testCase.id))
 
-                assertions.set(individual, additionalAssertions)
+                assertions.set(testCase, additionalAssertions)
             }
 
             const testPath = path.join(getProperty("final_suite_directory"), `test-${key}.js`)
