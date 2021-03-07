@@ -1,5 +1,5 @@
-import {ObjectFunctionCall, prng, StringGene} from 'syntest-framework'
-import {Individual} from 'syntest-framework'
+import {ObjectFunctionCall, prng, String} from 'syntest-framework'
+import {TestCase} from 'syntest-framework'
 
 import {Bool} from 'syntest-framework'
 import {Fixed} from 'syntest-framework'
@@ -7,7 +7,7 @@ import {Ufixed} from 'syntest-framework'
 import {Int} from 'syntest-framework'
 import {Uint} from 'syntest-framework'
 import {Address} from 'syntest-framework'
-import {Gene} from "syntest-framework";
+import {Statement} from "syntest-framework";
 import {Constructor} from "syntest-framework";
 import {getProperty} from "syntest-framework";
 import {SoliditySampler} from "./SoliditySampler";
@@ -26,11 +26,11 @@ export class SolidityRandomSampler extends SoliditySampler {
         super(target)
     }
 
-    sampleIndividual (): Individual {
+    sampleIndividual (): TestCase {
         const action = prng.pickOne(this.target.getPossibleActions('function'))
         const root = this.sampleObjectFunctionCall(0, action.returnType)
 
-        return new Individual(root)
+        return new TestCase(root)
     }
 
     sampleConstructor (depth: number): Constructor {
@@ -39,7 +39,7 @@ export class SolidityRandomSampler extends SoliditySampler {
         return new Constructor(action.name, `${action.name}Object`, prng.uniqueId(), [])
     }
 
-    sampleArgument (depth: number, type: string): Gene {
+    sampleArgument (depth: number, type: string): Statement {
         // check depth to decide whether to pick a variable
         if (depth >= getProperty("max_depth")) {
             // TODO or take an already available variable
@@ -59,14 +59,14 @@ export class SolidityRandomSampler extends SoliditySampler {
         }
     }
 
-    sampleGene(depth: number, type: string, geneType= 'primitive'): Gene {
+    sampleGene(depth: number, type: string, geneType= 'primitive'): Statement {
         if (geneType === 'primitive') {
             if (type === 'bool') {
                 return Bool.getRandom()
             } else if (type === 'address') {
                 return Address.getRandom()
             } else if (type === 'string') {
-                return StringGene.getRandom()
+                return String.getRandom()
             } else if (type.includes('int')) {
                 if (type.includes('uint')) {
                     return Uint.getRandom()
@@ -83,7 +83,7 @@ export class SolidityRandomSampler extends SoliditySampler {
                     return Fixed.getRandom()
                 }
             } else if (type.includes('string')) {
-                return StringGene.getRandom()
+                return String.getRandom()
             } else if (type == "") {
                 throw new Error(`THERE U GO!`)
             }
@@ -99,7 +99,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     sampleObjectFunctionCall (depth: number, type: string): ObjectFunctionCall {
         const action = prng.pickOne(this.target.getPossibleActions('function', type))
 
-        const args: Gene[] = []
+        const args: Statement[] = []
 
         for (const arg of action.args) {
             if (arg.type != "")

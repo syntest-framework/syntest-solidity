@@ -1,51 +1,51 @@
 import {getProperty, ObjectFunctionCall, Stringifier} from "syntest-framework";
-import {Gene} from "syntest-framework";
-import {PrimitiveGene} from "syntest-framework";
-import {Individual} from "syntest-framework";
+import {Statement} from "syntest-framework";
+import {PrimitiveStatement} from "syntest-framework";
+import {TestCase} from "syntest-framework";
 import {Constructor} from "syntest-framework";
 import * as path from "path";
 
 export class SolidityTruffleStringifier implements Stringifier {
 
-    stringifyGene(gene: Gene): string {
-        if (gene instanceof PrimitiveGene) {
-            return `const ${gene.varName} = ${(gene as PrimitiveGene<any>).value}`
-        } else if (gene instanceof Constructor) {
-            const formattedArgs = (gene as Constructor).args
-                .map((a: Gene) => this.stringifyGene(a))
+    stringifyGene(statement: Statement): string {
+        if (statement instanceof PrimitiveStatement) {
+            return `const ${statement.varName} = ${(statement as PrimitiveStatement<any>).value}`
+        } else if (statement instanceof Constructor) {
+            const formattedArgs = (statement as Constructor).args
+                .map((a: Statement) => this.stringifyGene(a))
                 .join(', ')
 
-            return `const ${gene.varName} = await ${(gene as Constructor).constructorName}.deployed(${formattedArgs});`
-        } else if (gene instanceof ObjectFunctionCall) {
-            const args = (gene as ObjectFunctionCall).getChildren()
+            return `const ${statement.varName} = await ${(statement as Constructor).constructorName}.deployed(${formattedArgs});`
+        } else if (statement instanceof ObjectFunctionCall) {
+            const args = (statement as ObjectFunctionCall).getChildren()
             const instance = args.shift() as Constructor
             const formattedArgs = args
-                .map((a: Gene) => a.varName)
+                .map((a: Statement) => a.varName)
                 .join(', ')
 
             if (instance === undefined)
                 throw new Error("This never happens, but we have to do it because the compiler is dumb")
 
-            if (gene.type !== 'none') {
-                return `const ${gene.varName} = await ${instance.varName}.${(gene as ObjectFunctionCall).functionName}.call(${formattedArgs});`
+            if (statement.type !== 'none') {
+                return `const ${statement.varName} = await ${instance.varName}.${(statement as ObjectFunctionCall).functionName}.call(${formattedArgs});`
             }
-            return `await ${instance.varName}.${(gene as ObjectFunctionCall).functionName}.call(${formattedArgs});`
+            return `await ${instance.varName}.${(statement as ObjectFunctionCall).functionName}.call(${formattedArgs});`
         }
 
         return "";
     }
 
-    getImport(gene: Gene): string {
-        if (gene instanceof Constructor) {
+    getImport(statement: Statement): string {
+        if (statement instanceof Constructor) {
             // TODO This assumes constructor name is also name of the file
-            return `const ${(gene as Constructor).constructorName} = artifacts.require("${(gene as Constructor).constructorName}");\n\n`
+            return `const ${(statement as Constructor).constructorName} = artifacts.require("${(statement as Constructor).constructorName}");\n\n`
         }
 
         return ""
     }
 
-    stringifyIndividual(individual: Individual | Individual[], targetName: string, addLogs?: boolean, additionalAssertions?: Map<Individual, { [p: string]: string }>): string {
-        if (individual instanceof Individual) {
+    stringifyIndividual(individual: TestCase | TestCase[], targetName: string, addLogs?: boolean, additionalAssertions?: Map<TestCase, { [p: string]: string }>): string {
+        if (individual instanceof TestCase) {
             individual = [individual]
         }
 
@@ -57,15 +57,15 @@ export class SolidityTruffleStringifier implements Stringifier {
             let testString = ''
             let assertions = ''
 
-            const stack: Gene[] = []
-            const queue: Gene[] = [ind.root]
+            const stack: Statement[] = []
+            const queue: Statement[] = [ind.root]
 
             if (addLogs) {
                 testString += `\t\tawait fs.mkdirSync('${path.join(getProperty('temp_log_directory'), ind.id)}', { recursive: true })\n`
             }
 
             while (queue.length) {
-                const current: Gene = queue.splice(0, 1)[0]
+                const current: Statement = queue.splice(0, 1)[0]
                 stack.push(current)
 
                 for (const child of current.getChildren()) {
@@ -74,10 +74,10 @@ export class SolidityTruffleStringifier implements Stringifier {
             }
 
             while (stack.length) {
-                const gene: Gene = stack.pop()!
+                const gene: Statement = stack.pop()!
                 testString += `\t\t${this.stringifyGene(gene)}\n`
 
-                if (gene instanceof PrimitiveGene) {
+                if (gene instanceof PrimitiveStatement) {
                     assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`
                 } else if (addLogs && gene instanceof ObjectFunctionCall) {
                     testString += `\t\tawait fs.writeFileSync('${path.join(getProperty('temp_log_directory'), ind.id, gene.varName)}', '' + ${gene.varName})\n`
