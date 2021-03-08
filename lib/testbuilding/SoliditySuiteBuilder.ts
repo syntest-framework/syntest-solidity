@@ -24,7 +24,8 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
 
 
     async writeTest (filePath: string, testCase: TestCase, targetName: string, addLogs = false, additionalAssertions?: Map<TestCase, { [p: string]: string }>) {
-        await writeFileSync(filePath, this.stringifier.stringifyIndividual(testCase, targetName, addLogs, additionalAssertions))
+        let stringifiedTestCase = this.stringifier.stringifyIndividual(testCase, targetName, addLogs, additionalAssertions)
+        await writeFileSync(filePath, stringifiedTestCase)
     }
 
     async createSuite (archive: Map<Objective, TestCase>) {

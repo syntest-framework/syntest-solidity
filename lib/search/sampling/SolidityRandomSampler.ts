@@ -1,17 +1,14 @@
-import {ObjectFunctionCall, prng, String} from 'syntest-framework'
+import {Numeric, ObjectFunctionCall, prng, String} from 'syntest-framework'
 import {TestCase} from 'syntest-framework'
 
 import {Bool} from 'syntest-framework'
-import {Fixed} from 'syntest-framework'
-import {Ufixed} from 'syntest-framework'
-import {Int} from 'syntest-framework'
-import {Uint} from 'syntest-framework'
-import {Address} from 'syntest-framework'
+
 import {Statement} from "syntest-framework";
 import {Constructor} from "syntest-framework";
 import {getProperty} from "syntest-framework";
 import {SoliditySampler} from "./SoliditySampler";
-import {SolidityTarget} from "../objective/SolidityTarget";
+import {SolidityTarget} from "../..";
+import {Address} from "../../testcase/Address";
 
 /**
  * SolidityRandomSampler class
@@ -38,10 +35,10 @@ export class SolidityRandomSampler extends SoliditySampler {
         if (constructors.length > 0) {
             const action = prng.pickOne(this.target.getPossibleActions('constructor'))
             // TODO arguments for constructors
-            return new Constructor(action.name, `${action.name}Object`, prng.uniqueId(), [])
+            return new Constructor(action.name, prng.uniqueId(), `${action.name}`, [])
         } else {
             // if no constructors is available, we invoke the default (implicit) constructor
-            return new Constructor(this.target.name, `${this.target.name}Object`, prng.uniqueId(), [])
+            return new Constructor(this.target.name, prng.uniqueId(), `${this.target.name}`, [])
         }
     }
 
@@ -66,6 +63,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
 
     sampleGene(depth: number, type: string, geneType= 'primitive'): Statement {
+        // TODO incorporate bits & decimals in the numeric types
         if (geneType === 'primitive') {
             if (type === 'bool') {
                 return Bool.getRandom()
@@ -75,23 +73,21 @@ export class SolidityRandomSampler extends SoliditySampler {
                 return String.getRandom()
             } else if (type.includes('int')) {
                 if (type.includes('uint')) {
-                    return Uint.getRandom()
-
+                    return Numeric.getRandom('uint', 0, getProperty('numeric_max_value'), false)
                 } else {
-                    return Int.getRandom()
-
+                    return Numeric.getRandom('int', 0, getProperty('numeric_max_value'), true)
                 }
             } else if (type.includes('fixed')) {
                 if (type.includes('ufixed')) {
-                    return Ufixed.getRandom()
+                    return Numeric.getRandom('ufixed', getProperty('numeric_decimals'), getProperty('numeric_max_value'), false)
 
                 } else {
-                    return Fixed.getRandom()
+                    return Numeric.getRandom('fixed', getProperty('numeric_decimals'), getProperty('numeric_max_value'), true)
                 }
             } else if (type.includes('string')) {
                 return String.getRandom()
             } else if (type == "") {
-                throw new Error(`THERE U GO!`)
+                throw new Error(`Weird!`)
             }
         } else if (geneType === 'functionCall') {
             return this.sampleObjectFunctionCall(depth, type)
@@ -114,6 +110,6 @@ export class SolidityRandomSampler extends SoliditySampler {
 
         const constructor = this.sampleConstructor(depth + 1)
 
-        return new ObjectFunctionCall(constructor, action.name, action.returnType, prng.uniqueId(), args)
+        return new ObjectFunctionCall(action.returnType, prng.uniqueId(), constructor, action.name, args)
     }
 }
