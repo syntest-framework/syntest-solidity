@@ -42,11 +42,16 @@ export class SolidityRandomSampler extends SoliditySampler {
         }
     }
 
-    sampleArgument (depth: number, type: string): Statement {
+    sampleArgument (depth: number, type: string, bits: number): Statement {
         // check depth to decide whether to pick a variable
         if (depth >= getProperty("max_depth")) {
             // TODO or take an already available variable
-            return this.sampleGene(depth, type)
+            if (type.includes('int')) {
+                return this.sampleNumericGene(depth, type, bits)
+            } else {
+                return this.sampleGene(depth, type)
+            }
+
         }
 
         if (this.target.getPossibleActions().filter((a) => a.type === type).length && prng.nextBoolean(getProperty("sample_func_as_arg"))) {
@@ -57,8 +62,26 @@ export class SolidityRandomSampler extends SoliditySampler {
         } else {
             // Pick variable
             // TODO or take an already available variable
+            if (type.includes('int')) {
+                return this.sampleNumericGene(depth, type, bits)
+            } else {
+                return this.sampleGene(depth, type)
+            }
+        }
+    }
 
-            return this.sampleGene(depth, type)
+    sampleNumericGene(depth: number, type: string, bits: number): Statement {
+        let max = Math.pow(2, bits) - 1;
+        if (type.includes('uint')) {
+            return Numeric.getRandom('uint', 0, max, false)
+        } else {
+            return Numeric.getRandom('int', 0, max, true)
+        }
+        if (type.includes('ufixed')) {
+            return Numeric.getRandom('ufixed', getProperty('numeric_decimals'), max, false)
+
+        } else {
+            return Numeric.getRandom('fixed', getProperty('numeric_decimals'), max, true)
         }
     }
 
@@ -71,19 +94,6 @@ export class SolidityRandomSampler extends SoliditySampler {
                 return Address.getRandom()
             } else if (type === 'string') {
                 return String.getRandom()
-            } else if (type.includes('int')) {
-                if (type.includes('uint')) {
-                    return Numeric.getRandom('uint', 0, getProperty('numeric_max_value'), false)
-                } else {
-                    return Numeric.getRandom('int', 0, getProperty('numeric_max_value'), true)
-                }
-            } else if (type.includes('fixed')) {
-                if (type.includes('ufixed')) {
-                    return Numeric.getRandom('ufixed', getProperty('numeric_decimals'), getProperty('numeric_max_value'), false)
-
-                } else {
-                    return Numeric.getRandom('fixed', getProperty('numeric_decimals'), getProperty('numeric_max_value'), true)
-                }
             } else if (type.includes('string')) {
                 return String.getRandom()
             } else if (type == "") {
@@ -105,7 +115,7 @@ export class SolidityRandomSampler extends SoliditySampler {
 
         for (const arg of action.args) {
             if (arg.type != "")
-                args.push(this.sampleArgument(depth + 1, arg.type))
+                args.push(this.sampleArgument(depth + 1, arg.type, arg.bits))
         }
 
         const constructor = this.sampleConstructor(depth + 1)
