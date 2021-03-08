@@ -34,9 +34,15 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
 
     sampleConstructor (depth: number): Constructor {
-        const action = prng.pickOne(this.target.getPossibleActions('constructor'))
-        // TODO arguments for constructors
-        return new Constructor(action.name, `${action.name}Object`, prng.uniqueId(), [])
+        let constructors = this.target.getPossibleActions('constructor')
+        if (constructors.length > 0) {
+            const action = prng.pickOne(this.target.getPossibleActions('constructor'))
+            // TODO arguments for constructors
+            return new Constructor(action.name, `${action.name}Object`, prng.uniqueId(), [])
+        } else {
+            // if no constructors is available, we invoke the default (implicit) constructor
+            return new Constructor(this.target.name, `${this.target.name}Object`, prng.uniqueId(), [])
+        }
     }
 
     sampleArgument (depth: number, type: string): Statement {
