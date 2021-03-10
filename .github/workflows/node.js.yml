@@ -53,7 +53,7 @@ jobs:
       
     # Dependencies
     - name: Solidity - Install Dependencies
-      run: npm ci
+      run: npm install
       working-directory: syntest-solidity
       
     # Building
