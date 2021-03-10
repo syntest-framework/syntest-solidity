@@ -33,7 +33,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "lint:fix": "eslint .",
+    "lint:fix": "eslint . --fix",
     "prepare": "npm run build",
     "run": "truffle run syntest-solidity",
     "test": "mocha",
