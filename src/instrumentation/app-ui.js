@@ -1,7 +1,7 @@
 const UI = require("./ui");
 
 /**
- * UI for solidity-coverage/lib/app.js
+ * UI for solidity-coverage/src/app.js
  */
 class AppUI extends UI {
     constructor(log){

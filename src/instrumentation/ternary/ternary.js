@@ -30,7 +30,7 @@ function instrumentAssignmentExpression(contract, expression) {
       });
       instrumenter.instrumentConditionalExpression(contract, expression.right);
     } else {
-      const err = 'Error instrumenting assignment expression @ solidity-coverage/lib/instrumenter.js';
+      const err = 'Error instrumenting assignment expression @ solidity-coverage/src/instrumenter.js';
       console.log(err, contract, expression.left);
       process.exit();
     }

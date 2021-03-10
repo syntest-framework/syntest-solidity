@@ -45,20 +45,20 @@ jobs:
        
     # SynTest Framework
     - name: Framework - Install Dependencies
-      run: npm install
+      run: npm ci
       working-directory: syntest-framework
-    - name: Framework - Compile Typescript
-      run: npm run tsc
+    - name: Framework - Build framework
+      run: npm run build
       working-directory: syntest-framework
       
     # Dependencies
     - name: Solidity - Install Dependencies
-      run: npm install
+      run: npm ci
       working-directory: syntest-solidity
       
     # Building
-    - name: Solidity - Compile Typescript
-      run: npm run tsc
+    - name: Solidity - Build Solidity
+      run: npm run build
       working-directory: syntest-solidity
     
     # Testing

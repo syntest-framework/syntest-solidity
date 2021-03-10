@@ -1,9 +1,9 @@
 /* eslint-env node, mocha */
 
 /*const path = require('path');
-const getInstrumentedVersion = require('./../lib/instrumentSolidity.js');
+const getInstrumentedVersion = require('./../src/instrumentSolidity.js');
 const util = require('./util/util.js');
-const CoverageMap = require('./../lib/coverageMap');
+const CoverageMap = require('./../src/coverageMap');
 const vm = require('./util/vm');
 const assert = require('assert');
 

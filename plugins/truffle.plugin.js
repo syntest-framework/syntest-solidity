@@ -1,7 +1,7 @@
 const {guessCWD, loadConfig, setupOptions, createDirectoryStructure, deleteTempDirectories} = require("syntest-framework");
 const {drawGraph, setupLogger, getLogger, getProperty, processConfig, Fitness, createAlgorithmFromConfig, createCriterionFromConfig} = require('syntest-framework')
 
-const API = require('./../lib/api');
+const API = require('../src/api');
 const utils = require('./resources/plugin.utils');
 const truffleUtils = require('./resources/truffle.utils');
 const PluginUI = require('./resources/truffle.ui');
