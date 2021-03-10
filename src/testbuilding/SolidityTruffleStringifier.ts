@@ -1,12 +1,12 @@
 import {
+  Constructor,
   getProperty,
   ObjectFunctionCall,
+  PrimitiveStatement,
+  Statement,
   Stringifier,
+  TestCase,
 } from "syntest-framework";
-import { Statement } from "syntest-framework";
-import { PrimitiveStatement } from "syntest-framework";
-import { TestCase } from "syntest-framework";
-import { Constructor } from "syntest-framework";
 import * as path from "path";
 
 export class SolidityTruffleStringifier implements Stringifier {

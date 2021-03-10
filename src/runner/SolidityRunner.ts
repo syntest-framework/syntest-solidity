@@ -1,7 +1,11 @@
-import { getLogger, getProperty } from "syntest-framework";
-import { Datapoint, Runner } from "syntest-framework";
-import { SuiteBuilder } from "syntest-framework";
-import { TestCase } from "syntest-framework";
+import {
+  Datapoint,
+  getLogger,
+  getProperty,
+  Runner,
+  SuiteBuilder,
+  TestCase,
+} from "syntest-framework";
 import * as path from "path";
 
 const truffleUtils = require("../../plugins/resources/truffle.utils");

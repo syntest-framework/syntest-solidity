@@ -1,5 +1,4 @@
-import { ActionDescription, Target } from "syntest-framework";
-import { CFG } from "syntest-framework";
+import { ActionDescription, CFG, Target } from "syntest-framework";
 
 export class SolidityTarget extends Target {
   private _functionCalls: FunctionDescription[] | null = null;

@@ -1,7 +1,9 @@
-import { ObjectFunctionCall, Sampler } from "syntest-framework";
-
-import { Statement } from "syntest-framework";
-import { Constructor } from "syntest-framework";
+import {
+  Constructor,
+  ObjectFunctionCall,
+  Sampler,
+  Statement,
+} from "syntest-framework";
 
 /**
  * SolidityRandomSampler class

@@ -1,7 +1,11 @@
-import { getProperty, TestCase, Objective } from "syntest-framework";
-import { SuiteBuilder } from "syntest-framework";
-import { Stringifier } from "syntest-framework";
-import { writeFileSync, readdirSync, rmdirSync, readFileSync } from "fs";
+import {
+  getProperty,
+  Objective,
+  Stringifier,
+  SuiteBuilder,
+  TestCase,
+} from "syntest-framework";
+import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
 
 const truffleUtils = require("../../plugins/resources/truffle.utils");

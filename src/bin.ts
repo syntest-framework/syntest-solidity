@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 
 import {
-  guessCWD,
-  setupOptions,
-  loadConfig,
-  getProperty,
-  processConfig,
-  setupLogger,
-  Fitness,
   createAlgorithmFromConfig,
   createCriterionFromConfig,
-  getLogger,
   createDirectoryStructure,
   deleteTempDirectories,
+  Fitness,
+  getLogger,
+  getProperty,
+  guessCWD,
+  loadConfig,
+  processConfig,
+  setupLogger,
+  setupOptions,
 } from "syntest-framework";
 
 import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleStringifier";

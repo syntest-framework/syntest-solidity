@@ -6,7 +6,7 @@ import {
   setupLogger,
   setupOptions,
 } from "syntest-framework";
-import { Address } from "../../src";
+import { AddressStatement } from "../../src";
 
 const expect = chai.expect;
 
@@ -20,7 +20,7 @@ describe("AddressStatement", () => {
   });
 
   it("should not have a null address", () => {
-    const statement = Address.getRandom();
+    const statement = AddressStatement.getRandom();
 
     expect(statement != null);
   });

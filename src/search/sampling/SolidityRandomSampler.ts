@@ -1,14 +1,17 @@
-import { Numeric, ObjectFunctionCall, prng, String } from "syntest-framework";
-import { TestCase } from "syntest-framework";
-
-import { Bool } from "syntest-framework";
-
-import { Statement } from "syntest-framework";
-import { Constructor } from "syntest-framework";
-import { getProperty } from "syntest-framework";
+import {
+  BoolStatement,
+  Constructor,
+  getProperty,
+  NumericStatement,
+  ObjectFunctionCall,
+  prng,
+  Statement,
+  StringStatement,
+  TestCase,
+} from "syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
 import { SolidityTarget } from "../..";
-import { Address } from "../../testcase/Address";
+import { AddressStatement } from "../../testcase/AddressStatement";
 
 /**
  * SolidityRandomSampler class
@@ -87,19 +90,19 @@ export class SolidityRandomSampler extends SoliditySampler {
   sampleNumericGene(depth: number, type: string, bits: number): Statement {
     let max = Math.pow(2, bits) - 1;
     if (type.includes("uint")) {
-      return Numeric.getRandom("uint", 0, max, false);
+      return NumericStatement.getRandom("uint", 0, max, false);
     } else {
-      return Numeric.getRandom("int", 0, max, true);
+      return NumericStatement.getRandom("int", 0, max, true);
     }
     if (type.includes("ufixed")) {
-      return Numeric.getRandom(
+      return NumericStatement.getRandom(
         "ufixed",
         getProperty("numeric_decimals"),
         max,
         false
       );
     } else {
-      return Numeric.getRandom(
+      return NumericStatement.getRandom(
         "fixed",
         getProperty("numeric_decimals"),
         max,
@@ -112,13 +115,13 @@ export class SolidityRandomSampler extends SoliditySampler {
     // TODO incorporate bits & decimals in the numeric types
     if (geneType === "primitive") {
       if (type === "bool") {
-        return Bool.getRandom();
+        return BoolStatement.getRandom();
       } else if (type === "address") {
-        return Address.getRandom();
+        return AddressStatement.getRandom();
       } else if (type === "string") {
-        return String.getRandom();
+        return StringStatement.getRandom();
       } else if (type.includes("string")) {
-        return String.getRandom();
+        return StringStatement.getRandom();
       } else if (type == "") {
         throw new Error(`Weird!`);
       }
