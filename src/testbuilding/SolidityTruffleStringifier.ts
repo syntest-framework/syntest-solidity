@@ -1,5 +1,5 @@
 import {
-  Constructor,
+  ConstructorCall,
   getProperty,
   ObjectFunctionCall,
   PrimitiveStatement,
@@ -10,49 +10,56 @@ import {
 import * as path from "path";
 
 export class SolidityTruffleStringifier implements Stringifier {
-  stringifyGene(statement: Statement): string {
-    if (statement instanceof PrimitiveStatement) {
-      return `const ${statement.varName} = ${
-        (statement as PrimitiveStatement<any>).value
-      }`;
-    } else if (statement instanceof Constructor) {
-      const formattedArgs = (statement as Constructor).args
-        .map((a: Statement) => this.stringifyGene(a))
-        .join(", ");
+  stringifyConstructor(statement: Statement): string {
+    if (!(statement instanceof ConstructorCall))
+      throw new Error(`${statement} is not a constructor`);
 
-      return `const ${statement.varName} = await ${
-        (statement as Constructor).constructorName
-      }.deployed(${formattedArgs});`;
-    } else if (statement instanceof ObjectFunctionCall) {
+    const formattedArgs = (statement as ConstructorCall).args
+      .map((a: Statement) => {
+        if (a instanceof PrimitiveStatement) this.stringifyGene(a);
+      })
+      .join(", ");
+
+    return `const ${statement.varName} = await ${
+      (statement as ConstructorCall).constructorName
+    }.deployed(${formattedArgs});`;
+  }
+
+  stringifyGene(statement: Statement): string {
+    if (!(statement instanceof PrimitiveStatement)) {
+      throw new Error(`${statement} is not a primitive statement`);
+    }
+
+    return `const ${statement.varName} = ${
+      (statement as PrimitiveStatement<any>).value
+    }`;
+  }
+
+  stringifyFunctionCall(statement: Statement, objectName: string): string {
+    if (statement instanceof ObjectFunctionCall) {
       const args = (statement as ObjectFunctionCall).getChildren();
-      const instance = args.shift() as Constructor;
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
-      if (instance === undefined)
-        throw new Error(
-          "This never happens, but we have to do it because the compiler is dumb"
-        );
-
       if (statement.type !== "none") {
-        return `const ${statement.varName} = await ${instance.varName}.${
+        return `const ${statement.varName} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
         }.call(${formattedArgs});`;
       }
-      return `await ${instance.varName}.${
+      return `await ${objectName}.${
         (statement as ObjectFunctionCall).functionName
       }.call(${formattedArgs});`;
+    } else {
+      throw new Error(`${statement} is not a function call`);
     }
-
-    return "";
   }
 
   getImport(statement: Statement): string {
-    if (statement instanceof Constructor) {
+    if (statement instanceof ConstructorCall) {
       // TODO This assumes constructor name is also name of the file
       return `const ${
-        (statement as Constructor).constructorName
+        (statement as ConstructorCall).constructorName
       } = artifacts.require("${
-        (statement as Constructor).constructorName
+        (statement as ConstructorCall).constructorName
       }");\n\n`;
     }
 
@@ -89,16 +96,31 @@ export class SolidityTruffleStringifier implements Stringifier {
 
       while (queue.length) {
         const current: Statement = queue.splice(0, 1)[0];
-        stack.push(current);
+        if (!(current instanceof ConstructorCall)) stack.push(current);
 
         for (const child of current.getChildren()) {
           queue.push(child);
         }
       }
 
+      const constructor = ind.root;
+      stack.push(constructor);
+
       while (stack.length) {
         const gene: Statement = stack.pop()!;
-        testString += `\t\t${this.stringifyGene(gene)}\n`;
+
+        if (gene instanceof ConstructorCall) {
+          testString += `\t\t${this.stringifyConstructor(gene)}\n`;
+        } else if (gene instanceof PrimitiveStatement) {
+          testString += `\t\t${this.stringifyGene(gene)}\n`;
+        } else if (gene instanceof ObjectFunctionCall) {
+          testString += `\t\t${this.stringifyFunctionCall(
+            gene,
+            constructor.varName
+          )}\n`;
+        } else {
+          throw Error(`The type of gene ${gene} is not recognized`);
+        }
 
         if (gene instanceof PrimitiveStatement) {
           assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`;

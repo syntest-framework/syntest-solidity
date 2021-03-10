@@ -32,7 +32,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     addLogs = false,
     additionalAssertions?: Map<TestCase, { [p: string]: string }>
   ) {
-    let stringifiedTestCase = this.stringifier.stringifyIndividual(
+    const stringifiedTestCase = this.stringifier.stringifyIndividual(
       testCase,
       targetName,
       addLogs,

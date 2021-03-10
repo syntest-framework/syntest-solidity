@@ -1,6 +1,6 @@
 import {
   BoolStatement,
-  Constructor,
+  ConstructorCall,
   getProperty,
   NumericStatement,
   ObjectFunctionCall,
@@ -27,20 +27,40 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleIndividual(): TestCase {
-    const action = prng.pickOne(this.target.getPossibleActions("function"));
-    const root = this.sampleObjectFunctionCall(0, action.returnType);
+    const root = this.sampleConstructor(0);
 
+    const call = this.sampleMethodCall(root);
+    root.setChild(0, call);
     return new TestCase(root);
   }
 
-  sampleConstructor(depth: number): Constructor {
-    let constructors = this.target.getPossibleActions("constructor");
+  sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
+    const action = prng.pickOne(this.target.getPossibleActions("function"));
+
+    const args: Statement[] = [];
+
+    for (const arg of action.args) {
+      if (arg.type != "") args.push(this.sampleArgument(1, arg.type, arg.bits));
+    }
+
+    const call = new ObjectFunctionCall(
+      action.returnType,
+      prng.uniqueId(),
+      root,
+      action.name,
+      args
+    );
+    return call;
+  }
+
+  sampleConstructor(depth: number): ConstructorCall {
+    const constructors = this.target.getPossibleActions("constructor");
     if (constructors.length > 0) {
       const action = prng.pickOne(
         this.target.getPossibleActions("constructor")
       );
       // TODO arguments for constructors
-      return new Constructor(
+      return new ConstructorCall(
         action.name,
         prng.uniqueId(),
         `${action.name}`,
@@ -48,7 +68,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       );
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
-      return new Constructor(
+      return new ConstructorCall(
         this.target.name,
         prng.uniqueId(),
         `${this.target.name}`,
@@ -88,7 +108,7 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleNumericGene(depth: number, type: string, bits: number): Statement {
-    let max = Math.pow(2, bits) - 1;
+    const max = Math.pow(2, bits) - 1;
     if (type.includes("uint")) {
       return NumericStatement.getRandom("uint", 0, max, false);
     } else {
@@ -112,7 +132,6 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleGene(depth: number, type: string, geneType = "primitive"): Statement {
-    // TODO incorporate bits & decimals in the numeric types
     if (geneType === "primitive") {
       if (type === "bool") {
         return BoolStatement.getRandom();
