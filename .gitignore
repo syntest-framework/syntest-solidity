@@ -115,4 +115,7 @@ dist
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
+### Syntest Solidity ###
+package-lock.json
+
 # End of https://www.toptal.com/developers/gitignore/api/node
