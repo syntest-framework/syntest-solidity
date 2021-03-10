@@ -12,5 +12,5 @@ export abstract class SoliditySampler extends Sampler {
 
     abstract sampleConstructor (depth: number): Constructor
     abstract sampleObjectFunctionCall (depth: number, type: string): ObjectFunctionCall
-    abstract sampleArgument (depth: number, type: string): Statement
+    abstract sampleArgument (depth: number, type: string, bits: number): Statement
 }
