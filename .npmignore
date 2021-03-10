@@ -1,6 +1,8 @@
-lib/
-test/
+.nyc_output/
 docs/
-
-
-tsconfig.json
+node_modules/
+src/
+test/
+*.json
+!package.json
+!package-lock.json

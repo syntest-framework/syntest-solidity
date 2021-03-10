@@ -26,11 +26,11 @@ $ cd syntest-framework; npm install
 $ cd syntest-solidity; npm install
 ```
 
-- Compile to JavaScript
+- Build Syntest-Solidity
 
 ```bash
-$ cd syntest-framework; npm run tsc
-$ cd syntest-solidity; npm run tsc
+$ cd syntest-framework; npm run build
+$ cd syntest-solidity; npm run build
 ```
 
 - Install Truffle
