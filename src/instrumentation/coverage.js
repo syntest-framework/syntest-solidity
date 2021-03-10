@@ -3,10 +3,9 @@
  * @type {Coverage}
  */
 
-const util = require('util');
+const util = require("util");
 
 class Coverage {
-
   constructor() {
     this.data = {};
     this.assertData = {};
@@ -30,7 +29,7 @@ class Coverage {
       statementMap: {},
       branchMap: {},
     };
-    this.assertData[contractPath] = { };
+    this.assertData[contractPath] = {};
 
     info.runnableLines.forEach((item, idx) => {
       this.data[contractPath].l[info.runnableLines[idx]] = 0;
@@ -65,43 +64,55 @@ class Coverage {
   generate(collectedData) {
     const hashes = Object.keys(collectedData);
 
-    for (let hash of hashes){
+    for (let hash of hashes) {
       const data = collectedData[hash];
       const contractPath = collectedData[hash].contractPath;
       const id = collectedData[hash].id;
       const hits = collectedData[hash].hits;
 
-      switch(collectedData[hash].type){
-        case 'line':       this.data[contractPath].l[id] = hits;                   break;
-        case 'function':   this.data[contractPath].f[id] = hits;                   break;
-        case 'statement':  this.data[contractPath].s[id] = hits;                   break;
-        case 'branch':     this.data[contractPath].b[id][data.locationIdx] = hits; break;
-        case 'assertPre':  this.assertData[contractPath][id].preEvents = hits;     break;
-        case 'assertPost': this.assertData[contractPath][id].postEvents = hits;    break;
+      switch (collectedData[hash].type) {
+        case "line":
+          this.data[contractPath].l[id] = hits;
+          break;
+        case "function":
+          this.data[contractPath].f[id] = hits;
+          break;
+        case "statement":
+          this.data[contractPath].s[id] = hits;
+          break;
+        case "branch":
+          this.data[contractPath].b[id][data.locationIdx] = hits;
+          break;
+        case "assertPre":
+          this.assertData[contractPath][id].preEvents = hits;
+          break;
+        case "assertPost":
+          this.assertData[contractPath][id].postEvents = hits;
+          break;
       }
     }
 
     // Finally, interpret the assert pre/post events
     const contractPaths = Object.keys(this.assertData);
 
-    for (let contractPath of contractPaths){
+    for (let contractPath of contractPaths) {
       const contract = this.data[contractPath];
 
       for (let i = 1; i <= Object.keys(contract.b).length; i++) {
         const branch = this.assertData[contractPath][i];
 
         // Was it an assert branch?
-        if (branch && branch.preEvents > 0){
+        if (branch && branch.preEvents > 0) {
           this.data[contractPath].b[i] = [
             branch.postEvents,
-            branch.preEvents - branch.postEvents
-          ]
+            branch.preEvents - branch.postEvents,
+          ];
         }
       }
     }
 
     return Object.assign({}, this.data);
   }
-};
+}
 
 module.exports = Coverage;

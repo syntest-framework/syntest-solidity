@@ -1,12 +1,12 @@
 // import {getLogger} from "syntest-framework";
 
-const PluginUI = require('./truffle.ui');
-const globalModules = require('global-modules');
-const TruffleProvider = require('@truffle/provider');
-const recursive = require('recursive-readdir');
-const globby = require('globby');
-const path = require('path');
-const {getLogger} = require('syntest-framework')
+const PluginUI = require("./truffle.ui");
+const globalModules = require("global-modules");
+const TruffleProvider = require("@truffle/provider");
+const recursive = require("recursive-readdir");
+const globby = require("globby");
+const path = require("path");
+const { getLogger } = require("syntest-framework");
 
 // =============================
 // Truffle Specific Plugin Utils
@@ -17,25 +17,24 @@ const {getLogger} = require('syntest-framework')
  * @param  {Object}   config  truffleConfig
  * @return {String[]}         list of files to pass to mocha
  */
-async function getTestFilePaths(config){
+async function getTestFilePaths(config) {
   let target;
 
   // Handle --file <path|glob> cli option (subset of tests)
-  (typeof config.file === 'string')
-    ? target = globby.sync([config.file])
-    : target = await recursive(config.testDir);
+  typeof config.file === "string"
+    ? (target = globby.sync([config.file]))
+    : (target = await recursive(config.testDir));
 
   // Filter native solidity tests and warn that they're skipped
   const solregex = /.*\.(sol)$/;
-  const hasSols = target.filter(f => f.match(solregex) != null);
+  const hasSols = target.filter((f) => f.match(solregex) != null);
 
-  if (hasSols.length > 0) getLogger().info('sol-tests ' + [hasSols.length]);
+  if (hasSols.length > 0) getLogger().info("sol-tests " + [hasSols.length]);
 
   // Return list of test files
   const testregex = /.*\.(js|ts|es|es6|jsx)$/;
-  return target.filter(f => f.match(testregex) != null);
+  return target.filter((f) => f.match(testregex) != null);
 }
-
 
 /**
  * Configures the network. Runs before the server is launched.
@@ -48,42 +47,41 @@ async function getTestFilePaths(config){
  * @param {TruffleConfig}      config
  * @param {SolidityCoverage} api
  */
-function setNetwork(config, api){
+function setNetwork(config, api) {
   // --network <network-name>
-  if (config.network){
+  if (config.network) {
     const network = config.networks[config.network];
 
     // Check network:
-    if (!network){
-      throw new Error('no-network ' + [config.network]);
+    if (!network) {
+      throw new Error("no-network " + [config.network]);
     }
 
     // Check network id
-    if (!isNaN(parseInt(network.network_id))){
-
+    if (!isNaN(parseInt(network.network_id))) {
       // Warn: non-matching provider options id and network id
-      if (api.providerOptions.network_id &&
-          api.providerOptions.network_id !== parseInt(network.network_id)){
-
-        getLogger().info('id-clash ' + [ parseInt(network.network_id) ]);
+      if (
+        api.providerOptions.network_id &&
+        api.providerOptions.network_id !== parseInt(network.network_id)
+      ) {
+        getLogger().info("id-clash " + [parseInt(network.network_id)]);
       }
 
       // Prefer network defined id.
       api.providerOptions.network_id = parseInt(network.network_id);
-
     } else {
       network.network_id = "*";
     }
 
     // Check port: use solcoverjs || default if undefined
     if (!network.port) {
-      getLogger().info('no-port ' + [api.port]);
+      getLogger().info("no-port " + [api.port]);
       network.port = api.port;
     }
 
     // Warn: port conflicts
-    if (api.port !== api.defaultPort && api.port !== network.port){
-      getLogger().info('port-clash ' + [ network.port ])
+    if (api.port !== api.defaultPort && api.port !== network.port) {
+      getLogger().info("port-clash " + [network.port]);
     }
 
     // Prefer network port if defined;
@@ -97,7 +95,7 @@ function setNetwork(config, api){
   }
 
   // Default Network Configuration
-  config.network = 'soliditycoverage';
+  config.network = "soliditycoverage";
   setOuterConfigKeys(config, api, "*");
 
   config.networks[config.network] = {
@@ -105,8 +103,8 @@ function setNetwork(config, api){
     port: api.port,
     host: api.host,
     gas: api.gasLimit,
-    gasPrice: api.gasPrice
-  }
+    gasPrice: api.gasPrice,
+  };
 }
 
 /**
@@ -115,21 +113,21 @@ function setNetwork(config, api){
  * @param {TruffleConfig} config
  * @param {Array}         accounts
  */
-function setNetworkFrom(config, accounts){
-  if (!config.networks[config.network].from){
+function setNetworkFrom(config, accounts) {
+  if (!config.networks[config.network].from) {
     config.networks[config.network].from = accounts[0];
   }
 }
 
 // Truffle complains that these outer keys *are not* set when running plugin fn directly.
 // But throws saying they *cannot* be manually set when running as truffle command.
-function setOuterConfigKeys(config, api, id){
+function setOuterConfigKeys(config, api, id) {
   try {
     config.network_id = id;
     config.port = api.port;
     config.host = api.host;
     config.provider = TruffleProvider.create(config);
-  } catch (err){}
+  } catch (err) {}
 }
 
 /**
@@ -144,27 +142,25 @@ function setOuterConfigKeys(config, api, id){
  * @param  {Object} truffleConfig config
  * @return {Module}
  */
-function loadLibrary(config){
+function loadLibrary(config) {
   // Local
   try {
     if (config.useGlobalTruffle || config.usePluginTruffle) throw null;
 
     const lib = require("truffle");
-    getLogger().info('lib-local');
+    getLogger().info("lib-local");
     return lib;
-
-  } catch(err) {};
+  } catch (err) {}
 
   // Global
   try {
     if (config.usePluginTruffle) throw null;
 
-    const globalTruffle = path.join(globalModules, 'truffle');
+    const globalTruffle = path.join(globalModules, "truffle");
     const lib = require(globalTruffle);
-    getLogger().info('lib-global');
+    getLogger().info("lib-global");
     return lib;
-
-  } catch(err) {};
+  } catch (err) {}
 
   // // Plugin Copy @ v 5.0.31
   // try {
@@ -176,7 +172,6 @@ function loadLibrary(config){
   // } catch(err) {
   //   throw new Error('lib-fail ' + [err]);
   // };
-
 }
 
 /**
@@ -184,21 +179,24 @@ function loadLibrary(config){
  * keys required by the plugin utils
  * @return {Object} truffle-config.js
  */
-function normalizeConfig(config){
+function normalizeConfig(config) {
   config.workingDir = config.working_directory;
   config.contractsDir = config.contracts_directory;
   config.testDir = config.test_directory;
   config.artifactsDir = config.build_directory;
 
   // eth-gas-reporter freezes the in-process client because it uses sync calls
-  if (typeof config.mocha === "object" && config.mocha.reporter === 'eth-gas-reporter'){
-    config.mocha.reporter = 'spec';
+  if (
+    typeof config.mocha === "object" &&
+    config.mocha.reporter === "eth-gas-reporter"
+  ) {
+    config.mocha.reporter = "spec";
     delete config.mocha.reporterOptions;
   }
 
   // Truffle V4 style solc settings are honored over V5 settings. Apparently it's common
   // for both to be present in the same config (as an error).
-  if (typeof config.solc === "object" ){
+  if (typeof config.solc === "object") {
     config.solc.optimizer = { enabled: false };
   }
 
@@ -211,4 +209,4 @@ module.exports = {
   setNetworkFrom: setNetworkFrom,
   loadLibrary: loadLibrary,
   normalizeConfig: normalizeConfig,
-}
+};

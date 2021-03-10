@@ -5,7 +5,6 @@
  */
 
 function instrumentAssignmentExpression(contract, expression) {
-
   // This is suspended for 0.5.0 which tries to accomodate the new `emit` keyword.
   // Solc is not allowing us to use the construction `emit SomeEvent()` within the parens :/
   return;
@@ -35,7 +34,7 @@ function instrumentAssignmentExpression(contract, expression) {
       process.exit();
     }
   }*/
-};
+}
 
 function instrumentConditionalExpression(contract, expression) {
   // ----------------------------------------------------------------------------------------------
@@ -101,7 +100,7 @@ function instrumentConditionalExpression(contract, expression) {
   createOrAppendInjectionPoint(contract, expression.falseBody.range[1], {
     type: 'closeParen',
   });*/
-};
+}
 
 // Paren / Literal injectors
 /*

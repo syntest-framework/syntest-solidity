@@ -1,18 +1,18 @@
-const web3Utils = require('web3-utils')
+const web3Utils = require("web3-utils");
 
 /**
  * Writes data from the VM step to the in-memory
  * coverage map constructed by the Instrumenter.
  */
 class DataCollector {
-  constructor(instrumentationData={}){
+  constructor(instrumentationData = {}) {
     this.instrumentationData = instrumentationData;
 
     this.validOpcodes = {
-      "PUSH1": true,
-    }
+      PUSH1: true,
+    };
 
-    this.lastComparison = {}
+    this.lastComparison = {};
   }
 
   /**
@@ -20,37 +20,38 @@ class DataCollector {
    * top of the stack. This runs millions of times - trying to keep it fast.
    * @param  {Object} info  vm step info
    */
-  step(info){
+  step(info) {
     try {
-      if (['GT', 'SGT', 'LT', 'SLT', 'EQ'].includes(info.opcode.name)) {
-
-        let left = web3Utils.toDecimal(info.stack[info.stack.length - 1])
-        let right = web3Utils.toDecimal(info.stack[info.stack.length - 2])
+      if (["GT", "SGT", "LT", "SLT", "EQ"].includes(info.opcode.name)) {
+        let left = web3Utils.toDecimal(info.stack[info.stack.length - 1]);
+        let right = web3Utils.toDecimal(info.stack[info.stack.length - 2]);
 
         this.lastComparison = {
           // ...info.opcode,
           left: left,
           right: right,
-          opcode: info.opcode.name
-        }
+          opcode: info.opcode.name,
+        };
       }
 
-      if (this.validOpcodes[info.opcode.name] && info.stack.length > 0){
+      if (this.validOpcodes[info.opcode.name] && info.stack.length > 0) {
         const idx = info.stack.length - 1;
         let hash = web3Utils.toHex(info.stack[idx]).toString();
         hash = this._normalizeHash(hash);
 
-        if(this.instrumentationData[hash]){
+        if (this.instrumentationData[hash]) {
           this.instrumentationData[hash].hits++;
 
-          if (this.instrumentationData[hash].type === 'branch') {
-            this.instrumentationData[hash].left = this.lastComparison.left
-            this.instrumentationData[hash].right = this.lastComparison.right
-            this.instrumentationData[hash].opcode = this.lastComparison.opcode
+          if (this.instrumentationData[hash].type === "branch") {
+            this.instrumentationData[hash].left = this.lastComparison.left;
+            this.instrumentationData[hash].right = this.lastComparison.right;
+            this.instrumentationData[hash].opcode = this.lastComparison.opcode;
           }
         }
       }
-    } catch (err) { /*Ignore*/ };
+    } catch (err) {
+      /*Ignore*/
+    }
   }
 
   /**
@@ -61,11 +62,11 @@ class DataCollector {
    * @param  {String} hash  data hash from evm stack.
    * @return {String}       0x prefixed hash of length 66.
    */
-  _normalizeHash(hash){
-    if (hash.length < 66 && hash.length > 59){
+  _normalizeHash(hash) {
+    if (hash.length < 66 && hash.length > 59) {
       hash = hash.slice(2);
-      while(hash.length < 64) hash = '0' + hash;
-      hash = '0x' + hash
+      while (hash.length < 64) hash = "0" + hash;
+      hash = "0x" + hash;
     }
     return hash;
   }
@@ -74,7 +75,7 @@ class DataCollector {
    * Unit test helper
    * @param {Object} data  Instrumenter.instrumentationData
    */
-  _setInstrumentationData(data){
+  _setInstrumentationData(data) {
     this.instrumentationData = data;
   }
 }

@@ -1,5 +1,5 @@
-const chalk = require('chalk');
-const emoji = require('node-emoji');
+const chalk = require("chalk");
+const emoji = require("node-emoji");
 
 /**
  * Coverage tool output formatters. These classes support any the logging solidity-coverage API
@@ -7,7 +7,7 @@ const emoji = require('node-emoji');
  * dev stack (ex: the truffle compile command, or istanbul).
  */
 class UI {
-  constructor(log){
+  constructor(log) {
     this.log = log || console.log;
     this.chalk = chalk;
   }
@@ -17,7 +17,7 @@ class UI {
    * @param  {String}   kind  message selector
    * @param  {String[]} args  info to inject into template
    */
-  report(kind, args=[]){}
+  report(kind, args = []) {}
 
   /**
    * Returns a formatted message. Useful for error messages.
@@ -25,15 +25,15 @@ class UI {
    * @param  {String[]} args  info to inject into template
    * @return {String}         message
    */
-  generate(kind, args=[]){}
+  generate(kind, args = []) {}
 
-  _write(msg){
-    this.log(this._format(msg))
+  _write(msg) {
+    this.log(this._format(msg));
   }
 
-  _format(msg){
-    return emoji.emojify(msg)
+  _format(msg) {
+    return emoji.emojify(msg);
   }
 }
 
-module.exports = UI
+module.exports = UI;

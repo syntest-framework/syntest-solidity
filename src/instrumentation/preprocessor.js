@@ -1,8 +1,8 @@
-const SolidityParser = require('@solidity-parser/parser');
+const SolidityParser = require("@solidity-parser/parser");
 
 const crRegex = /[\r\n ]+$/g;
-const OPEN = '{';
-const CLOSE = '}';
+const OPEN = "{";
+const CLOSE = "}";
 
 /**
  * Inserts an open or close brace e.g. `{` or `}` at specified position in solidity source
@@ -13,7 +13,11 @@ const CLOSE = '}';
  * @return {String}          contract
  */
 function insertBrace(contract, item, offset) {
-  return contract.slice(0,item.pos + offset) + item.type + contract.slice(item.pos + offset)
+  return (
+    contract.slice(0, item.pos + offset) +
+    item.type +
+    contract.slice(item.pos + offset)
+  );
 }
 
 /**
@@ -25,45 +29,44 @@ function insertBrace(contract, item, offset) {
  * @return {String}          modified solidity source code
  */
 function preprocess(contract) {
-
   try {
     const ast = SolidityParser.parse(contract, { range: true });
     insertions = [];
 
     SolidityParser.visit(ast, {
-      IfStatement: function(node) {
-        if (node.trueBody.type !== 'Block') {
-          insertions.push({type: OPEN, pos: node.trueBody.range[0]});
-          insertions.push({type: CLOSE, pos: node.trueBody.range[1] + 1});
+      IfStatement: function (node) {
+        if (node.trueBody.type !== "Block") {
+          insertions.push({ type: OPEN, pos: node.trueBody.range[0] });
+          insertions.push({ type: CLOSE, pos: node.trueBody.range[1] + 1 });
         }
-        if ( node.falseBody && node.falseBody.type !== 'Block' ) {
-          insertions.push({type: OPEN, pos: node.falseBody.range[0]});
-          insertions.push({type: CLOSE, pos: node.falseBody.range[1] + 1});
-        }
-      },
-      ForStatement: function(node){
-        if (node.body.type !== 'Block'){
-          insertions.push({type: OPEN, pos: node.body.range[0]});
-          insertions.push({type: CLOSE, pos: node.body.range[1] + 1});
+        if (node.falseBody && node.falseBody.type !== "Block") {
+          insertions.push({ type: OPEN, pos: node.falseBody.range[0] });
+          insertions.push({ type: CLOSE, pos: node.falseBody.range[1] + 1 });
         }
       },
-      WhileStatement: function(node){
-        if (node.body.type !== 'Block'){
-          insertions.push({type: OPEN, pos: node.body.range[0]});
-          insertions.push({type: CLOSE, pos: node.body.range[1] + 1});
+      ForStatement: function (node) {
+        if (node.body.type !== "Block") {
+          insertions.push({ type: OPEN, pos: node.body.range[0] });
+          insertions.push({ type: CLOSE, pos: node.body.range[1] + 1 });
         }
-      }
-    })
+      },
+      WhileStatement: function (node) {
+        if (node.body.type !== "Block") {
+          insertions.push({ type: OPEN, pos: node.body.range[0] });
+          insertions.push({ type: CLOSE, pos: node.body.range[1] + 1 });
+        }
+      },
+    });
 
     // Sort the insertion points.
-    insertions.sort((a,b) => a.pos - b.pos);
-    insertions.forEach((item, idx) => contract = insertBrace(contract, item, idx));
-
+    insertions.sort((a, b) => a.pos - b.pos);
+    insertions.forEach(
+      (item, idx) => (contract = insertBrace(contract, item, idx))
+    );
   } catch (err) {
     contract = err;
   }
   return contract;
-};
-
+}
 
 module.exports = preprocess;

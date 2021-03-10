@@ -1,64 +1,63 @@
-const Validator = require('jsonschema').Validator;
-const AppUI = require('./app-ui');
-const util = require('util')
+const Validator = require("jsonschema").Validator;
+const AppUI = require("./app-ui");
+const util = require("util");
 
-Validator.prototype.customFormats.isFunction = function(input) {
-  return typeof input === "function"
+Validator.prototype.customFormats.isFunction = function (input) {
+  return typeof input === "function";
 };
 
 const configSchema = {
   id: "/solcoverjs",
   type: "object",
   properties: {
+    client: { type: "object" },
+    cwd: { type: "string" },
+    host: { type: "string" },
 
-    client: {type: "object"},
-    cwd:    {type: "string"},
-    host:   {type: "string"},
-
-    port:                 {type: "number"},
-    providerOptions:      {type: "object"},
-    silent:               {type: "boolean"},
-    autoLaunchServer:     {type: "boolean"},
-    istanbulFolder:       {type: "string"},
+    port: { type: "number" },
+    providerOptions: { type: "object" },
+    silent: { type: "boolean" },
+    autoLaunchServer: { type: "boolean" },
+    istanbulFolder: { type: "string" },
 
     // Hooks:
-    onServerReady:        {type: "function", format: "isFunction"},
-    onCompileComplete:    {type: "function", format: "isFunction"},
-    onTestComplete:       {type: "function", format: "isFunction"},
-    onIstanbulComplete:   {type: "function", format: "isFunction"},
+    onServerReady: { type: "function", format: "isFunction" },
+    onCompileComplete: { type: "function", format: "isFunction" },
+    onTestComplete: { type: "function", format: "isFunction" },
+    onIstanbulComplete: { type: "function", format: "isFunction" },
 
     // Arrays
     skipFiles: {
       type: "array",
-      items: {type: "string"}
+      items: { type: "string" },
     },
 
     istanbulReporter: {
       type: "array",
-      items: {type: "string"}
+      items: { type: "string" },
     },
   },
 };
 
 class ConfigValidator {
-  constructor(){
+  constructor() {
     this.validator = new Validator();
     this.validator.addSchema(configSchema);
     this.ui = new AppUI();
   }
 
-  validate(config){
+  validate(config) {
     let result = this.validator.validate(config, configSchema);
 
-    if (result.errors.length){
+    if (result.errors.length) {
       let msg;
-      const option = `"${result.errors[0].property.replace('instance.', '')}"`;
+      const option = `"${result.errors[0].property.replace("instance.", "")}"`;
 
-      (result.errors[0].argument === 'isFunction')
-        ? msg = `${option} is not a function`
-        : msg = `${option} ${result.errors[0].message}`;
+      result.errors[0].argument === "isFunction"
+        ? (msg = `${option} is not a function`)
+        : (msg = `${option} ${result.errors[0].message}`);
 
-      throw new Error(this.ui.generate('config-fail', [msg]));
+      throw new Error(this.ui.generate("config-fail", [msg]));
     }
 
     return true;

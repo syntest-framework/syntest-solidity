@@ -4,8 +4,7 @@
  * consumed by the Injector as it modifies the source code in instrumentation's final step.
  */
 class Registrar {
-
-  constructor(){
+  constructor() {
     // Sometimes we don't want to inject statements
     // because they're an unnecessary expense. ex: `receive`
     this.trackStatements = true;
@@ -20,9 +19,9 @@ class Registrar {
   _createInjectionPoint(contract, key, value) {
     value.contractName = contract.contractName;
 
-    (contract.injectionPoints[key])
+    contract.injectionPoints[key]
       ? contract.injectionPoints[key].push(value)
-      : contract.injectionPoints[key] = [value];
+      : (contract.injectionPoints[key] = [value]);
   }
 
   /**
@@ -34,24 +33,23 @@ class Registrar {
     if (!this.trackStatements) return;
 
     const startContract = contract.instrumented.slice(0, expression.range[0]);
-    const startline = ( startContract.match(/\n/g) || [] ).length + 1;
-    const startcol = expression.range[0] - startContract.lastIndexOf('\n') - 1;
+    const startline = (startContract.match(/\n/g) || []).length + 1;
+    const startcol = expression.range[0] - startContract.lastIndexOf("\n") - 1;
 
     const expressionContent = contract.instrumented.slice(
       expression.range[0],
       expression.range[1] + 1
     );
 
-    const endline = startline + (contract, expressionContent.match('/\n/g') || []).length;
+    const endline =
+      startline + (contract, expressionContent.match("/\n/g") || []).length;
 
     let endcol;
-    if (expressionContent.lastIndexOf('\n') >= 0) {
-
+    if (expressionContent.lastIndexOf("\n") >= 0) {
       endcol = contract.instrumented.slice(
-        expressionContent.lastIndexOf('\n'),
+        expressionContent.lastIndexOf("\n"),
         expression.range[1]
       ).length;
-
     } else endcol = startcol + (contract, expressionContent.length - 1);
 
     contract.statementId += 1;
@@ -61,10 +59,11 @@ class Registrar {
     };
 
     this._createInjectionPoint(contract, expression.range[0], {
-      type: 'injectStatement', statementId: contract.statementId,
-      line: expression.loc.start.line
+      type: "injectStatement",
+      statementId: contract.statementId,
+      line: expression.loc.start.line,
     });
-  };
+  }
 
   /**
    * Registers injections for line measurements
@@ -74,34 +73,42 @@ class Registrar {
   line(contract, expression) {
     const startchar = expression.range[0];
     const endchar = expression.range[1] + 1;
-    const lastNewLine = contract.instrumented.slice(0, startchar).lastIndexOf('\n');
-    const nextNewLine = startchar + contract.instrumented.slice(startchar).indexOf('\n');
-    const contractSnipped = contract.instrumented.slice(lastNewLine, nextNewLine);
+    const lastNewLine = contract.instrumented
+      .slice(0, startchar)
+      .lastIndexOf("\n");
+    const nextNewLine =
+      startchar + contract.instrumented.slice(startchar).indexOf("\n");
+    const contractSnipped = contract.instrumented.slice(
+      lastNewLine,
+      nextNewLine
+    );
     const restOfLine = contract.instrumented.slice(endchar, nextNewLine);
 
     if (
       contract.instrumented.slice(lastNewLine, startchar).trim().length === 0 &&
-        (
-          restOfLine.replace(';', '').trim().length === 0 ||
-          restOfLine.replace(';', '').trim().substring(0, 2) === '//'
-        )
-       )
-    {
+      (restOfLine.replace(";", "").trim().length === 0 ||
+        restOfLine.replace(";", "").trim().substring(0, 2) === "//")
+    ) {
       this._createInjectionPoint(contract, lastNewLine + 1, {
-        type: 'injectLine',
-        line: expression.loc.start.line
+        type: "injectLine",
+        line: expression.loc.start.line,
       });
-
     } else if (
-      contract.instrumented.slice(lastNewLine, startchar).replace('{', '').trim().length === 0 &&
-      contract.instrumented.slice(endchar, nextNewLine).replace(/[;}]/g, '').trim().length === 0)
-    {
+      contract.instrumented
+        .slice(lastNewLine, startchar)
+        .replace("{", "")
+        .trim().length === 0 &&
+      contract.instrumented
+        .slice(endchar, nextNewLine)
+        .replace(/[;}]/g, "")
+        .trim().length === 0
+    ) {
       this._createInjectionPoint(contract, expression.range[0], {
-        type: 'injectLine',
-        line: expression.loc.start.line
+        type: "injectLine",
+        line: expression.loc.start.line,
       });
     }
-  };
+  }
 
   /**
    * Registers injections for function measurements
@@ -113,9 +120,9 @@ class Registrar {
 
     // It's possible functions will have modifiers that take string args
     // which contains an open curly brace. Skip ahead...
-    if (expression.modifiers && expression.modifiers.length){
-      for (let modifier of expression.modifiers ){
-        if (modifier.range[1] > start){
+    if (expression.modifiers && expression.modifiers.length) {
+      for (let modifier of expression.modifiers) {
+        if (modifier.range[1] > start) {
           start = modifier.range[1];
         }
       }
@@ -124,10 +131,10 @@ class Registrar {
     }
 
     const startContract = contract.instrumented.slice(0, start);
-    const startline = ( startContract.match(/\n/g) || [] ).length + 1;
-    const startcol = start - startContract.lastIndexOf('\n') - 1;
+    const startline = (startContract.match(/\n/g) || []).length + 1;
+    const startcol = start - startContract.lastIndexOf("\n") - 1;
 
-    const endlineDelta = contract.instrumented.slice(start).indexOf('{');
+    const endlineDelta = contract.instrumented.slice(start).indexOf("{");
     const functionDefinition = contract.instrumented.slice(
       start,
       start + endlineDelta
@@ -135,22 +142,18 @@ class Registrar {
 
     contract.fnId += 1;
     contract.fnMap[contract.fnId] = {
-      name: expression.isConstructor ? 'constructor' : expression.name,
+      name: expression.isConstructor ? "constructor" : expression.name,
       line: startline,
       loc: expression.loc,
-      functionDefinition: functionDefinition
+      functionDefinition: functionDefinition,
     };
 
-    this._createInjectionPoint(
-      contract,
-      start + endlineDelta + 1,
-      {
-        type: 'injectFunction',
-        fnId: contract.fnId,
-        line: expression.loc.start.line
-      }
-    );
-  };
+    this._createInjectionPoint(contract, start + endlineDelta + 1, {
+      type: "injectFunction",
+      fnId: contract.fnId,
+      line: expression.loc.start.line,
+    });
+  }
 
   /**
    * Registers injections for branch measurements. This generic is consumed by
@@ -160,8 +163,8 @@ class Registrar {
    */
   addNewBranch(contract, expression) {
     const startContract = contract.instrumented.slice(0, expression.range[0]);
-    const startline = ( startContract.match(/\n/g) || [] ).length + 1;
-    const startcol = expression.range[0] - startContract.lastIndexOf('\n') - 1;
+    const startline = (startContract.match(/\n/g) || []).length + 1;
+    const startcol = expression.range[0] - startContract.lastIndexOf("\n") - 1;
 
     contract.branchId += 1;
 
@@ -169,24 +172,31 @@ class Registrar {
     // length and associated with the start of the if.
     contract.branchMap[contract.branchId] = {
       line: startline,
-      type: 'if',
-      locations: [{
-        start: {
-          line: startline, column: startcol,
+      type: "if",
+      locations: [
+        {
+          start: {
+            line: startline,
+            column: startcol,
+          },
+          end: {
+            line: startline,
+            column: startcol,
+          },
         },
-        end: {
-          line: startline, column: startcol,
+        {
+          start: {
+            line: startline,
+            column: startcol,
+          },
+          end: {
+            line: startline,
+            column: startcol,
+          },
         },
-      }, {
-        start: {
-          line: startline, column: startcol,
-        },
-        end: {
-          line: startline, column: startcol,
-        },
-      }],
+      ],
     };
-  };
+  }
 
   /**
    * Registers injections for assert/require statement measurements (branches)
@@ -195,23 +205,15 @@ class Registrar {
    */
   assertOrRequire(contract, expression) {
     this.addNewBranch(contract, expression);
-    this._createInjectionPoint(
-      contract,
-      expression.range[0],
-      {
-        type: 'injectAssertPre',
-        branchId: contract.branchId,
-      }
-    );
-    this._createInjectionPoint(
-      contract,
-      expression.range[1] + 2,
-      {
-        type: 'injectAssertPost',
-        branchId: contract.branchId,
-      }
-    );
-  };
+    this._createInjectionPoint(contract, expression.range[0], {
+      type: "injectAssertPre",
+      branchId: contract.branchId,
+    });
+    this._createInjectionPoint(contract, expression.range[1] + 2, {
+      type: "injectAssertPost",
+      branchId: contract.branchId,
+    });
+  }
 
   /**
    * Registers injections for if statement measurements (branches)
@@ -221,46 +223,31 @@ class Registrar {
   ifStatement(contract, expression) {
     this.addNewBranch(contract, expression);
 
-    if (expression.trueBody.type === 'Block') {
-      this._createInjectionPoint(
-        contract,
-        expression.trueBody.range[0] + 1,
-        {
-          type: 'injectBranch',
-          branchId: contract.branchId,
-          locationIdx: 0,
-          line: expression.trueBody.loc.start.line
-        }
-      );
+    if (expression.trueBody.type === "Block") {
+      this._createInjectionPoint(contract, expression.trueBody.range[0] + 1, {
+        type: "injectBranch",
+        branchId: contract.branchId,
+        locationIdx: 0,
+        line: expression.trueBody.loc.start.line,
+      });
     }
 
-    if (expression.falseBody && expression.falseBody.type === 'IfStatement') {
-
+    if (expression.falseBody && expression.falseBody.type === "IfStatement") {
       // Do nothing - we must be pre-preprocessing
-
-    } else if (expression.falseBody && expression.falseBody.type === 'Block') {
-      this._createInjectionPoint(
-        contract,
-        expression.falseBody.range[0] + 1,
-        {
-          type: 'injectBranch',
-          branchId: contract.branchId,
-          locationIdx: 1,
-          line: expression.falseBody.loc.start.line
-
-        }
-      );
+    } else if (expression.falseBody && expression.falseBody.type === "Block") {
+      this._createInjectionPoint(contract, expression.falseBody.range[0] + 1, {
+        type: "injectBranch",
+        branchId: contract.branchId,
+        locationIdx: 1,
+        line: expression.falseBody.loc.start.line,
+      });
     } else {
-      this._createInjectionPoint(
-        contract,
-        expression.trueBody.range[1] + 1,
-        {
-          type: 'injectEmptyBranch',
-          branchId: contract.branchId,
-          locationIdx: 1,
-          line: expression.trueBody.loc.start.line
-        }
-      );
+      this._createInjectionPoint(contract, expression.trueBody.range[1] + 1, {
+        type: "injectEmptyBranch",
+        branchId: contract.branchId,
+        locationIdx: 1,
+        line: expression.trueBody.loc.start.line,
+      });
     }
   }
 
@@ -272,30 +259,22 @@ class Registrar {
   forStatement(contract, expression) {
     this.addNewBranch(contract, expression);
 
-    if (expression.body.type === 'Block') {
-      this._createInjectionPoint(
-          contract,
-          expression.body.range[0] + 1,
-          {
-            type: 'injectBranch',
-            branchId: contract.branchId,
-            locationIdx: 0,
-            line: expression.body.loc.start.line
-          }
-      );
+    if (expression.body.type === "Block") {
+      this._createInjectionPoint(contract, expression.body.range[0] + 1, {
+        type: "injectBranch",
+        branchId: contract.branchId,
+        locationIdx: 0,
+        line: expression.body.loc.start.line,
+      });
     }
 
     // TODO remove this i think
-    this._createInjectionPoint(
-        contract,
-        expression.body.range[1] + 1,
-        {
-          type: 'injectBranch',
-          branchId: contract.branchId,
-          locationIdx: 1,
-          line: expression.body.loc.end.line
-        }
-    );
+    this._createInjectionPoint(contract, expression.body.range[1] + 1, {
+      type: "injectBranch",
+      branchId: contract.branchId,
+      locationIdx: 1,
+      line: expression.body.loc.end.line,
+    });
   }
 }
 

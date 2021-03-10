@@ -1,25 +1,25 @@
-const pify = require('pify');
-const fs = require('fs');
-const path = require('path');
-const istanbul = require('sc-istanbul');
-const assert = require('assert');
-const detect = require('detect-port');
-const _ = require('lodash/lang');
+const pify = require("pify");
+const fs = require("fs");
+const path = require("path");
+const istanbul = require("sc-istanbul");
+const assert = require("assert");
+const detect = require("detect-port");
+const _ = require("lodash/lang");
 
-const ConfigValidator = require('./instrumentation/validator');
-const Instrumenter = require('./instrumentation/instrumenter');
-const Coverage = require('./instrumentation/coverage');
-const DataCollector = require('./instrumentation/collector');
-const AppUI = require('./instrumentation/app-ui');
+const ConfigValidator = require("./instrumentation/validator");
+const Instrumenter = require("./instrumentation/instrumenter");
+const Coverage = require("./instrumentation/coverage");
+const DataCollector = require("./instrumentation/collector");
+const AppUI = require("./instrumentation/app-ui");
 
 /**
  * Coverage Runner
  */
 class API {
-  constructor(config={}) {
+  constructor(config = {}) {
     this.coverage = new Coverage();
     this.instrumenter = new Instrumenter();
-    this.validator = new ConfigValidator()
+    this.validator = new ConfigValidator();
     this.config = config || {};
 
     // Validate
@@ -31,15 +31,15 @@ class API {
     this.cwd = config.cwd || process.cwd();
 
     this.defaultHook = () => {};
-    this.onServerReady = config.onServerReady           || this.defaultHook;
-    this.onTestsComplete = config.onTestsComplete       || this.defaultHook;
-    this.onCompileComplete = config.onCompileComplete   || this.defaultHook;
+    this.onServerReady = config.onServerReady || this.defaultHook;
+    this.onTestsComplete = config.onTestsComplete || this.defaultHook;
+    this.onCompileComplete = config.onCompileComplete || this.defaultHook;
     this.onIstanbulComplete = config.onIstanbulComplete || this.defaultHook;
 
     this.server = null;
     this.defaultPort = 8555;
     this.client = config.client;
-    this.defaultNetworkName = 'soliditycoverage';
+    this.defaultNetworkName = "soliditycoverage";
     this.port = config.port || this.defaultPort;
     this.host = config.host || "127.0.0.1";
     this.providerOptions = config.providerOptions || {};
@@ -49,12 +49,17 @@ class API {
 
     this.log = config.log || console.log;
 
-    this.gasLimit = 0xffffffffff;            // default "gas sent" with transactions
-    this.gasLimitString = "0xfffffffffff";   // block gas limit for ganache (higher than "gas sent")
+    this.gasLimit = 0xffffffffff; // default "gas sent" with transactions
+    this.gasLimitString = "0xfffffffffff"; // block gas limit for ganache (higher than "gas sent")
     this.gasPrice = 0x01;
 
     this.istanbulFolder = config.istanbulFolder || false;
-    this.istanbulReporter = config.istanbulReporter || ['html', 'lcov', 'text', 'json'];
+    this.istanbulReporter = config.istanbulReporter || [
+      "html",
+      "lcov",
+      "text",
+      "json",
+    ];
 
     this.setLoggingLevel(config.silent);
     this.ui = new AppUI(this.log);
@@ -71,8 +76,8 @@ class API {
    *   relativePath:   (optional) <rel path to source file for logging>
    * }]
    */
-  instrument(targets=[]) {
-    let currentFile;      // Keep track of filename in case we crash...
+  instrument(targets = []) {
+    let currentFile; // Keep track of filename in case we crash...
     let started = false;
     let outputs = [];
 
@@ -80,12 +85,12 @@ class API {
       for (let target of targets) {
         currentFile = target.relativePath || target.canonicalPath;
 
-        if(!started){
+        if (!started) {
           started = true;
-          this.ui.report('instr-start');
+          this.ui.report("instr-start");
         }
 
-        this.ui.report('instr-item', [currentFile]);
+        this.ui.report("instr-item", [currentFile]);
 
         const instrumented = this.instrumenter.instrument(
           target.source,
@@ -98,12 +103,11 @@ class API {
           canonicalPath: target.canonicalPath,
           relativePath: target.relativePath,
           source: instrumented.contract,
-          instrumented: instrumented
-        })
+          instrumented: instrumented,
+        });
       }
-
     } catch (err) {
-      err.message = this.ui.generate('instr-fail', [currentFile]) + err.message;
+      err.message = this.ui.generate("instr-fail", [currentFile]) + err.message;
       throw err;
     }
 
@@ -115,14 +119,14 @@ class API {
    * Useful if you'd like to delegate coverage collection to multiple processes.
    * @return {Object} instrumentationData
    */
-  getInstrumentationData(){
-    return _.cloneDeep(this.instrumenter.instrumentationData)
+  getInstrumentationData() {
+    return _.cloneDeep(this.instrumenter.instrumentationData);
   }
 
   resetInstrumentationData() {
     for (let key of Object.keys(this.instrumenter.instrumentationData)) {
-      let point = this.instrumenter.instrumentationData[key]
-      point.hits = 0
+      let point = this.instrumenter.instrumentationData[key];
+      point.hits = 0;
     }
   }
 
@@ -131,7 +135,7 @@ class API {
    * to collect data for a pre-existing instrumentation.
    * @param {Object} data
    */
-  setInstrumentationData(data={}){
+  setInstrumentationData(data = {}) {
     this.instrumenter.instrumentationData = _.cloneDeep(data);
   }
 
@@ -144,44 +148,42 @@ class API {
    * @param  {Boolean} autoLaunchServer  boolean
    * @return {<Promise> (String | Server) }  address of server to connect to, or initialized, unlaunched server.
    */
-  async ganache(client, autoLaunchServer){
+  async ganache(client, autoLaunchServer) {
     // Check for port-in-use
-    if (await detect(this.port) !== this.port){
-      throw new Error(this.ui.generate('server-fail', [this.port]))
+    if ((await detect(this.port)) !== this.port) {
+      throw new Error(this.ui.generate("server-fail", [this.port]));
     }
 
     this.collector = new DataCollector(this.instrumenter.instrumentationData);
 
     this.providerOptions.gasLimit =
-      'gasLimit' in this.providerOptions
+      "gasLimit" in this.providerOptions
         ? this.providerOptions.gasLimit
         : this.gasLimitString;
 
     this.providerOptions.allowUnlimitedContractSize =
-      'allowUnlimitedContractSize' in this.providerOptions
+      "allowUnlimitedContractSize" in this.providerOptions
         ? this.providerOptions.allowUnlimitedContractSize
         : true;
 
     // Attach to vm step of supplied client
     try {
-      if (this.config.forceBackupServer) throw new Error()
-      await this.attachToVM(client)
-    }
-
-    // Fallback to ganache-cli)
-    catch(err) {
-      const _ganache = require('ganache-cli');
-      this.ui.report('vm-fail', [_ganache.version]);
+      if (this.config.forceBackupServer) throw new Error();
+      await this.attachToVM(client);
+    } catch (err) {
+      // Fallback to ganache-cli)
+      const _ganache = require("ganache-cli");
+      this.ui.report("vm-fail", [_ganache.version]);
       await this.attachToVM(_ganache);
     }
 
-    if (autoLaunchServer === false || this.autoLaunchServer === false){
+    if (autoLaunchServer === false || this.autoLaunchServer === false) {
       return this.server;
     }
 
     await pify(this.server.listen)(this.port);
     const address = `http://${this.host}:${this.port}`;
-    this.ui.report('server', [address]);
+    this.ui.report("server", [address]);
     return address;
   }
 
@@ -203,30 +205,28 @@ class API {
 
         collector.add(mapping);
 
-        this.istanbulReporter.forEach(report => reporter.add(report));
+        this.istanbulReporter.forEach((report) => reporter.add(report));
 
         // Pify doesn't like this one...
         reporter.write(collector, true, (err) => {
           if (err) return reject(err);
 
-          this.ui.report('istanbul');
+          this.ui.report("istanbul");
           resolve();
         });
-
       } catch (error) {
-        error.message = this.ui.generate('istanbul-fail') + error.message;
+        error.message = this.ui.generate("istanbul-fail") + error.message;
         throw error;
       }
-    })
+    });
   }
-
 
   /**
    * Removes coverage build artifacts, kills testrpc.
    */
   async finish() {
-    if (this.server && this.server.close){
-      this.ui.report('finish');
+    if (this.server && this.server.close) {
+      this.ui.report("finish");
       await pify(this.server.close)();
     }
   }
@@ -235,11 +235,11 @@ class API {
   // ========
   // Provider
   // ========
-  async attachToVM(client){
+  async attachToVM(client) {
     const self = this;
 
     // Fallback to client from options
-    if(!client) client = this.client;
+    if (!client) client = this.client;
     this.server = client.server(this.providerOptions);
 
     this.assertHasBlockchain(this.server.provider);
@@ -249,37 +249,40 @@ class API {
     const createVM = blockchain.createVMFromStateTrie;
 
     // Attach to VM which ganache has already created for transactions
-    blockchain.vm.on('step', self.collector.step.bind(self.collector));
+    blockchain.vm.on("step", self.collector.step.bind(self.collector));
 
     // Hijack createVM method which ganache runs for each `eth_call`
-    blockchain.createVMFromStateTrie = function(state, activatePrecompiles) {
+    blockchain.createVMFromStateTrie = function (state, activatePrecompiles) {
       const vm = createVM.apply(blockchain, arguments);
-      vm.on('step', self.collector.step.bind(self.collector));
+      vm.on("step", self.collector.step.bind(self.collector));
       return vm;
-    }
+    };
   }
 
-  assertHasBlockchain(provider){
+  assertHasBlockchain(provider) {
     assert(provider.engine.manager.state.blockchain !== undefined);
-    assert(provider.engine.manager.state.blockchain.createVMFromStateTrie !== undefined);
+    assert(
+      provider.engine.manager.state.blockchain.createVMFromStateTrie !==
+        undefined
+    );
   }
 
-  async vmIsResolved(provider){
-    return new Promise(resolve => {
+  async vmIsResolved(provider) {
+    return new Promise((resolve) => {
       const interval = setInterval(() => {
-        if (provider.engine.manager.state.blockchain.vm !== undefined){
+        if (provider.engine.manager.state.blockchain.vm !== undefined) {
           clearInterval(interval);
           resolve();
         }
       });
-    })
+    });
   }
 
   // ========
   // File I/O
   // ========
 
-  saveCoverage(data){
+  saveCoverage(data) {
     const covPath = path.join(this.cwd, "coverage.json");
     fs.writeFileSync(covPath, JSON.stringify(data));
   }
@@ -297,9 +300,9 @@ class API {
   makeKeysRelative(map, wd) {
     const newCoverage = {};
 
-    Object
-     .keys(map)
-     .forEach(pathKey => newCoverage[path.relative(wd, pathKey)] = map[pathKey]);
+    Object.keys(map).forEach(
+      (pathKey) => (newCoverage[path.relative(wd, pathKey)] = map[pathKey])
+    );
 
     return newCoverage;
   }
@@ -315,7 +318,6 @@ class API {
   setLoggingLevel(isSilent) {
     if (isSilent) this.log = () => {};
   }
-
 }
 
 module.exports = API;

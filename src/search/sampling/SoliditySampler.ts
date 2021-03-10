@@ -1,7 +1,7 @@
-import {ObjectFunctionCall, Sampler} from 'syntest-framework'
+import { ObjectFunctionCall, Sampler } from "syntest-framework";
 
-import {Statement} from "syntest-framework";
-import {Constructor} from "syntest-framework";
+import { Statement } from "syntest-framework";
+import { Constructor } from "syntest-framework";
 
 /**
  * SolidityRandomSampler class
@@ -9,8 +9,10 @@ import {Constructor} from "syntest-framework";
  * @author Dimitri Stallenberg
  */
 export abstract class SoliditySampler extends Sampler {
-
-    abstract sampleConstructor (depth: number): Constructor
-    abstract sampleObjectFunctionCall (depth: number, type: string): ObjectFunctionCall
-    abstract sampleArgument (depth: number, type: string, bits: number): Statement
+  abstract sampleConstructor(depth: number): Constructor;
+  abstract sampleObjectFunctionCall(
+    depth: number,
+    type: string
+  ): ObjectFunctionCall;
+  abstract sampleArgument(depth: number, type: string, bits: number): Statement;
 }

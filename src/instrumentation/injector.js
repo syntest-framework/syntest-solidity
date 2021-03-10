@@ -1,18 +1,18 @@
 const web3Utils = require("web3-utils");
 
 class Injector {
-  constructor(){
+  constructor() {
     this.hashCounter = 0;
   }
 
-  _split(contract, injectionPoint){
+  _split(contract, injectionPoint) {
     return {
       start: contract.instrumented.slice(0, injectionPoint),
-      end: contract.instrumented.slice(injectionPoint)
-    }
+      end: contract.instrumented.slice(injectionPoint),
+    };
   }
 
-  _getInjectable(id, hash, type){
+  _getInjectable(id, hash, type) {
     return `${this._getMethodIdentifier(id)}(${hash}); /* ${type} */ \n`;
   }
 
@@ -21,21 +21,21 @@ class Injector {
     return web3Utils.keccak256(`${id}:${this.hashCounter}`);
   }
 
-  _getMethodIdentifier(id){
-    return `coverage_${web3Utils.keccak256(id).slice(0,10)}`
+  _getMethodIdentifier(id) {
+    return `coverage_${web3Utils.keccak256(id).slice(0, 10)}`;
   }
 
-  _getInjectionComponents(contract, injectionPoint, id, type){
+  _getInjectionComponents(contract, injectionPoint, id, type) {
     const { start, end } = this._split(contract, injectionPoint);
-    const hash = this._getHash(id)
+    const hash = this._getHash(id);
     const injectable = this._getInjectable(id, hash, type);
 
     return {
       start: start,
       end: end,
       hash: hash,
-      injectable: injectable
-    }
+      injectable: injectable,
+    };
   }
 
   /**
@@ -44,22 +44,22 @@ class Injector {
    * @param  {String} id
    * @return {String}          ex: bytes32[1] memory _sc_82e0891
    */
-  _getHashMethodDefinition(id, contract){
-    const hash = web3Utils.keccak256(id).slice(0,10);
+  _getHashMethodDefinition(id, contract) {
+    const hash = web3Utils.keccak256(id).slice(0, 10);
     const method = this._getMethodIdentifier(id);
     return `\nfunction ${method}(bytes32 c__${hash}) public pure {}\n`;
   }
 
-  injectLine(contract, fileName, injectionPoint, injection, instrumentation){
-    const type = 'line';
+  injectLine(contract, fileName, injectionPoint, injection, instrumentation) {
+    const type = "line";
     const { start, end } = this._split(contract, injectionPoint);
     const id = `${fileName}:${injection.contractName}`;
 
     const newLines = start.match(/\n/g);
-    const linecount = ( newLines || []).length + 1;
+    const linecount = (newLines || []).length + 1;
     contract.runnableLines.push(linecount);
 
-    const hash = this._getHash(id)
+    const hash = this._getHash(id);
     const injectable = this._getInjectable(id, hash, type);
 
     instrumentation[hash] = {
@@ -67,66 +67,78 @@ class Injector {
       type: type,
       contractPath: fileName,
       line: injection.line,
-      hits: 0
-    }
+      hits: 0,
+    };
 
     contract.instrumented = `${start}${injectable}${end}`;
   }
 
-  injectStatement(contract, fileName, injectionPoint, injection, instrumentation) {
-    const type = 'statement';
+  injectStatement(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
+    const type = "statement";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.statementId,
       type: type,
       contractPath: fileName,
       line: injection.line,
-      hits: 0
-    }
+      hits: 0,
+    };
 
     contract.instrumented = `${start}${injectable}${end}`;
-  };
+  }
 
-  injectFunction(contract, fileName, injectionPoint, injection, instrumentation){
-    const type = 'function';
+  injectFunction(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
+    const type = "function";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.fnId,
       type: type,
       contractPath: fileName,
       line: injection.line,
-      hits: 0
-    }
+      hits: 0,
+    };
 
     contract.instrumented = `${start}${injectable}${end}`;
   }
 
-  injectBranch(contract, fileName, injectionPoint, injection, instrumentation){
-    const type = 'branch';
+  injectBranch(contract, fileName, injectionPoint, injection, instrumentation) {
+    const type = "branch";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.branchId,
@@ -134,22 +146,28 @@ class Injector {
       type: type,
       contractPath: fileName,
       line: injection.line,
-      hits: 0
-    }
+      hits: 0,
+    };
 
     contract.instrumented = `${start}${injectable}${end}`;
   }
 
-  injectEmptyBranch(contract, fileName, injectionPoint, injection, instrumentation) {
-    const type = 'branch';
+  injectEmptyBranch(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
+    const type = "branch";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.branchId,
@@ -157,60 +175,80 @@ class Injector {
       type: type,
       contractPath: fileName,
       line: injection.line,
-      hits: 0
-    }
+      hits: 0,
+    };
 
     contract.instrumented = `${start}else { ${injectable}}${end}`;
   }
 
-  injectAssertPre(contract, fileName, injectionPoint, injection, instrumentation) {
-    const type = 'assertPre';
+  injectAssertPre(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
+    const type = "assertPre";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.branchId,
       type: type,
       contractPath: fileName,
-      hits: 0
-    }
+      hits: 0,
+    };
 
     contract.instrumented = `${start}${injectable}${end}`;
   }
 
-  injectAssertPost(contract, fileName, injectionPoint, injection, instrumentation) {
-    const type = 'assertPost';
+  injectAssertPost(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
+    const type = "assertPost";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.branchId,
       type: type,
       contractPath: fileName,
-      hits: 0
-    }
+      hits: 0,
+    };
 
     contract.instrumented = `${start}${injectable}${end}`;
   }
 
-  injectHashMethod(contract, fileName, injectionPoint, injection, instrumentation){
+  injectHashMethod(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
     const start = contract.instrumented.slice(0, injectionPoint);
     const end = contract.instrumented.slice(injectionPoint);
     const id = `${fileName}:${injection.contractName}`;
-    contract.instrumented = `${start}${this._getHashMethodDefinition(id)}${end}`;
+    contract.instrumented = `${start}${this._getHashMethodDefinition(
+      id
+    )}${end}`;
   }
-};
+}
 
 module.exports = Injector;

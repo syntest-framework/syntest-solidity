@@ -3,16 +3,21 @@
  * functions where appropriate, which determine where to inject events.
  * (Listed in alphabetical order)
  */
-const Registrar = require('./registrar');
+const Registrar = require("./registrar");
 const register = new Registrar();
 
 const parse = {};
 
-parse.AssignmentExpression = function(contract, expression, graph, currentNode) {
+parse.AssignmentExpression = function (
+  contract,
+  expression,
+  graph,
+  currentNode
+) {
   register.statement(contract, expression);
 };
 
-parse.Block = function(contract, expression, graph, currentNode) {
+parse.Block = function (contract, expression, graph, currentNode) {
   // if (expression.statements.length > 1 && currentNode !== null) {
   //   graph.nodes[currentNode].root = true
   //   currentNode = null
@@ -20,52 +25,74 @@ parse.Block = function(contract, expression, graph, currentNode) {
   for (let x = 0; x < expression.statements.length; x++) {
     register.line(contract, expression.statements[x]);
     parse[expression.statements[x].type] &&
-    parse[expression.statements[x].type](contract, expression.statements[x], graph, graph.nodes[graph.nodes.length - 1].id);
+      parse[expression.statements[x].type](
+        contract,
+        expression.statements[x],
+        graph,
+        graph.nodes[graph.nodes.length - 1].id
+      );
   }
 };
 
-parse.BinaryOperation = function(contract, expression, graph, currentNode) {
+parse.BinaryOperation = function (contract, expression, graph, currentNode) {
   register.statement(contract, expression);
-}
+};
 
-parse.FunctionCall = function(contract, expression, graph, currentNode) {
+parse.FunctionCall = function (contract, expression, graph, currentNode) {
   // In any given chain of call expressions, only the last one will fail this check.
   // This makes sure we don't instrument a chain of expressions multiple times.
-  if (expression.expression.type !== 'FunctionCall') {
+  if (expression.expression.type !== "FunctionCall") {
     register.statement(contract, expression);
-    if (expression.expression.name === 'assert' || expression.expression.name === 'require') {
+    if (
+      expression.expression.name === "assert" ||
+      expression.expression.name === "require"
+    ) {
       register.assertOrRequire(contract, expression, graph, currentNode);
     }
     parse[expression.expression.type] &&
-    parse[expression.expression.type](contract, expression.expression, graph, currentNode);
+      parse[expression.expression.type](
+        contract,
+        expression.expression,
+        graph,
+        currentNode
+      );
   } else {
     parse[expression.expression.type] &&
-    parse[expression.expression.type](contract, expression.expression, graph, currentNode);
+      parse[expression.expression.type](
+        contract,
+        expression.expression,
+        graph,
+        currentNode
+      );
   }
 };
 
-parse.Conditional = function(contract, expression, graph, currentNode) {
+parse.Conditional = function (contract, expression, graph, currentNode) {
   register.statement(contract, expression);
   // TODO: Investigate node structure
   // There are potential substatements here we aren't measuring
 };
 
-parse.ContractDefinition = function(contract, expression, graph, currentNode) {
+parse.ContractDefinition = function (contract, expression, graph, currentNode) {
   parse.ContractOrLibraryStatement(contract, expression, graph, currentNode);
 };
 
-parse.ContractOrLibraryStatement = function(contract, expression, graph, currentNode) {
-
+parse.ContractOrLibraryStatement = function (
+  contract,
+  expression,
+  graph,
+  currentNode
+) {
   // We need to define a method to pass coverage hashes into at top of each contract.
   // This lets us get a fresh stack for the hash and avoid stack-too-deep errors.
-  if (expression.kind !== 'interface'){
+  if (expression.kind !== "interface") {
     let start = 0;
 
     // It's possible a base contract will have constructor string arg
     // which contains an open curly brace. Skip ahead pass the bases...
-    if (expression.baseContracts && expression.baseContracts.length){
-      for (let base of expression.baseContracts ){
-        if (base.range[1] > start){
+    if (expression.baseContracts && expression.baseContracts.length) {
+      for (let base of expression.baseContracts) {
+        if (base.range[1] > start) {
           start = base.range[1];
         }
       }
@@ -73,34 +100,44 @@ parse.ContractOrLibraryStatement = function(contract, expression, graph, current
       start = expression.range[0];
     }
 
-    const end = contract.instrumented.slice(start).indexOf('{') + 1;
+    const end = contract.instrumented.slice(start).indexOf("{") + 1;
     const loc = start + end;
 
     contract.contractName = expression.name;
 
-    (contract.injectionPoints[loc])
-      ? contract.injectionPoints[loc].push({ type: 'injectHashMethod', contractName: expression.name})
-      : contract.injectionPoints[loc] = [{ type: 'injectHashMethod', contractName: expression.name}];
+    contract.injectionPoints[loc]
+      ? contract.injectionPoints[loc].push({
+          type: "injectHashMethod",
+          contractName: expression.name,
+        })
+      : (contract.injectionPoints[loc] = [
+          { type: "injectHashMethod", contractName: expression.name },
+        ]);
   }
 
   if (expression.subNodes) {
-    expression.subNodes.forEach(construct => {
+    expression.subNodes.forEach((construct) => {
       parse[construct.type] &&
-      parse[construct.type](contract, construct, graph, currentNode);
+        parse[construct.type](contract, construct, graph, currentNode);
     });
   }
 };
 
-parse.EmitStatement = function(contract, expression, graph, currentNode){
+parse.EmitStatement = function (contract, expression, graph, currentNode) {
   register.statement(contract, expression);
 };
 
-parse.ExpressionStatement = function(contract, content, graph, currentNode) {
+parse.ExpressionStatement = function (contract, content, graph, currentNode) {
   parse[content.expression.type] &&
-  parse[content.expression.type](contract, content.expression, graph, currentNode);
+    parse[content.expression.type](
+      contract,
+      content.expression,
+      graph,
+      currentNode
+    );
 };
 
-parse.ForStatement = function(contract, expression, graph, currentNode) {
+parse.ForStatement = function (contract, expression, graph, currentNode) {
   register.statement(contract, expression);
   register.forStatement(contract, expression);
 
@@ -108,77 +145,76 @@ parse.ForStatement = function(contract, expression, graph, currentNode) {
     graph.edges.push({
       from: currentNode,
       to: graph.nodes.length,
-      type: '-'
-    })
+      type: "-",
+    });
   }
 
-  currentNode = graph.nodes.length
+  currentNode = graph.nodes.length;
 
   graph.nodes.push({
     id: currentNode,
     root: true,
     line: expression.loc.start.line,
     condition: expression.conditionExpression.operator,
-    loop: true
-  })
+    loop: true,
+  });
 
-  let loopNode = graph.nodes.length
-
+  let loopNode = graph.nodes.length;
 
   graph.nodes.push({
     id: loopNode,
     branchId: contract.branchId,
     locationIdx: 0,
     line: expression.body.loc.start.line,
-    type: 'true',
+    type: "true",
     // root: true,
-  })
+  });
 
   graph.edges.push({
     from: currentNode,
     to: loopNode,
-    type: 'true'
-  })
+    type: "true",
+  });
 
   parse[expression.body.type] &&
-  parse[expression.body.type](contract, expression.body, graph, loopNode);
+    parse[expression.body.type](contract, expression.body, graph, loopNode);
 
-  let rightNode = graph.nodes.length
+  let rightNode = graph.nodes.length;
 
   graph.nodes.push({
     id: rightNode,
     branchId: contract.branchId,
     locationIdx: 1,
     line: expression.body.loc.end.line,
-    type: 'false',
-    endLoop: true
-  })
+    type: "false",
+    endLoop: true,
+  });
 
   graph.edges.push({
     from: currentNode,
     to: rightNode,
-    type: 'false'
-  })
+    type: "false",
+  });
 };
 
-parse.FunctionDefinition = function(contract, expression, graph, currentNode) {
+parse.FunctionDefinition = function (contract, expression, graph, currentNode) {
   parse.Modifiers(contract, expression.modifiers, graph, currentNode);
   if (expression.body) {
     // Skip fn & statement instrumentation for `receive` methods to
     // minimize gas distortion
-    (expression.name === null && expression.isReceiveEther)
-      ? register.trackStatements = false
+    expression.name === null && expression.isReceiveEther
+      ? (register.trackStatements = false)
       : register.functionDeclaration(contract, expression, graph, currentNode);
 
-    currentNode = graph.nodes.length
+    currentNode = graph.nodes.length;
 
     graph.nodes.push({
       id: currentNode,
       absoluteRoot: true,
       root: true,
       line: expression.loc.start.line,
-      functionDefinition: expression.name || 'constructor'
-    })
+      functionDefinition: expression.name || "constructor",
+    });
 
     // currentNode = graph.nodes.length
     //
@@ -194,12 +230,17 @@ parse.FunctionDefinition = function(contract, expression, graph, currentNode) {
     // })
 
     parse[expression.body.type] &&
-    parse[expression.body.type](contract, expression.body, graph, currentNode);
+      parse[expression.body.type](
+        contract,
+        expression.body,
+        graph,
+        currentNode
+      );
     register.trackStatements = true;
   }
 };
 
-parse.IfStatement = function(contract, expression, graph, currentNode) {
+parse.IfStatement = function (contract, expression, graph, currentNode) {
   register.statement(contract, expression);
   register.ifStatement(contract, expression);
 
@@ -209,74 +250,84 @@ parse.IfStatement = function(contract, expression, graph, currentNode) {
     graph.edges.push({
       from: currentNode,
       to: graph.nodes.length,
-      type: '-'
-    })
+      type: "-",
+    });
   }
 
-  currentNode = graph.nodes.length
+  currentNode = graph.nodes.length;
 
   graph.nodes.push({
     id: currentNode,
     root: true,
     splitPoint: true,
     line: expression.loc.start.line,
-    condition: expression.condition.operator
-  })
+    condition: expression.condition.operator,
+  });
 
-  let leftNode = graph.nodes.length
+  let leftNode = graph.nodes.length;
 
   graph.nodes.push({
     id: leftNode,
     branchId: contract.branchId,
     locationIdx: 0,
     line: expression.trueBody.loc.start.line,
-    type: 'true'
-  })
+    type: "true",
+  });
 
   graph.edges.push({
     from: currentNode,
     to: leftNode,
-    type: 'true'
-  })
+    type: "true",
+  });
 
   parse[expression.trueBody.type] &&
-  parse[expression.trueBody.type](contract, expression.trueBody, graph, leftNode);
+    parse[expression.trueBody.type](
+      contract,
+      expression.trueBody,
+      graph,
+      leftNode
+    );
 
-  if (expression.falseBody && expression.falseBody.type === 'Block') {
-    let rightNode = graph.nodes.length
+  if (expression.falseBody && expression.falseBody.type === "Block") {
+    let rightNode = graph.nodes.length;
 
     graph.nodes.push({
       id: rightNode,
       branchId: contract.branchId,
       locationIdx: 1,
       line: expression.falseBody.loc.start.line,
-      type: 'false'
-    })
+      type: "false",
+    });
 
     graph.edges.push({
       from: currentNode,
       to: rightNode,
-      type: 'false'
-    })
+      type: "false",
+    });
 
     parse[expression.falseBody.type] &&
-    parse[expression.falseBody.type](contract, expression.falseBody, graph, rightNode);
+      parse[expression.falseBody.type](
+        contract,
+        expression.falseBody,
+        graph,
+        rightNode
+      );
   } else {
-    let rightNode = graph.nodes.length
+    let rightNode = graph.nodes.length;
 
     graph.nodes.push({
       id: rightNode,
       branchId: contract.branchId,
       locationIdx: 1,
       line: expression.trueBody.loc.start.line,
-      type: 'false'
-    })
+      type: "false",
+    });
 
     graph.edges.push({
       from: currentNode,
       to: rightNode,
-      type: 'false'
-    })
+      type: "false",
+    });
   }
 };
 
@@ -286,35 +337,41 @@ parse.IfStatement = function(contract, expression, graph, currentNode) {
   parse[expression.object.type](contract, expression.object, graph, currentNode);
 };*/
 
-parse.Modifiers = function(contract, modifiers, graph, newNode) {
+parse.Modifiers = function (contract, modifiers, graph, newNode) {
   if (modifiers) {
-    modifiers.forEach(modifier => {
-      parse[modifier.type] && parse[modifier.type](contract, modifier, graph, newNode);
+    modifiers.forEach((modifier) => {
+      parse[modifier.type] &&
+        parse[modifier.type](contract, modifier, graph, newNode);
     });
   }
 };
 
-parse.ModifierDefinition = function(contract, expression, graph, currentNode) {
+parse.ModifierDefinition = function (contract, expression, graph, currentNode) {
   register.functionDeclaration(contract, expression, graph, currentNode);
   parse[expression.body.type] &&
-  parse[expression.body.type](contract, expression.body, graph, currentNode);
+    parse[expression.body.type](contract, expression.body, graph, currentNode);
 };
 
-parse.NewExpression = function(contract, expression, graph, currentNode) {
+parse.NewExpression = function (contract, expression, graph, currentNode) {
   parse[expression.typeName.type] &&
-  parse[expression.typeName.type](contract, expression.typeName, graph, currentNode);
+    parse[expression.typeName.type](
+      contract,
+      expression.typeName,
+      graph,
+      currentNode
+    );
 };
 
-parse.SourceUnit = function(contract, expression, graph, currentNode) {
-  expression.children.forEach(construct => {
+parse.SourceUnit = function (contract, expression, graph, currentNode) {
+  expression.children.forEach((construct) => {
     parse[construct.type] &&
-    parse[construct.type](contract, construct, graph, currentNode);
+      parse[construct.type](contract, construct, graph, currentNode);
   });
 };
 
-parse.ReturnStatement = function(contract, expression, graph, currentNode) {
+parse.ReturnStatement = function (contract, expression, graph, currentNode) {
   if (currentNode !== null && currentNode !== undefined) {
-    graph.nodes[currentNode].final = true
+    graph.nodes[currentNode].final = true;
   }
 
   register.statement(contract, expression);
@@ -326,23 +383,33 @@ parse.ReturnStatement = function(contract, expression, graph, currentNode) {
   parse[subExpression.argument.type](contract, expression.argument, graph, currentNode);
 };*/
 
-parse.TryStatement = function(contract, expression, graph, currentNode) {
+parse.TryStatement = function (contract, expression, graph, currentNode) {
   register.statement(contract, expression);
   parse[expression.body.type] &&
-  parse[expression.body.type](contract, expression.body, graph, currentNode);
+    parse[expression.body.type](contract, expression.body, graph, currentNode);
 
   for (let x = 0; x < expression.catchClauses.length; x++) {
     parse[expression.catchClauses[x].body.type] &&
-    parse[expression.catchClauses[x].body.type](contract, expression.catchClauses[x].body, graph, currentNode);
+      parse[expression.catchClauses[x].body.type](
+        contract,
+        expression.catchClauses[x].body,
+        graph,
+        currentNode
+      );
   }
 };
 
 parse.UsingStatement = function (contract, expression, graph, currentNode) {
   parse[expression.for.type] &&
-  parse[expression.for.type](contract, expression.for, graph, currentNode);
+    parse[expression.for.type](contract, expression.for, graph, currentNode);
 };
 
-parse.VariableDeclarationStatement = function (contract, expression, graph, currentNode) {
+parse.VariableDeclarationStatement = function (
+  contract,
+  expression,
+  graph,
+  currentNode
+) {
   register.statement(contract, expression);
 };
 
@@ -354,57 +421,56 @@ parse.WhileStatement = function (contract, expression, graph, currentNode) {
     graph.edges.push({
       from: currentNode,
       to: graph.nodes.length,
-      type: '-'
-    })
+      type: "-",
+    });
   }
 
-  currentNode = graph.nodes.length
+  currentNode = graph.nodes.length;
 
   graph.nodes.push({
     id: currentNode,
     root: true,
     line: expression.loc.start.line,
     condition: expression.condition.operator,
-    loop: true
-  })
+    loop: true,
+  });
 
-  let loopNode = graph.nodes.length
-
+  let loopNode = graph.nodes.length;
 
   graph.nodes.push({
     id: loopNode,
     branchId: contract.branchId,
     locationIdx: 0,
     line: expression.body.loc.start.line,
-    type: 'true',
+    type: "true",
     // root: true,
-  })
+  });
 
   graph.edges.push({
     from: currentNode,
     to: loopNode,
-    type: 'true'
-  })
+    type: "true",
+  });
 
   parse[expression.body.type] &&
-  parse[expression.body.type](contract, expression.body, graph, loopNode);
+    parse[expression.body.type](contract, expression.body, graph, loopNode);
 
-  let rightNode = graph.nodes.length
+  let rightNode = graph.nodes.length;
 
   graph.nodes.push({
     id: rightNode,
     line: expression.body.loc.end.line,
     branchId: contract.branchId,
     locationIdx: 1,
-    type: 'false',
-    endLoop: true
-  })
+    type: "false",
+    endLoop: true,
+  });
 
   graph.edges.push({
     from: currentNode,
     to: rightNode,
-    type: 'false'
-  })
+    type: "false",
+  });
 };
 
 module.exports = parse;
