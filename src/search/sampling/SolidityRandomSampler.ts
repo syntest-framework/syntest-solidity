@@ -108,8 +108,10 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleNumericGene(depth: number, type: string, bits: number): Statement {
-    const max = Math.pow(2, bits) - 1;
+    let max = Math.pow(2, bits - 1) - 1;
+
     if (type.includes("uint")) {
+      max = Math.pow(2, bits) - 1;
       return NumericStatement.getRandom("uint", 0, max, false);
     } else {
       return NumericStatement.getRandom("int", -max, max, true);
