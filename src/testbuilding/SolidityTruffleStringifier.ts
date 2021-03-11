@@ -3,6 +3,7 @@ import {
   getProperty,
   ObjectFunctionCall,
   PrimitiveStatement,
+  NumericStatement,
   Statement,
   Stringifier,
   TestCase,
@@ -30,9 +31,12 @@ export class SolidityTruffleStringifier implements Stringifier {
       throw new Error(`${statement} is not a primitive statement`);
     }
 
-    return `const ${statement.varName} = ${
-      (statement as PrimitiveStatement<any>).value
-    }`;
+    let value: string = (statement as PrimitiveStatement<any>).value;
+    if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
+      value = `BigInt(\"${value}\")`;
+    }
+    const v = `const ${statement.varName} = ${value}`;
+    return v;
   }
 
   stringifyFunctionCall(statement: Statement, objectName: string): string {

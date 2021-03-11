@@ -112,7 +112,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     if (type.includes("uint")) {
       return NumericStatement.getRandom("uint", 0, max, false);
     } else {
-      return NumericStatement.getRandom("int", 0, max, true);
+      return NumericStatement.getRandom("int", -max, max, true);
     }
     if (type.includes("ufixed")) {
       return NumericStatement.getRandom(
