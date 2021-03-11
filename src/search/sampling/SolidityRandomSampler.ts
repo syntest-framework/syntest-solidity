@@ -4,6 +4,7 @@ import {
   getProperty,
   NumericStatement,
   ObjectFunctionCall,
+  ActionStatement,
   prng,
   Statement,
   StringStatement,
@@ -13,6 +14,7 @@ import { SoliditySampler } from "./SoliditySampler";
 import { SolidityTarget } from "../..";
 import { AddressStatement } from "../../testcase/AddressStatement";
 import BigNumber from "bignumber.js";
+import {pathToFileURL} from "url";
 
 /**
  * SolidityRandomSampler class
@@ -30,8 +32,11 @@ export class SolidityRandomSampler extends SoliditySampler {
   sampleIndividual(): TestCase {
     const root = this.sampleConstructor(0);
 
-    const call = this.sampleMethodCall(root);
-    root.setChild(0, call);
+    const nCalls = prng.nextInt(1, 5);
+    for (let index = 0; index <= nCalls; index++){
+        const call = this.sampleMethodCall(root);
+        root.setMethodCall(index, call as ActionStatement);
+    }
     return new TestCase(root);
   }
 
@@ -65,6 +70,7 @@ export class SolidityRandomSampler extends SoliditySampler {
         action.name,
         prng.uniqueId(),
         `${action.name}`,
+        [],
         []
       );
     } else {
@@ -73,6 +79,7 @@ export class SolidityRandomSampler extends SoliditySampler {
         this.target.name,
         prng.uniqueId(),
         `${this.target.name}`,
+        [],
         []
       );
     }
@@ -113,9 +120,15 @@ export class SolidityRandomSampler extends SoliditySampler {
 
     if (type.includes("uint")) {
       max = new BigNumber(2).pow(bits).minus(1);
-      return NumericStatement.getRandom("uint", 0, false, max, new BigNumber(0));
+      return NumericStatement.getRandom(
+        "uint",
+        0,
+        false,
+        max,
+        new BigNumber(0)
+      );
     } else {
-      return NumericStatement.getRandom("int", -max, true, max, max.negated());
+      return NumericStatement.getRandom("int", 0, true, max, max.negated());
     }
     if (type.includes("ufixed")) {
       return NumericStatement.getRandom(
