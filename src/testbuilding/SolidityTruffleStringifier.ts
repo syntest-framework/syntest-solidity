@@ -5,6 +5,7 @@ import {
   PrimitiveStatement,
   NumericStatement,
   Statement,
+  StringStatement,
   Stringifier,
   TestCase,
 } from "syntest-framework";
@@ -35,6 +36,8 @@ export class SolidityTruffleStringifier implements Stringifier {
     if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
       const value = primitive.value.toFixed();
       return `const ${statement.varName} = BigInt(\"${value}\")`;
+    } else if (statement instanceof StringStatement){
+      return `const ${statement.varName} = \"${primitive.value}\"`;
     } else {
       return `const ${statement.varName} = ${primitive.value}`;
     }
