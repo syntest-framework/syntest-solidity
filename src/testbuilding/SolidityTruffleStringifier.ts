@@ -31,12 +31,13 @@ export class SolidityTruffleStringifier implements Stringifier {
       throw new Error(`${statement} is not a primitive statement`);
     }
 
-    let value: string = (statement as PrimitiveStatement<any>).value;
+    const primitive: PrimitiveStatement<any> = statement as PrimitiveStatement<any>;
     if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
-      value = `BigInt(\"${value}\")`;
+      const value = primitive.value.toFixed();
+      return `const ${statement.varName} = BigInt(\"${value}\")`;
+    } else {
+      return `const ${statement.varName} = ${primitive.value}`;
     }
-    const v = `const ${statement.varName} = ${value}`;
-    return v;
   }
 
   stringifyFunctionCall(statement: Statement, objectName: string): string {
@@ -127,7 +128,13 @@ export class SolidityTruffleStringifier implements Stringifier {
         }
 
         if (gene instanceof PrimitiveStatement) {
-          assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`;
+          if (gene.type.startsWith("int") || gene.type.startsWith("uint")) {
+            let value: string = (gene as NumericStatement).value.toFixed();
+            value = `BigInt(\"${value}\")`;
+            assertions += `\t\tassert.equal(${gene.varName}, ${value})\n`;
+          } else {
+            assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`;
+          }
         } else if (addLogs && gene instanceof ObjectFunctionCall) {
           testString += `\t\tawait fs.writeFileSync('${path.join(
             getProperty("temp_log_directory"),
