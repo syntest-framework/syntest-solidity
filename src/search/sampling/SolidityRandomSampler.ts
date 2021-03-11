@@ -12,6 +12,7 @@ import {
 import { SoliditySampler } from "./SoliditySampler";
 import { SolidityTarget } from "../..";
 import { AddressStatement } from "../../testcase/AddressStatement";
+import BigNumber from "bignumber.js";
 
 /**
  * SolidityRandomSampler class
@@ -108,26 +109,24 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleNumericGene(depth: number, type: string, bits: number): Statement {
-    let max = Math.pow(2, bits - 1) - 1;
+    let max = new BigNumber(2).pow(bits - 1).minus(1);
 
     if (type.includes("uint")) {
-      max = Math.pow(2, bits) - 1;
-      return NumericStatement.getRandom("uint", 0, max, false);
+      max = new BigNumber(2).pow(bits).minus(1);
+      return NumericStatement.getRandom("uint", 0, false, max, new BigNumber(0));
     } else {
-      return NumericStatement.getRandom("int", -max, max, true);
+      return NumericStatement.getRandom("int", -max, true, max, max.negated());
     }
     if (type.includes("ufixed")) {
       return NumericStatement.getRandom(
         "ufixed",
         getProperty("numeric_decimals"),
-        max,
         false
       );
     } else {
       return NumericStatement.getRandom(
         "fixed",
         getProperty("numeric_decimals"),
-        max,
         true
       );
     }
