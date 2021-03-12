@@ -11,9 +11,9 @@ import {
   TestCase,
 } from "syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
-import { AddressStatement } from "../../testcase/AddressStatement";
+import { AddressStatement } from "../AddressStatement";
 import BigNumber from "bignumber.js";
-import { SolidityTarget } from "../objective/SolidityTarget";
+import { SolidityTarget } from "../../search/objective/SolidityTarget";
 
 /**
  * SolidityRandomSampler class
