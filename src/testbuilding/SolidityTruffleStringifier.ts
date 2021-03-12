@@ -36,7 +36,7 @@ export class SolidityTruffleStringifier implements Stringifier {
     if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
       const value = primitive.value.toFixed();
       return `const ${statement.varName} = BigInt(\"${value}\")`;
-    } else if (statement instanceof StringStatement){
+    } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = \"${primitive.value}\"`;
     } else {
       return `const ${statement.varName} = ${primitive.value}`;
@@ -104,10 +104,17 @@ export class SolidityTruffleStringifier implements Stringifier {
 
       while (queue.length) {
         const current: Statement = queue.splice(0, 1)[0];
-        if (!(current instanceof ConstructorCall)) stack.push(current);
 
-        for (const child of current.getChildren()) {
-          queue.push(child);
+        if (current instanceof ConstructorCall) {
+          for (const call of current.getMethodCalls()) {
+            queue.push(call);
+          }
+        } else {
+          stack.push(current);
+
+          for (const child of current.getChildren()) {
+            queue.push(child);
+          }
         }
       }
 
@@ -131,13 +138,17 @@ export class SolidityTruffleStringifier implements Stringifier {
         }
 
         if (gene instanceof PrimitiveStatement) {
+          /*
           if (gene.type.startsWith("int") || gene.type.startsWith("uint")) {
             let value: string = (gene as NumericStatement).value.toFixed();
             value = `BigInt(\"${value}\")`;
             assertions += `\t\tassert.equal(${gene.varName}, ${value})\n`;
+          } else if (gene instanceof StringStatement){
+            assertions += `\t\tassert.equal(${gene.varName}, \"${gene.value}\")\n`;
           } else {
             assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`;
           }
+           */
         } else if (addLogs && gene instanceof ObjectFunctionCall) {
           testString += `\t\tawait fs.writeFileSync('${path.join(
             getProperty("temp_log_directory"),
