@@ -5,19 +5,23 @@ import {
   PrimitiveStatement,
   Statement,
   StringStatement,
-  Stringifier,
+  TestCaseDecoder,
   TestCase,
 } from "syntest-framework";
 import * as path from "path";
 
-export class SolidityTruffleStringifier implements Stringifier {
-  stringifyConstructor(statement: Statement): string {
+/**
+ * @author Dimitri Stallenberg
+ * @author Mitchell Olsthoorn
+ */
+export class SolidityTruffleStringifier implements TestCaseDecoder {
+  decodeConstructor(statement: Statement): string {
     if (!(statement instanceof ConstructorCall))
       throw new Error(`${statement} is not a constructor`);
 
     const formattedArgs = (statement as ConstructorCall).args
       .map((a: Statement) => {
-        if (a instanceof PrimitiveStatement) this.stringifyGene(a);
+        if (a instanceof PrimitiveStatement) this.decodeStatement(a);
       })
       .join(", ");
 
@@ -26,7 +30,7 @@ export class SolidityTruffleStringifier implements Stringifier {
     }.deployed(${formattedArgs});`;
   }
 
-  stringifyGene(statement: Statement): string {
+  decodeStatement(statement: Statement): string {
     if (!(statement instanceof PrimitiveStatement)) {
       throw new Error(`${statement} is not a primitive statement`);
     }
@@ -42,7 +46,7 @@ export class SolidityTruffleStringifier implements Stringifier {
     }
   }
 
-  stringifyFunctionCall(statement: Statement, objectName: string): string {
+  decodeFunctionCall(statement: Statement, objectName: string): string {
     if (statement instanceof ObjectFunctionCall) {
       const args = (statement as ObjectFunctionCall).getChildren();
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
@@ -73,21 +77,21 @@ export class SolidityTruffleStringifier implements Stringifier {
     return "";
   }
 
-  stringifyIndividual(
-    individual: TestCase | TestCase[],
+  decodeTestCase(
+    testCase: TestCase | TestCase[],
     targetName: string,
     addLogs?: boolean,
     additionalAssertions?: Map<TestCase, { [p: string]: string }>
   ): string {
-    if (individual instanceof TestCase) {
-      individual = [individual];
+    if (testCase instanceof TestCase) {
+      testCase = [testCase];
     }
 
     let totalTestString = "";
 
     const imports: string[] = [];
 
-    for (const ind of individual) {
+    for (const ind of testCase) {
       let testString = "";
       let assertions = "";
 
@@ -124,11 +128,11 @@ export class SolidityTruffleStringifier implements Stringifier {
         const gene: Statement = stack.pop()!;
 
         if (gene instanceof ConstructorCall) {
-          testString += `\t\t${this.stringifyConstructor(gene)}\n`;
+          testString += `\t\t${this.decodeConstructor(gene)}\n`;
         } else if (gene instanceof PrimitiveStatement) {
-          testString += `\t\t${this.stringifyGene(gene)}\n`;
+          testString += `\t\t${this.decodeStatement(gene)}\n`;
         } else if (gene instanceof ObjectFunctionCall) {
-          testString += `\t\t${this.stringifyFunctionCall(
+          testString += `\t\t${this.decodeFunctionCall(
             gene,
             constructor.varName
           )}\n`;

@@ -28,7 +28,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     super(target);
   }
 
-  sampleIndividual(): TestCase {
+  sampleTestCase(): TestCase {
     const root = this.sampleConstructor(0);
 
     const nCalls = prng.nextInt(1, 5);
@@ -91,7 +91,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       if (type.includes("int")) {
         return this.sampleNumericGene(depth, type, bits);
       } else {
-        return this.sampleGene(depth, type);
+        return this.sampleStatement(depth, type);
       }
     }
 
@@ -109,7 +109,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       if (type.includes("int")) {
         return this.sampleNumericGene(depth, type, bits);
       } else {
-        return this.sampleGene(depth, type);
+        return this.sampleStatement(depth, type);
       }
     }
   }
@@ -144,7 +144,11 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
   }
 
-  sampleGene(depth: number, type: string, geneType = "primitive"): Statement {
+  sampleStatement(
+    depth: number,
+    type: string,
+    geneType = "primitive"
+  ): Statement {
     if (geneType === "primitive") {
       if (type === "bool") {
         return BoolStatement.getRandom();

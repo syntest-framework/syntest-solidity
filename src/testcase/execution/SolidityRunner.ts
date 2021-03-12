@@ -22,14 +22,14 @@ export class SolidityRunner extends TestCaseRunner {
     this.config = config;
   }
 
-  async runTest(testCase: TestCase): Promise<Datapoint[]> {
+  async runTestCase(testCase: TestCase): Promise<Datapoint[]> {
     // TODO very stupid but we have to create actual files for truffle to run...
 
     const testPath = path.join(
       getProperty("temp_test_directory"),
       "tempTest.js"
     );
-    await this.suiteBuilder.writeTest(
+    await this.suiteBuilder.writeTestCase(
       testPath,
       testCase,
       testCase.root.constructorName
@@ -60,7 +60,7 @@ export class SolidityRunner extends TestCaseRunner {
 
     this.api.resetInstrumentationData();
     // Remove test file
-    await this.suiteBuilder.deleteTest(testPath);
+    await this.suiteBuilder.deleteTestCase(testPath);
 
     const finalpoints = [];
 

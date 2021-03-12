@@ -16,7 +16,9 @@ export class AddressStatement extends PrimitiveStatement<string> {
 
   mutate(sampler: TestCaseSampler, depth: number): AddressStatement {
     if (prng.nextBoolean(getProperty("resample_gene_probability"))) {
-      return sampler.sampleGene(depth, this.type, "primitive");
+      return <AddressStatement>(
+        sampler.sampleStatement(depth, this.type, "primitive")
+      );
     }
 
     return this.copy();
