@@ -1,4 +1,4 @@
-export * from "./runner/SolidityRunner";
+export * from "./testcase/execution/SolidityRunner";
 
 export * from "./search/objective/SolidityTarget";
 export * from "./search/sampling/SolidityRandomSampler";

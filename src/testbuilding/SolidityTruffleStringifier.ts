@@ -3,7 +3,6 @@ import {
   getProperty,
   ObjectFunctionCall,
   PrimitiveStatement,
-  NumericStatement,
   Statement,
   StringStatement,
   Stringifier,

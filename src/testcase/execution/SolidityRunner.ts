@@ -2,15 +2,15 @@ import {
   Datapoint,
   getLogger,
   getProperty,
-  Runner,
+  TestCaseRunner,
   SuiteBuilder,
   TestCase,
 } from "syntest-framework";
 import * as path from "path";
 
-const truffleUtils = require("../../plugins/resources/truffle.utils");
+const truffleUtils = require("../../../plugins/resources/truffle.utils");
 
-export class SolidityRunner extends Runner {
+export class SolidityRunner extends TestCaseRunner {
   private api: any;
   private truffle: any;
   private config: any;

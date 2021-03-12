@@ -17,7 +17,7 @@ import {
 
 import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleStringifier";
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
-import { SolidityRunner } from "./runner/SolidityRunner";
+import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./search/sampling/SolidityRandomSampler";
 import { SolidityTarget } from "./index";
 import * as path from "path";
