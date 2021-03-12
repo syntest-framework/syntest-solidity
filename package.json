@@ -27,7 +27,7 @@
   },
   "scripts": {
     "build": "npm run build:compile",
-    "build:compile": "tsc --build",
+    "build:compile": "rm -rf dist; tsc --build",
     "build:watch": "tsc --build --watch",
     "clean": "rm -rf .nyc_output dist node_modules",
     "format": "prettier --write .",
