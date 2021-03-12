@@ -26,10 +26,11 @@
     "url": "git+https://github.com/syntest-framework/syntest-framework.git"
   },
   "scripts": {
-    "build": "npm run build:compile",
-    "build:compile": "rm -rf dist; tsc --build",
+    "build": "npm run clean:dist; npm run build:compile",
+    "build:compile": "tsc --build",
     "build:watch": "tsc --build --watch",
     "clean": "rm -rf .nyc_output dist node_modules",
+    "clean:dist": "rm -rf dist",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
