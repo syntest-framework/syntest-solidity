@@ -29,7 +29,11 @@ export class SolidityRunner extends Runner {
       getProperty("temp_test_directory"),
       "tempTest.js"
     );
-    await this.suiteBuilder.writeTest(testPath, testCase, "TODO");
+    await this.suiteBuilder.writeTest(
+      testPath,
+      testCase,
+      testCase.root.constructorName
+    );
 
     this.config.testDir = path.resolve(getProperty("temp_test_directory"));
     this.config.test_files = await truffleUtils.getTestFilePaths(this.config);
