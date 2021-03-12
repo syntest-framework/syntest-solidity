@@ -1,8 +1,8 @@
-export * from "./runner/SolidityRunner";
+export * from "./testcase/execution/SolidityRunner";
 
 export * from "./search/objective/SolidityTarget";
-export * from "./search/sampling/SolidityRandomSampler";
-export * from "./search/sampling/SoliditySampler";
+export * from "./testcase/sampling/SolidityRandomSampler";
+export * from "./testcase/sampling/SoliditySampler";
 
 export * from "./testbuilding/SoliditySuiteBuilder";
 export * from "./testbuilding/SolidityTruffleStringifier";

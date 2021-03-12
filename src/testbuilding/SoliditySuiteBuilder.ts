@@ -1,7 +1,7 @@
 import {
   getProperty,
   Objective,
-  Stringifier,
+  TestCaseDecoder,
   SuiteBuilder,
   TestCase,
 } from "syntest-framework";
@@ -18,27 +18,27 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
   private truffle: any;
   private config: any;
 
-  constructor(stringifier: Stringifier, api: any, truffle: any, config: any) {
-    super(stringifier);
+  constructor(decoder: TestCaseDecoder, api: any, truffle: any, config: any) {
+    super(decoder);
     this.api = api;
     this.truffle = truffle;
     this.config = config;
   }
 
-  async writeTest(
+  async writeTestCase(
     filePath: string,
     testCase: TestCase,
     targetName: string,
     addLogs = false,
     additionalAssertions?: Map<TestCase, { [p: string]: string }>
   ) {
-    let stringifiedTestCase = this.stringifier.stringifyIndividual(
+    const decodedTestCase = this.decoder.decodeTestCase(
       testCase,
       targetName,
       addLogs,
       additionalAssertions
     );
-    await writeFileSync(filePath, stringifiedTestCase);
+    await writeFileSync(filePath, decodedTestCase);
   }
 
   async createSuite(archive: Map<Objective, TestCase>) {
@@ -67,7 +67,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
           getProperty("temp_test_directory"),
           `test${key}${testCase.id}.js`
         );
-        await this.writeTest(testPath, testCase, "", true);
+        await this.writeTestCase(testPath, testCase, "", true);
       }
     }
 
@@ -116,7 +116,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       );
       await writeFileSync(
         testPath,
-        this.stringifier.stringifyIndividual(
+        this.decoder.decodeTestCase(
           reducedArchive.get(key)!,
           `${key}`,
           false,

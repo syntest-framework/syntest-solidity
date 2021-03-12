@@ -2,7 +2,7 @@ import {
   getProperty,
   PrimitiveStatement,
   prng,
-  Sampler,
+  TestCaseSampler,
 } from "syntest-framework";
 
 /**
@@ -14,9 +14,11 @@ export class AddressStatement extends PrimitiveStatement<string> {
     super(type, uniqueId, value);
   }
 
-  mutate(sampler: Sampler, depth: number): AddressStatement {
+  mutate(sampler: TestCaseSampler, depth: number): AddressStatement {
     if (prng.nextBoolean(getProperty("resample_gene_probability"))) {
-      return sampler.sampleGene(depth, this.type, "primitive");
+      return <AddressStatement>(
+        sampler.sampleStatement(depth, this.type, "primitive")
+      );
     }
 
     return this.copy();
@@ -27,7 +29,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   static getRandom(type = "string") {
-    let value = "accounts[0]";
+    const value = "accounts[0]";
 
     return new AddressStatement(type, prng.uniqueId(), value);
   }

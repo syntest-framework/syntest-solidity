@@ -1,17 +1,19 @@
 import {
   BoolStatement,
-  Constructor,
+  ConstructorCall,
   getProperty,
   NumericStatement,
   ObjectFunctionCall,
+  ActionStatement,
   prng,
   Statement,
   StringStatement,
   TestCase,
 } from "syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
-import { SolidityTarget } from "../..";
-import { AddressStatement } from "../../testcase/AddressStatement";
+import { AddressStatement } from "../AddressStatement";
+import BigNumber from "bignumber.js";
+import { SolidityTarget } from "../../search/objective/SolidityTarget";
 
 /**
  * SolidityRandomSampler class
@@ -26,32 +28,57 @@ export class SolidityRandomSampler extends SoliditySampler {
     super(target);
   }
 
-  sampleIndividual(): TestCase {
-    const action = prng.pickOne(this.target.getPossibleActions("function"));
-    const root = this.sampleObjectFunctionCall(0, action.returnType);
+  sampleTestCase(): TestCase {
+    const root = this.sampleConstructor(0);
 
+    const nCalls = prng.nextInt(1, 5);
+    for (let index = 0; index <= nCalls; index++) {
+      const call = this.sampleMethodCall(root);
+      root.setMethodCall(index, call as ActionStatement);
+    }
     return new TestCase(root);
   }
 
-  sampleConstructor(depth: number): Constructor {
-    let constructors = this.target.getPossibleActions("constructor");
+  sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
+    const action = prng.pickOne(this.target.getPossibleActions("function"));
+
+    const args: Statement[] = [];
+
+    for (const arg of action.args) {
+      if (arg.type != "") args.push(this.sampleArgument(1, arg.type, arg.bits));
+    }
+
+    const call = new ObjectFunctionCall(
+      action.returnType,
+      prng.uniqueId(),
+      root,
+      action.name,
+      args
+    );
+    return call;
+  }
+
+  sampleConstructor(depth: number): ConstructorCall {
+    const constructors = this.target.getPossibleActions("constructor");
     if (constructors.length > 0) {
       const action = prng.pickOne(
         this.target.getPossibleActions("constructor")
       );
       // TODO arguments for constructors
-      return new Constructor(
+      return new ConstructorCall(
         action.name,
         prng.uniqueId(),
         `${action.name}`,
+        [],
         []
       );
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
-      return new Constructor(
+      return new ConstructorCall(
         this.target.name,
         prng.uniqueId(),
         `${this.target.name}`,
+        [],
         []
       );
     }
@@ -64,7 +91,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       if (type.includes("int")) {
         return this.sampleNumericGene(depth, type, bits);
       } else {
-        return this.sampleGene(depth, type);
+        return this.sampleStatement(depth, type);
       }
     }
 
@@ -82,37 +109,46 @@ export class SolidityRandomSampler extends SoliditySampler {
       if (type.includes("int")) {
         return this.sampleNumericGene(depth, type, bits);
       } else {
-        return this.sampleGene(depth, type);
+        return this.sampleStatement(depth, type);
       }
     }
   }
 
   sampleNumericGene(depth: number, type: string, bits: number): Statement {
-    let max = Math.pow(2, bits) - 1;
+    let max = new BigNumber(2).pow(bits - 1).minus(1);
+
     if (type.includes("uint")) {
-      return NumericStatement.getRandom("uint", 0, max, false);
+      max = new BigNumber(2).pow(bits).minus(1);
+      return NumericStatement.getRandom(
+        "uint",
+        0,
+        false,
+        max,
+        new BigNumber(0)
+      );
     } else {
-      return NumericStatement.getRandom("int", 0, max, true);
+      return NumericStatement.getRandom("int", 0, true, max, max.negated());
     }
     if (type.includes("ufixed")) {
       return NumericStatement.getRandom(
         "ufixed",
         getProperty("numeric_decimals"),
-        max,
         false
       );
     } else {
       return NumericStatement.getRandom(
         "fixed",
         getProperty("numeric_decimals"),
-        max,
         true
       );
     }
   }
 
-  sampleGene(depth: number, type: string, geneType = "primitive"): Statement {
-    // TODO incorporate bits & decimals in the numeric types
+  sampleStatement(
+    depth: number,
+    type: string,
+    geneType = "primitive"
+  ): Statement {
     if (geneType === "primitive") {
       if (type === "bool") {
         return BoolStatement.getRandom();

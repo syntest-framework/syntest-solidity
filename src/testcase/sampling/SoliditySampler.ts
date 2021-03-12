@@ -1,7 +1,7 @@
 import {
-  Constructor,
+  ConstructorCall,
   ObjectFunctionCall,
-  Sampler,
+  TestCaseSampler,
   Statement,
 } from "syntest-framework";
 
@@ -10,8 +10,8 @@ import {
  *
  * @author Dimitri Stallenberg
  */
-export abstract class SoliditySampler extends Sampler {
-  abstract sampleConstructor(depth: number): Constructor;
+export abstract class SoliditySampler extends TestCaseSampler {
+  abstract sampleConstructor(depth: number): ConstructorCall;
   abstract sampleObjectFunctionCall(
     depth: number,
     type: string

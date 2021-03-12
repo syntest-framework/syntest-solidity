@@ -2,15 +2,15 @@ import {
   Datapoint,
   getLogger,
   getProperty,
-  Runner,
+  TestCaseRunner,
   SuiteBuilder,
   TestCase,
 } from "syntest-framework";
 import * as path from "path";
 
-const truffleUtils = require("../../plugins/resources/truffle.utils");
+const truffleUtils = require("../../../plugins/resources/truffle.utils");
 
-export class SolidityRunner extends Runner {
+export class SolidityRunner extends TestCaseRunner {
   private api: any;
   private truffle: any;
   private config: any;
@@ -22,14 +22,18 @@ export class SolidityRunner extends Runner {
     this.config = config;
   }
 
-  async runTest(testCase: TestCase): Promise<Datapoint[]> {
+  async runTestCase(testCase: TestCase): Promise<Datapoint[]> {
     // TODO very stupid but we have to create actual files for truffle to run...
 
     const testPath = path.join(
       getProperty("temp_test_directory"),
       "tempTest.js"
     );
-    await this.suiteBuilder.writeTest(testPath, testCase, "TODO");
+    await this.suiteBuilder.writeTestCase(
+      testPath,
+      testCase,
+      testCase.root.constructorName
+    );
 
     this.config.testDir = path.resolve(getProperty("temp_test_directory"));
     this.config.test_files = await truffleUtils.getTestFilePaths(this.config);
@@ -56,7 +60,7 @@ export class SolidityRunner extends Runner {
 
     this.api.resetInstrumentationData();
     // Remove test file
-    await this.suiteBuilder.deleteTest(testPath);
+    await this.suiteBuilder.deleteTestCase(testPath);
 
     const finalpoints = [];
 
