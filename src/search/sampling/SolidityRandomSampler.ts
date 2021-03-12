@@ -14,7 +14,7 @@ import { SoliditySampler } from "./SoliditySampler";
 import { SolidityTarget } from "../..";
 import { AddressStatement } from "../../testcase/AddressStatement";
 import BigNumber from "bignumber.js";
-import {pathToFileURL} from "url";
+import { pathToFileURL } from "url";
 
 /**
  * SolidityRandomSampler class
@@ -33,9 +33,9 @@ export class SolidityRandomSampler extends SoliditySampler {
     const root = this.sampleConstructor(0);
 
     const nCalls = prng.nextInt(1, 5);
-    for (let index = 0; index <= nCalls; index++){
-        const call = this.sampleMethodCall(root);
-        root.setMethodCall(index, call as ActionStatement);
+    for (let index = 0; index <= nCalls; index++) {
+      const call = this.sampleMethodCall(root);
+      root.setMethodCall(index, call as ActionStatement);
     }
     return new TestCase(root);
   }
