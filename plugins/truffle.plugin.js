@@ -4,8 +4,6 @@ const {
   setupOptions,
   createDirectoryStructure,
   deleteTempDirectories,
-} = require("syntest-framework");
-const {
   drawGraph,
   setupLogger,
   getLogger,
@@ -16,7 +14,6 @@ const {
   createCriterionFromConfig,
 } = require("syntest-framework");
 
-const API = require("../src/api");
 const utils = require("./resources/plugin.utils");
 const truffleUtils = require("./resources/truffle.utils");
 const PluginUI = require("./resources/truffle.ui");
@@ -31,6 +28,7 @@ const {
   SolidityRunner,
   SoliditySuiteBuilder,
   SolidityTruffleStringifier,
+    Api
 } = require("../dist/index");
 
 const program = "syntest-solidity";
@@ -71,7 +69,7 @@ async function plugin(config) {
     if (config.help) return ui.report("help"); // Exit if --help
 
     truffle = truffleUtils.loadLibrary(config);
-    api = new API(myConfig);
+    api = new Api(myConfig);
 
     truffleUtils.setNetwork(config, api);
 

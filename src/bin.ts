@@ -15,14 +15,17 @@ import {
   setupOptions,
 } from "syntest-framework";
 
-import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleStringifier";
-import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
-import { SolidityRunner } from "./testcase/execution/SolidityRunner";
-import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
-import { SolidityTarget } from "./index";
+import {
+  SolidityTarget,
+  SolidityRandomSampler,
+  SolidityRunner,
+  SoliditySuiteBuilder,
+  SolidityTruffleStringifier,
+  Api
+} from "./index";
+
 import * as path from "path";
 
-const API = require("./api.js");
 const utils = require("../plugins/resources/plugin.utils");
 const truffleUtils = require("../plugins/resources/truffle.utils");
 const Web3 = require("web3");
@@ -53,7 +56,7 @@ async function start() {
   setupLogger();
 
   const truffle = truffleUtils.loadLibrary(truffleConfig);
-  const api = new API(config);
+  const api = new Api(config);
 
   truffleUtils.setNetwork(truffleConfig, api);
 
