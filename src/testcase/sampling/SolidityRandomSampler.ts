@@ -14,6 +14,7 @@ import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../AddressStatement";
 import BigNumber from "bignumber.js";
 import { SolidityTarget } from "../../search/objective/SolidityTarget";
+import {ByteStatement} from "./ByteStatement";
 
 /**
  * SolidityRandomSampler class
@@ -158,6 +159,8 @@ export class SolidityRandomSampler extends SoliditySampler {
         return StringStatement.getRandom();
       } else if (type.includes("string")) {
         return StringStatement.getRandom();
+      } else if (type.startsWith("byte")){
+        return ByteStatement.getRandomInstance('bytes', 32, 0);
       } else if (type == "") {
         throw new Error(`Weird!`);
       }

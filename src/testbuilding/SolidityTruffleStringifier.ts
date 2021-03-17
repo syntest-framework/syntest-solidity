@@ -9,6 +9,7 @@ import {
   TestCase,
 } from "syntest-framework";
 import * as path from "path";
+import {ByteStatement} from "../testcase/sampling/ByteStatement";
 
 /**
  * @author Dimitri Stallenberg
@@ -41,6 +42,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       return `const ${statement.varName} = BigInt(\"${value}\")`;
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = \"${primitive.value}\"`;
+    } else if (statement instanceof ByteStatement) {
+      return `const ${statement.varName} = \"0x${primitive.value}\"`;
     } else {
       return `const ${statement.varName} = ${primitive.value}`;
     }
@@ -172,7 +175,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       if (additionalAssertions) {
         const assertion: any = additionalAssertions.get(ind);
         for (const variableName of Object.keys(assertion)) {
-          assertions += `\t\tassert.equal(${variableName}, ${assertion[variableName]})\n`;
+          if (!(assertion[variableName] === "[object Object]"))
+            assertions += `\t\tassert.equal(${variableName}, ${assertion[variableName]})\n`;
         }
       }
 
