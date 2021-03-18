@@ -20,15 +20,19 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     if (!(statement instanceof ConstructorCall))
       throw new Error(`${statement} is not a constructor`);
 
-    const formattedArgs = (statement as ConstructorCall).args
-      .map((a: Statement) => {
-        if (a instanceof PrimitiveStatement) this.decodeStatement(a);
-      })
-      .join(", ");
+    let string = "";
 
-    return `const ${statement.varName} = await ${
-      (statement as ConstructorCall).constructorName
-    }.deployed(${formattedArgs});`;
+    const args = (statement as ConstructorCall).args;
+    for (const arg of args){
+      if (arg instanceof PrimitiveStatement){
+        string = string + this.decodeStatement(arg) + "\n\t";
+      }
+    }
+    const formattedArgs = args.map((a: PrimitiveStatement<any>) => a.varName).join(", ");
+
+    return string + `\t` + `const ${statement.varName} = await ${
+        (statement as ConstructorCall).constructorName
+    }.new(${formattedArgs});`;
   }
 
   decodeStatement(statement: Statement): string {
@@ -39,11 +43,11 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     const primitive: PrimitiveStatement<any> = statement as PrimitiveStatement<any>;
     if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
       const value = primitive.value.toFixed();
-      return `const ${statement.varName} = BigInt(\"${value}\")`;
+      return `const ${statement.varName} = BigInt("${value}")`;
     } else if (statement instanceof StringStatement) {
-      return `const ${statement.varName} = \"${primitive.value}\"`;
+      return `const ${statement.varName} = "${primitive.value}"`;
     } else if (statement instanceof ByteStatement) {
-      return `const ${statement.varName} = \"0x${primitive.value}\"`;
+      return `const ${statement.varName} = "0x${primitive.value}"`;
     } else {
       return `const ${statement.varName} = ${primitive.value}`;
     }

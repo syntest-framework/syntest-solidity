@@ -65,12 +65,18 @@ export class SolidityRandomSampler extends SoliditySampler {
       const action = prng.pickOne(
         this.target.getPossibleActions("constructor")
       );
+
+      const args: Statement[] = [];
+      for (const arg of action.args) {
+        if (arg.type != "") args.push(this.sampleArgument(1, arg.type, arg.bits));
+      }
+
       // TODO arguments for constructors
       return new ConstructorCall(
         action.name,
         prng.uniqueId(),
         `${action.name}`,
-        [],
+          args,
         []
       );
     } else {
