@@ -14,7 +14,7 @@ import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../AddressStatement";
 import BigNumber from "bignumber.js";
 import { SolidityTarget } from "../../search/objective/SolidityTarget";
-import {ByteStatement} from "./ByteStatement";
+import { ByteStatement } from "./ByteStatement";
 
 /**
  * SolidityRandomSampler class
@@ -68,15 +68,15 @@ export class SolidityRandomSampler extends SoliditySampler {
 
       const args: Statement[] = [];
       for (const arg of action.args) {
-        if (arg.type != "") args.push(this.sampleArgument(1, arg.type, arg.bits));
+        if (arg.type != "")
+          args.push(this.sampleArgument(1, arg.type, arg.bits));
       }
 
-      // TODO arguments for constructors
       return new ConstructorCall(
         action.name,
         prng.uniqueId(),
         `${action.name}`,
-          args,
+        args,
         []
       );
     } else {
@@ -165,8 +165,8 @@ export class SolidityRandomSampler extends SoliditySampler {
         return StringStatement.getRandom();
       } else if (type.includes("string")) {
         return StringStatement.getRandom();
-      } else if (type.startsWith("byte")){
-        return ByteStatement.getRandomInstance('bytes', 32, 0);
+      } else if (type.startsWith("byte")) {
+        return this.sampleByteStatement(type);
       } else if (type == "") {
         throw new Error(`Weird!`);
       }
@@ -177,6 +177,18 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
 
     throw new Error(`Unknown type ${type} ${geneType}!`);
+  }
+
+  sampleByteStatement(type: string): ByteStatement {
+    if (type === "byte" || type === "bytes1")
+      return ByteStatement.getRandom("byte", 1);
+    else if (type === "bytes") {
+      return ByteStatement.getRandom("byte", prng.nextInt(1, 32));
+    } else {
+      const nBytes = type.replace("bytes", "");
+      const n = Number.parseInt(nBytes);
+      return ByteStatement.getRandom("byte", n);
+    }
   }
 
   sampleObjectFunctionCall(depth: number, type: string): ObjectFunctionCall {

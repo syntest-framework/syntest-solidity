@@ -9,7 +9,8 @@ import {
   TestCase,
 } from "syntest-framework";
 import * as path from "path";
-import {ByteStatement} from "../testcase/sampling/ByteStatement";
+import * as web3 from "web3-utils";
+import { ByteStatement } from "../testcase/sampling/ByteStatement";
 
 /**
  * @author Dimitri Stallenberg
@@ -23,16 +24,22 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     let string = "";
 
     const args = (statement as ConstructorCall).args;
-    for (const arg of args){
-      if (arg instanceof PrimitiveStatement){
+    for (const arg of args) {
+      if (arg instanceof PrimitiveStatement) {
         string = string + this.decodeStatement(arg) + "\n\t";
       }
     }
-    const formattedArgs = args.map((a: PrimitiveStatement<any>) => a.varName).join(", ");
+    const formattedArgs = args
+      .map((a: PrimitiveStatement<any>) => a.varName)
+      .join(", ");
 
-    return string + `\t` + `const ${statement.varName} = await ${
+    return (
+      string +
+      `\t` +
+      `const ${statement.varName} = await ${
         (statement as ConstructorCall).constructorName
-    }.new(${formattedArgs});`;
+      }.new(${formattedArgs});`
+    );
   }
 
   decodeStatement(statement: Statement): string {
@@ -47,7 +54,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = "${primitive.value}"`;
     } else if (statement instanceof ByteStatement) {
-      return `const ${statement.varName} = "0x${primitive.value}"`;
+      const bytes = web3.bytesToHex((statement as ByteStatement).value);
+      return `const ${statement.varName} = "${bytes}"`;
     } else {
       return `const ${statement.varName} = ${primitive.value}`;
     }
