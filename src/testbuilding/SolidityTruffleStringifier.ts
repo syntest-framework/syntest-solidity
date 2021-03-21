@@ -9,6 +9,8 @@ import {
   TestCase,
 } from "syntest-framework";
 import * as path from "path";
+import * as web3_utils from "web3-utils";
+import { ByteStatement } from "../testcase/sampling/ByteStatement";
 
 /**
  * @author Dimitri Stallenberg
@@ -19,15 +21,25 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     if (!(statement instanceof ConstructorCall))
       throw new Error(`${statement} is not a constructor`);
 
-    const formattedArgs = (statement as ConstructorCall).args
-      .map((a: Statement) => {
-        if (a instanceof PrimitiveStatement) this.decodeStatement(a);
-      })
+    let string = "";
+
+    const args = (statement as ConstructorCall).args;
+    for (const arg of args) {
+      if (arg instanceof PrimitiveStatement) {
+        string = string + this.decodeStatement(arg) + "\n\t";
+      }
+    }
+    const formattedArgs = args
+      .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
-    return `const ${statement.varName} = await ${
-      (statement as ConstructorCall).constructorName
-    }.deployed(${formattedArgs});`;
+    return (
+      string +
+      `\t` +
+      `const ${statement.varName} = await ${
+        (statement as ConstructorCall).constructorName
+      }.new(${formattedArgs});`
+    );
   }
 
   decodeStatement(statement: Statement): string {
@@ -38,9 +50,12 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     const primitive: PrimitiveStatement<any> = statement as PrimitiveStatement<any>;
     if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
       const value = primitive.value.toFixed();
-      return `const ${statement.varName} = BigInt(\"${value}\")`;
+      return `const ${statement.varName} = BigInt("${value}")`;
     } else if (statement instanceof StringStatement) {
-      return `const ${statement.varName} = \"${primitive.value}\"`;
+      return `const ${statement.varName} = "${primitive.value}"`;
+    } else if (statement instanceof ByteStatement) {
+      const bytes = web3_utils.bytesToHex((statement as ByteStatement).value);
+      return `const ${statement.varName} = "${bytes}"`;
     } else {
       return `const ${statement.varName} = ${primitive.value}`;
     }
@@ -172,7 +187,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       if (additionalAssertions) {
         const assertion: any = additionalAssertions.get(ind);
         for (const variableName of Object.keys(assertion)) {
-          assertions += `\t\tassert.equal(${variableName}, ${assertion[variableName]})\n`;
+          if (!(assertion[variableName] === "[object Object]"))
+            assertions += `\t\tassert.equal(${variableName}, ${assertion[variableName]})\n`;
         }
       }
 
