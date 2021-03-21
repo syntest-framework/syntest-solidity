@@ -168,7 +168,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       } else if (type.startsWith("byte")) {
         return this.sampleByteStatement(type);
       } else if (type == "") {
-        throw new Error(`Weird!`);
+        throw new Error(`Type "" not recognized. It must be a bug in our parser!`);
       }
     } else if (geneType === "functionCall") {
       return this.sampleObjectFunctionCall(depth, type);
