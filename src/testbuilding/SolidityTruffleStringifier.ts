@@ -9,7 +9,7 @@ import {
   TestCase,
 } from "syntest-framework";
 import * as path from "path";
-import * as web3 from "web3-utils";
+import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/sampling/ByteStatement";
 
 /**
@@ -54,7 +54,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = "${primitive.value}"`;
     } else if (statement instanceof ByteStatement) {
-      const bytes = web3.bytesToHex((statement as ByteStatement).value);
+      const bytes = web3_utils.bytesToHex((statement as ByteStatement).value);
       return `const ${statement.varName} = "${bytes}"`;
     } else {
       return `const ${statement.varName} = ${primitive.value}`;
