@@ -96,8 +96,7 @@ export class SolidityTarget extends Target {
       });
 
       let visibility = "public";
-      if (fn.functionDefinition.includes(" private "))
-        visibility = "private";
+      if (fn.functionDefinition.includes(" private ")) visibility = "private";
       else if (fn.functionDefinition.includes(" internal "))
         visibility = "internal";
       else if (fn.functionDefinition.includes(" external "))
