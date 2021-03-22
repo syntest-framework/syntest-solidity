@@ -39,8 +39,14 @@ export class SolidityTarget extends Target {
     const possibleTargets: FunctionDescription[] = [];
 
     const fnMap = this.functionMap;
+
     for (const key of Object.keys(fnMap)) {
       const fn = fnMap[key];
+
+      // Check whether the function is testable, i.e. private and internal functions cannot be accessed
+      if (fn.functionDefinition.includes('internal') || fn.functionDefinition.includes('private')) {
+        continue
+      }
 
       const args = fn.functionDefinition
         .slice(
