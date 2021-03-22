@@ -95,9 +95,18 @@ export class SolidityTarget extends Target {
         return arg;
       });
 
+      let visibility = "public";
+      if (fn.functionDefinition.includes(" private "))
+        visibility = "private";
+      else if (fn.functionDefinition.includes(" internal "))
+        visibility = "internal";
+      else if (fn.functionDefinition.includes(" external "))
+        visibility = "external";
+
       possibleTargets.push({
         name: name,
         type: type,
+        visibility: visibility,
         returnType: returnType,
         args: argumentDescriptions,
       });
@@ -110,6 +119,7 @@ export class SolidityTarget extends Target {
 export interface FunctionDescription extends ActionDescription {
   name: string;
   type: string;
+  visibility: string;
   returnType: string;
   args: ArgumentDescription[];
 }

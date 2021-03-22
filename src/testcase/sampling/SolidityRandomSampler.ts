@@ -41,7 +41,10 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
-    const action = prng.pickOne(this.target.getPossibleActions("function"));
+    const actions =  this.target.getPossibleActions("function").filter(
+        (a) => a.visibility === "public" || a.visibility === "external"
+    );
+    const action = prng.pickOne(actions);
 
     const args: Statement[] = [];
 
@@ -214,3 +217,4 @@ export class SolidityRandomSampler extends SoliditySampler {
     );
   }
 }
+
