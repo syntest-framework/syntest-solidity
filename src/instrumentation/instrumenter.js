@@ -1,9 +1,9 @@
-const SolidityParser = require("@solidity-parser/parser");
-const path = require("path");
+const SolidityParser = require('@solidity-parser/parser');
+const path = require('path');
 
-const Injector = require("./injector");
-const preprocess = require("./preprocessor");
-const parse = require("./parse");
+const Injector = require('./injector');
+const preprocess = require('solidity-coverage/lib/preprocessor');
+const parse = require('./parse');
 
 const { finalizeCFG } = require("syntest-framework");
 
@@ -13,9 +13,12 @@ const { finalizeCFG } = require("syntest-framework");
  * per coverage run.
  */
 class Instrumenter {
-  constructor() {
+
+  constructor(config={}){
     this.instrumentationData = {};
     this.injector = new Injector();
+    this.measureStatementCoverage = (config.measureStatementCoverage === false) ? false : true;
+    this.measureFunctionCoverage = (config.measureFunctionCoverage === false) ? false: true;
   }
 
   _isRootNode(node) {
@@ -26,7 +29,7 @@ class Instrumenter {
     );
   }
 
-  _initializeCoverageFields(contract) {
+  _initializeCoverageFields(contract){
     contract.runnableLines = [];
     contract.fnMap = {};
     contract.fnId = 0;
@@ -39,9 +42,9 @@ class Instrumenter {
 
   /**
    * Per `contractSource`:
-   * - wraps any unbracketed singleton consequents of if, for, while stmts (preprocessor.js)
+   * - wraps any unbracketed singleton consequents of if, for, while stmts
    * - walks the file's AST, creating an instrumentation map (parse.js, registrar.js)
-   * - injects `instrumentation` solidity statements into the target solidity source (injector.js)
+   * - injects `instrumentation` solidity statements into the target solidity source
    *
    * @param  {String} contractSource  solidity source code
    * @param  {String} fileName        absolute path to source file
@@ -61,6 +64,10 @@ class Instrumenter {
 
     this._initializeCoverageFields(contract);
 
+    parse.configureStatementCoverage(this.measureStatementCoverage)
+    parse.configureFunctionCoverage(this.measureFunctionCoverage)
+
+
     // create temp control flow graph
     let cfg = {
       nodes: [],
@@ -69,6 +76,7 @@ class Instrumenter {
 
     // First, we run over the original contract to get the source mapping.
     let ast = SolidityParser.parse(contract.source, { loc: true, range: true });
+    //console.log(JSON.stringify(ast, null, ' '))		    parse[ast.type](contract, ast, cfg);
     parse[ast.type](contract, ast, cfg);
     const retValue = JSON.parse(JSON.stringify(contract)); // Possibly apotropaic.
 

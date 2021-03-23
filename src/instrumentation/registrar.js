@@ -157,14 +157,14 @@ class Registrar {
 
   /**
    * Registers injections for branch measurements. This generic is consumed by
-   * the `assert/require` and `if` registration methods.
+   * the `require` and `if` registration methods.
    * @param  {Object} contract   instrumentation target
    * @param  {Object} expression AST node
    */
   addNewBranch(contract, expression) {
     const startContract = contract.instrumented.slice(0, expression.range[0]);
-    const startline = (startContract.match(/\n/g) || []).length + 1;
-    const startcol = expression.range[0] - startContract.lastIndexOf("\n") - 1;
+    const startline = ( startContract.match(/\n/g) || [] ).length + 1;
+    const startcol = expression.range[0] - startContract.lastIndexOf('\n') - 1;
 
     contract.branchId += 1;
 
@@ -172,48 +172,51 @@ class Registrar {
     // length and associated with the start of the if.
     contract.branchMap[contract.branchId] = {
       line: startline,
-      type: "if",
-      locations: [
-        {
-          start: {
-            line: startline,
-            column: startcol,
-          },
-          end: {
-            line: startline,
-            column: startcol,
-          },
+      type: 'if',
+      locations: [{
+        start: {
+          line: startline, column: startcol,
         },
-        {
-          start: {
-            line: startline,
-            column: startcol,
-          },
-          end: {
-            line: startline,
-            column: startcol,
-          },
+        end: {
+          line: startline, column: startcol,
         },
-      ],
+      }, {
+        start: {
+          line: startline, column: startcol,
+        },
+        end: {
+          line: startline, column: startcol,
+        },
+      }],
     };
-  }
+  };
 
   /**
-   * Registers injections for assert/require statement measurements (branches)
+   * Registers injections for require statement measurements (branches)
    * @param  {Object} contract   instrumentation target
    * @param  {Object} expression AST node
    */
-  assertOrRequire(contract, expression) {
+  requireBranch(contract, expression) {
     this.addNewBranch(contract, expression);
-    this._createInjectionPoint(contract, expression.range[0], {
-      type: "injectAssertPre",
-      branchId: contract.branchId,
-    });
-    this._createInjectionPoint(contract, expression.range[1] + 2, {
-      type: "injectAssertPost",
-      branchId: contract.branchId,
-    });
-  }
+    this._createInjectionPoint(
+        contract,
+        expression.range[0],
+        {
+          type: 'injectRequirePre',
+          branchId: contract.branchId,
+          line:  expression.loc.start.line
+        }
+    );
+    this._createInjectionPoint(
+        contract,
+        expression.range[1] + 2,
+        {
+          type: 'injectRequirePost',
+          branchId: contract.branchId,
+          line:  expression.loc.start.line
+        }
+    );
+  };
 
   /**
    * Registers injections for if statement measurements (branches)
