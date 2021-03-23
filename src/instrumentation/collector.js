@@ -42,7 +42,7 @@ class DataCollector {
         if (this.instrumentationData[hash]) {
           this.instrumentationData[hash].hits++;
 
-          if (this.instrumentationData[hash].type === "branch") {
+          if (this.instrumentationData[hash].type === "branch" || this.instrumentationData[hash].type === "requirePre") {
             this.instrumentationData[hash].left = this.lastComparison.left;
             this.instrumentationData[hash].right = this.lastComparison.right;
             this.instrumentationData[hash].opcode = this.lastComparison.opcode;
