@@ -1,18 +1,13 @@
 const web3Utils = require("web3-utils");
+const SolidityCollector = require("solidity-coverage/lib/injector")
 
 /**
- * Writes data from the VM step to the in-memory
- * coverage map constructed by the Instrumenter.
+ * @author Annibale Panichella
+ * @author Dimitri Stallenberg
  */
-class DataCollector {
+class DataCollector extends SolidityCollector {
   constructor(instrumentationData = {}) {
-    this.instrumentationData = instrumentationData;
-
-    this.validOpcodes = {
-      PUSH1: true,
-    };
-
-    this.lastComparison = {};
+    super(instrumentationData);
   }
 
   /**
@@ -57,42 +52,6 @@ class DataCollector {
     }
   }
 
-  /**
-   * Normalizes has string and marks hit.
-   * @param  {String} hash bytes32 hash
-   */
-  _registerHash(hash){
-    hash = this._normalizeHash(hash);
-
-    if(this.instrumentationData[hash]){
-      this.instrumentationData[hash].hits++;
-    }
-  }
-
-  /**
-   * Left-pads zero prefixed bytes 32 hashes to length 66. The '59' in the
-   * comparison below is arbitrary. It provides a margin for recurring zeros
-   * but prevents left-padding shorter irrelevant hashes (like fn sigs)
-   *
-   * @param  {String} hash  data hash from evm stack.
-   * @return {String}       0x prefixed hash of length 66.
-   */
-  _normalizeHash(hash){
-    if (hash.length < 66 && hash.length > 59){
-      hash = hash.slice(2);
-      while(hash.length < 64) hash = '0' + hash;
-      hash = '0x' + hash
-    }
-    return hash;
-  }
-
-  /**
-   * Unit test helper
-   * @param {Object} data  Instrumenter.instrumentationData
-   */
-  _setInstrumentationData(data){
-    this.instrumentationData = data;
-  }
 }
 
 module.exports = DataCollector;
