@@ -1,65 +1,17 @@
 const web3Utils = require("web3-utils");
+const Injection_covergae = require("solidity-coverage/lib/injector");
 
-class Injector {
+/**
+ * @author Annibale Panichella
+ * @author Dimitri Stallenberg
+ */
+class Injector extends Injection_covergae {
   constructor() {
-    this.hashCounter = 0;
-  }
-
-  _split(contract, injectionPoint) {
-    return {
-      start: contract.instrumented.slice(0, injectionPoint),
-      end: contract.instrumented.slice(injectionPoint),
-    };
-  }
-
-  _getInjectable(id, hash, type) {
-    return `${this._getMethodIdentifier(id)}(${hash}); /* ${type} */ \n`;
-  }
-
-  _getHash(id) {
-    this.hashCounter++;
-    return web3Utils.keccak256(`${id}:${this.hashCounter}`);
+    super()
   }
 
   _getMethodIdentifier(id) {
     return `coverage_${web3Utils.keccak256(id).slice(0, 10)}`;
-  }
-
-  _getInjectionComponents(contract, injectionPoint, id, type){
-    const { start, end } = this._split(contract, injectionPoint);
-    const hash = this._getHash(id)
-    const injectable = this._getInjectable(id, hash, type);
-
-    return {
-      start: start,
-      end: end,
-      hash: hash,
-      injectable: injectable
-    }
-  }
-
-  /**
-   * Generates an instrumentation fn definition for contract scoped methods.
-   * Declared once per contract.
-   * @param  {String} id
-   * @return {String}
-   */
-  _getHashMethodDefinition(id, contract){
-    const hash = web3Utils.keccak256(id).slice(0,10);
-    const method = this._getMethodIdentifier(id);
-    return `\nfunction ${method}(bytes32 c__${hash}) public pure {}\n`;
-  }
-
-  /**
-   * Generates an instrumentation fn definition for file scoped methods.
-   * Declared once per file. (Has no visibility modifier)
-   * @param  {String} id
-   * @return {String}
-   */
-  _getFileScopedHashMethodDefinition(id, contract){
-    const hash = web3Utils.keccak256(id).slice(0,10);
-    const method = this._getMethodIdentifier(id);
-    return `\nfunction ${method}(bytes32 c__${hash}) pure {}\n`;
   }
 
   injectLine(contract, fileName, injectionPoint, injection, instrumentation){
