@@ -1,10 +1,6 @@
 const web3Utils = require("web3-utils");
 const injection_coverage = require("solidity-coverage/lib/injector");
 
-/**
- * @author Annibale Panichella
- * @author Dimitri Stallenberg
- */
 class Injector extends injection_coverage {
   constructor() {
     super()
@@ -169,16 +165,6 @@ class Injector extends injection_coverage {
     }
 
     contract.instrumented = `${start}${injectable}${end}`;
-  }
-
-  injectHashMethod(contract, fileName, injectionPoint, injection, instrumentation){
-    const start = contract.instrumented.slice(0, injectionPoint);
-    const end = contract.instrumented.slice(injectionPoint);
-    const id = `${fileName}:${injection.contractName}`;
-
-    contract.instrumented = (injection.isFileScoped)
-        ? `${start}${this._getFileScopedHashMethodDefinition(id)}${end}`
-        : `${start}${this._getHashMethodDefinition(id)}${end}`;
   }
 };
 
