@@ -1,11 +1,11 @@
 const web3Utils = require("web3-utils");
-const Injection_covergae = require("solidity-coverage/lib/injector");
+const injection_coverage = require("solidity-coverage/lib/injector");
 
 /**
  * @author Annibale Panichella
  * @author Dimitri Stallenberg
  */
-class Injector extends Injection_covergae {
+class Injector extends injection_coverage {
   constructor() {
     super()
   }
