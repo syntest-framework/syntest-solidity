@@ -1,61 +1,24 @@
 const SolidityParser = require('@solidity-parser/parser');
-const path = require('path');
 
-const Injector = require('./injector');
+const SyntestInjector = require('./injector');
 const preprocess = require('solidity-coverage/lib/preprocessor');
+const Instrumented = require('solidity-coverage/lib/instrumenter')
 const parse = require('./parse');
 
 const { finalizeCFG } = require("syntest-framework");
 
 /**
- * Top level controller for the instrumentation sequence. Also hosts the instrumentation data map
- * which the vm step listener writes its output to. This only needs to be instantiated once
- * per coverage run.
+ * @author Annibale Panichella
+ * @author Dimitri Stallenberg
  */
-class Instrumenter {
+class SyntestInstrumenter extends Instrumented {
 
   constructor(config={}){
-    this.instrumentationData = {};
-    this.injector = new Injector();
-    this.measureStatementCoverage = (config.measureStatementCoverage === false) ? false : true;
-    this.measureFunctionCoverage = (config.measureFunctionCoverage === false) ? false: true;
+    super(config);
+    this.injector = new SyntestInjector();
   }
 
-  _isRootNode(node) {
-    return (
-      node.type === "ContractDefinition" ||
-      node.type === "LibraryDefinition" ||
-      node.type === "InterfaceDefinition"
-    );
-  }
 
-  _initializeCoverageFields(contract){
-    contract.runnableLines = [];
-    contract.fnMap = {};
-    contract.fnId = 0;
-    contract.branchMap = {};
-    contract.branchId = 0;
-    contract.statementMap = {};
-    contract.statementId = 0;
-    contract.injectionPoints = {};
-  }
-
-  /**
-   * Per `contractSource`:
-   * - wraps any unbracketed singleton consequents of if, for, while stmts
-   * - walks the file's AST, creating an instrumentation map (parse.js, registrar.js)
-   * - injects `instrumentation` solidity statements into the target solidity source
-   *
-   * @param  {String} contractSource  solidity source code
-   * @param  {String} fileName        absolute path to source file
-   * @return {Object}                 instrumented `contract` object
-   * {
-   *   contract: instrumented solidity source code,
-   *   contractName: contract name,
-   *   runnableLines: integer
-   * }
-   *
-   */
   instrument(contractSource, fileName) {
     const contract = {};
 
@@ -140,4 +103,4 @@ class Instrumenter {
   }
 }
 
-module.exports = Instrumenter;
+module.exports = SyntestInstrumenter;
