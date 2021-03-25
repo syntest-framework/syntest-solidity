@@ -1,13 +1,11 @@
+const Registrar = require("solidity-coverage/lib/registrar");
+
 /**
- * Registers injections points (e.g source location, type) and their associated data with
- * a contract / instrumentation target. Run during the `parse` step. This data is
- * consumed by the Injector as it modifies the source code in instrumentation's final step.
+ *
  */
-class Registrar {
+class SyntestRegistrar extends Registrar {
   constructor() {
-    // Sometimes we don't want to inject statements
-    // because they're an unnecessary expense. ex: `receive`
-    this.trackStatements = true;
+    super();
   }
 
   /**
@@ -281,4 +279,4 @@ class Registrar {
   }
 }
 
-module.exports = Registrar;
+module.exports = SyntestRegistrar;
