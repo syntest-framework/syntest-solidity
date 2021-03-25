@@ -1,11 +1,11 @@
 const web3Utils = require("web3-utils");
-const SolidityCollector = require("solidity-coverage/lib/injector")
+const DataCollector = require("solidity-coverage/lib/injector")
 
 /**
  * @author Annibale Panichella
  * @author Dimitri Stallenberg
  */
-class DataCollector extends SolidityCollector {
+class SyntestDataCollector extends DataCollector {
   constructor(instrumentationData = {}) {
     super(instrumentationData);
     this.instrumentationData = instrumentationData;
@@ -77,4 +77,4 @@ class DataCollector extends SolidityCollector {
   }
 }
 
-module.exports = DataCollector;
+module.exports = SyntestDataCollector;

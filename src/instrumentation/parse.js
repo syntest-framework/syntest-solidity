@@ -1,8 +1,3 @@
-/**
- * Methods in this file walk the AST and call the instrumenter
- * functions where appropriate, which determine where to inject events.
- * (Listed in alphabetical order)
- */
 const semver = require('semver');
 const Registrar = require("./registrar");
 const register = new Registrar();

@@ -1,7 +1,7 @@
 const web3Utils = require("web3-utils");
-const injection_coverage = require("solidity-coverage/lib/injector");
+const Injector = require("solidity-coverage/lib/injector");
 
-class Injector extends injection_coverage {
+class SyntestInjector extends Injector {
   constructor() {
     super()
   }
@@ -168,4 +168,4 @@ class Injector extends injection_coverage {
   }
 };
 
-module.exports = Injector;
+module.exports = SyntestInjector;

@@ -21,7 +21,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
       );
     }
 
-    return this.copy();
+    return AddressStatement.getRandom();
   }
 
   copy(): AddressStatement {
@@ -29,7 +29,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   static getRandom(type = "string") {
-    const value = "accounts[0]";
+    const value = `accounts[${prng.nextInt(0, 10)}]`;
 
     return new AddressStatement(type, prng.uniqueId(), value);
   }
