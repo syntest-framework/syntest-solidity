@@ -69,25 +69,10 @@ class SyntestRegistrar extends Registrar {
    * @param  {Object} expression AST node
    */
   functionDeclaration(contract, expression) {
-    let start = 0;
-
-    // It's possible functions will have modifiers that take string args
-    // which contains an open curly brace. Skip ahead...
-    if (expression.modifiers && expression.modifiers.length){
-      for (let modifier of expression.modifiers ){
-        if (modifier.range[1]+1 > start){
-          start = modifier.range[1]+1;
-        }
-      }
-    } else {
-      start = expression.range[0];
-    }
+    let start = expression.range[0];
 
     const startContract = contract.instrumented.slice(0, start);
     const startline = ( startContract.match(/\n/g) || [] ).length + 1;
-    const startcol = start - startContract.lastIndexOf('\n') - 1;
-
-    const temp = contract.instrumented.slice(start);
     const endlineDelta = contract.instrumented.slice(start).indexOf('{');
     const functionDefinition = contract.instrumented.slice(
         start,
