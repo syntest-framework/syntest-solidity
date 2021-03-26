@@ -30,7 +30,8 @@ export class SolidityTarget extends Target {
     return this._functionCalls!.filter((f) => {
       return (
         (type === undefined || f.type === type) &&
-        (returnType === undefined || f.returnType === returnType)
+        (returnType === undefined || f.returnType === returnType) &&
+        (f.visibility === "public" || f.visibility === "external")
       );
     });
   }
