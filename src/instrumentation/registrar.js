@@ -64,51 +64,6 @@ class SyntestRegistrar extends Registrar {
   }
 
   /**
-   * Registers injections for line measurements
-   * @param  {Object} contract   instrumentation target
-   * @param  {Object} expression AST node
-   */
-  line(contract, expression) {
-    const startchar = expression.range[0];
-    const endchar = expression.range[1] + 1;
-    const lastNewLine = contract.instrumented
-      .slice(0, startchar)
-      .lastIndexOf("\n");
-    const nextNewLine =
-      startchar + contract.instrumented.slice(startchar).indexOf("\n");
-    const contractSnipped = contract.instrumented.slice(
-      lastNewLine,
-      nextNewLine
-    );
-    const restOfLine = contract.instrumented.slice(endchar, nextNewLine);
-
-    if (
-      contract.instrumented.slice(lastNewLine, startchar).trim().length === 0 &&
-      (restOfLine.replace(";", "").trim().length === 0 ||
-        restOfLine.replace(";", "").trim().substring(0, 2) === "//")
-    ) {
-      this._createInjectionPoint(contract, lastNewLine + 1, {
-        type: "injectLine",
-        line: expression.loc.start.line,
-      });
-    } else if (
-      contract.instrumented
-        .slice(lastNewLine, startchar)
-        .replace("{", "")
-        .trim().length === 0 &&
-      contract.instrumented
-        .slice(endchar, nextNewLine)
-        .replace(/[;}]/g, "")
-        .trim().length === 0
-    ) {
-      this._createInjectionPoint(contract, expression.range[0], {
-        type: "injectLine",
-        line: expression.loc.start.line,
-      });
-    }
-  }
-
-  /**
    * Registers injections for function measurements
    * @param  {Object} contract   instrumentation target
    * @param  {Object} expression AST node
@@ -118,10 +73,10 @@ class SyntestRegistrar extends Registrar {
 
     // It's possible functions will have modifiers that take string args
     // which contains an open curly brace. Skip ahead...
-    if (expression.modifiers && expression.modifiers.length) {
-      for (let modifier of expression.modifiers) {
-        if (modifier.range[1] > start) {
-          start = modifier.range[1];
+    if (expression.modifiers && expression.modifiers.length){
+      for (let modifier of expression.modifiers ){
+        if (modifier.range[1]+1 > start){
+          start = modifier.range[1]+1;
         }
       }
     } else {
@@ -129,13 +84,14 @@ class SyntestRegistrar extends Registrar {
     }
 
     const startContract = contract.instrumented.slice(0, start);
-    const startline = (startContract.match(/\n/g) || []).length + 1;
-    const startcol = start - startContract.lastIndexOf("\n") - 1;
+    const startline = ( startContract.match(/\n/g) || [] ).length + 1;
+    const startcol = start - startContract.lastIndexOf('\n') - 1;
 
-    const endlineDelta = contract.instrumented.slice(start).indexOf("{");
+    const temp = contract.instrumented.slice(start);
+    const endlineDelta = contract.instrumented.slice(start).indexOf('{');
     const functionDefinition = contract.instrumented.slice(
-      start,
-      start + endlineDelta
+        start,
+        start + endlineDelta
     );
 
     contract.fnId += 1;
@@ -152,42 +108,6 @@ class SyntestRegistrar extends Registrar {
       line: expression.loc.start.line,
     });
   }
-
-  /**
-   * Registers injections for branch measurements. This generic is consumed by
-   * the `require` and `if` registration methods.
-   * @param  {Object} contract   instrumentation target
-   * @param  {Object} expression AST node
-   */
-  addNewBranch(contract, expression) {
-    const startContract = contract.instrumented.slice(0, expression.range[0]);
-    const startline = ( startContract.match(/\n/g) || [] ).length + 1;
-    const startcol = expression.range[0] - startContract.lastIndexOf('\n') - 1;
-
-    contract.branchId += 1;
-
-    // NB locations for if branches in istanbul are zero
-    // length and associated with the start of the if.
-    contract.branchMap[contract.branchId] = {
-      line: startline,
-      type: 'if',
-      locations: [{
-        start: {
-          line: startline, column: startcol,
-        },
-        end: {
-          line: startline, column: startcol,
-        },
-      }, {
-        start: {
-          line: startline, column: startcol,
-        },
-        end: {
-          line: startline, column: startcol,
-        },
-      }],
-    };
-  };
 
   /**
    * Registers injections for require statement measurements (branches)
