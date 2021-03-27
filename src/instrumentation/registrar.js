@@ -71,10 +71,14 @@ class SyntestRegistrar extends Registrar {
   functionDeclaration(contract, expression) {
     let start = expression.range[0];
 
-    const startContract = contract.instrumented.slice(0, start);
+    const instrumented = this.removeModifier(contract, expression);
+
+    const startContract = instrumented.slice(0, start);
     const startline = ( startContract.match(/\n/g) || [] ).length + 1;
-    const endlineDelta = contract.instrumented.slice(start).indexOf('{');
-    const functionDefinition = contract.instrumented.slice(
+    const startcol = start - startContract.lastIndexOf('\n') - 1;
+    
+    const endlineDelta = instrumented.slice(start).indexOf('{');
+    const functionDefinition = instrumented.slice(
         start,
         start + endlineDelta
     );
@@ -92,6 +96,23 @@ class SyntestRegistrar extends Registrar {
       fnId: contract.fnId,
       line: expression.loc.start.line,
     });
+  }
+
+  removeModifier(contract, expression) {
+    let copy = contract.instrumented;
+
+    // It's possible functions will have modifiers that take string args
+    // which contains an open curly brace. Skip ahead...
+    if (expression.modifiers && expression.modifiers.length){
+      for (let modifier of expression.modifiers ){
+        let str = "";
+        for (let index = modifier.range[0]; index <= modifier.range[1]; index++)
+          str = str + " ";
+
+        copy = copy.substring(0, modifier.range[0]) + str + copy.substring(modifier.range[1]+1, copy.length);
+      }
+    }
+    return copy;
   }
 
   /**
