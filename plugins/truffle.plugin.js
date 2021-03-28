@@ -4,8 +4,6 @@ const {
   setupOptions,
   createDirectoryStructure,
   deleteTempDirectories,
-} = require("syntest-framework");
-const {
   drawGraph,
   setupLogger,
   getLogger,
@@ -24,6 +22,7 @@ const pkg = require("./../package.json");
 const death = require("death");
 const path = require("path");
 const Web3 = require("web3");
+const SolidityParser = require('@solidity-parser/parser');
 
 const {
   SolidityTarget,
@@ -31,6 +30,7 @@ const {
   SolidityRunner,
   SoliditySuiteBuilder,
   SolidityTruffleStringifier,
+  SolidityCFGFactory
 } = require("../dist/index");
 
 const program = "syntest-solidity";
@@ -147,6 +147,7 @@ async function plugin(config) {
     );
 
     let finalArchive = new Map();
+    const cfgFactory = new SolidityCFGFactory()
 
     for (let target of targets) {
       getLogger().debug(`Testing target: ${target.relativePath}`);
@@ -154,8 +155,10 @@ async function plugin(config) {
         continue;
       }
 
+      const ast = SolidityParser.parse(target.source, { loc: true, range: true });
+
       const targetName = target.instrumented.contractName;
-      const targetCFG = target.instrumented.cfg;
+      const targetCFG = cfgFactory.convertAST(ast);
       const targetFnMap = target.instrumented.fnMap;
 
       drawGraph(
