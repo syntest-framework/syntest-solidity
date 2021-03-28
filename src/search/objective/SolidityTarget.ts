@@ -96,10 +96,11 @@ export class SolidityTarget extends Target {
       });
 
       possibleTargets.push({
+        visibility: "",
         name: name,
         type: type,
         returnType: returnType,
-        args: argumentDescriptions,
+        args: argumentDescriptions
       });
     }
 
