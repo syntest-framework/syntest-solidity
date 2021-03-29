@@ -1,13 +1,11 @@
+const Registrar = require("solidity-coverage/lib/registrar");
+
 /**
- * Registers injections points (e.g source location, type) and their associated data with
- * a contract / instrumentation target. Run during the `parse` step. This data is
- * consumed by the Injector as it modifies the source code in instrumentation's final step.
+ *
  */
-class Registrar {
+class SyntestRegistrar extends Registrar {
   constructor() {
-    // Sometimes we don't want to inject statements
-    // because they're an unnecessary expense. ex: `receive`
-    this.trackStatements = true;
+    super();
   }
 
   /**
@@ -66,79 +64,21 @@ class Registrar {
   }
 
   /**
-   * Registers injections for line measurements
-   * @param  {Object} contract   instrumentation target
-   * @param  {Object} expression AST node
-   */
-  line(contract, expression) {
-    const startchar = expression.range[0];
-    const endchar = expression.range[1] + 1;
-    const lastNewLine = contract.instrumented
-      .slice(0, startchar)
-      .lastIndexOf("\n");
-    const nextNewLine =
-      startchar + contract.instrumented.slice(startchar).indexOf("\n");
-    const contractSnipped = contract.instrumented.slice(
-      lastNewLine,
-      nextNewLine
-    );
-    const restOfLine = contract.instrumented.slice(endchar, nextNewLine);
-
-    if (
-      contract.instrumented.slice(lastNewLine, startchar).trim().length === 0 &&
-      (restOfLine.replace(";", "").trim().length === 0 ||
-        restOfLine.replace(";", "").trim().substring(0, 2) === "//")
-    ) {
-      this._createInjectionPoint(contract, lastNewLine + 1, {
-        type: "injectLine",
-        line: expression.loc.start.line,
-      });
-    } else if (
-      contract.instrumented
-        .slice(lastNewLine, startchar)
-        .replace("{", "")
-        .trim().length === 0 &&
-      contract.instrumented
-        .slice(endchar, nextNewLine)
-        .replace(/[;}]/g, "")
-        .trim().length === 0
-    ) {
-      this._createInjectionPoint(contract, expression.range[0], {
-        type: "injectLine",
-        line: expression.loc.start.line,
-      });
-    }
-  }
-
-  /**
    * Registers injections for function measurements
    * @param  {Object} contract   instrumentation target
    * @param  {Object} expression AST node
    */
   functionDeclaration(contract, expression) {
-    let start = 0;
+    let start = expression.range[0];
 
-    // It's possible functions will have modifiers that take string args
-    // which contains an open curly brace. Skip ahead...
-    if (expression.modifiers && expression.modifiers.length) {
-      for (let modifier of expression.modifiers) {
-        if (modifier.range[1] > start) {
-          start = modifier.range[1];
-        }
-      }
-    } else {
-      start = expression.range[0];
-    }
+    const instrumented = this.removeModifier(contract, expression);
 
-    const startContract = contract.instrumented.slice(0, start);
+    const startContract = instrumented.slice(0, start);
     const startline = (startContract.match(/\n/g) || []).length + 1;
     const startcol = start - startContract.lastIndexOf("\n") - 1;
 
-    const endlineDelta = contract.instrumented.slice(start).indexOf("{");
-    const functionDefinition = contract.instrumented.slice(
-      start,
-      start + endlineDelta
-    );
+    const endlineDelta = instrumented.slice(start).indexOf("{");
+    const functionDefinition = instrumented.slice(start, start + endlineDelta);
 
     contract.fnId += 1;
     contract.fnMap[contract.fnId] = {
@@ -155,63 +95,42 @@ class Registrar {
     });
   }
 
-  /**
-   * Registers injections for branch measurements. This generic is consumed by
-   * the `assert/require` and `if` registration methods.
-   * @param  {Object} contract   instrumentation target
-   * @param  {Object} expression AST node
-   */
-  addNewBranch(contract, expression) {
-    const startContract = contract.instrumented.slice(0, expression.range[0]);
-    const startline = (startContract.match(/\n/g) || []).length + 1;
-    const startcol = expression.range[0] - startContract.lastIndexOf("\n") - 1;
+  removeModifier(contract, expression) {
+    let copy = contract.instrumented;
 
-    contract.branchId += 1;
+    // It's possible functions will have modifiers that take string args
+    // which contains an open curly brace. Skip ahead...
+    if (expression.modifiers && expression.modifiers.length) {
+      for (let modifier of expression.modifiers) {
+        let str = "";
+        for (let index = modifier.range[0]; index <= modifier.range[1]; index++)
+          str = str + " ";
 
-    // NB locations for if branches in istanbul are zero
-    // length and associated with the start of the if.
-    contract.branchMap[contract.branchId] = {
-      line: startline,
-      type: "if",
-      locations: [
-        {
-          start: {
-            line: startline,
-            column: startcol,
-          },
-          end: {
-            line: startline,
-            column: startcol,
-          },
-        },
-        {
-          start: {
-            line: startline,
-            column: startcol,
-          },
-          end: {
-            line: startline,
-            column: startcol,
-          },
-        },
-      ],
-    };
+        copy =
+          copy.substring(0, modifier.range[0]) +
+          str +
+          copy.substring(modifier.range[1] + 1, copy.length);
+      }
+    }
+    return copy;
   }
 
   /**
-   * Registers injections for assert/require statement measurements (branches)
+   * Registers injections for require statement measurements (branches)
    * @param  {Object} contract   instrumentation target
    * @param  {Object} expression AST node
    */
-  assertOrRequire(contract, expression) {
+  requireBranch(contract, expression) {
     this.addNewBranch(contract, expression);
     this._createInjectionPoint(contract, expression.range[0], {
-      type: "injectAssertPre",
+      type: "injectRequirePre",
       branchId: contract.branchId,
+      line: expression.loc.start.line,
     });
     this._createInjectionPoint(contract, expression.range[1] + 2, {
-      type: "injectAssertPost",
+      type: "injectRequirePost",
       branchId: contract.branchId,
+      line: expression.loc.start.line,
     });
   }
 
@@ -278,4 +197,4 @@ class Registrar {
   }
 }
 
-module.exports = Registrar;
+module.exports = SyntestRegistrar;

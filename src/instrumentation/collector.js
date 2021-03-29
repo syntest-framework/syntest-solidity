@@ -1,11 +1,13 @@
 const web3Utils = require("web3-utils");
+const DataCollector = require("solidity-coverage/lib/injector");
 
 /**
- * Writes data from the VM step to the in-memory
- * coverage map constructed by the Instrumenter.
+ * @author Annibale Panichella
+ * @author Dimitri Stallenberg
  */
-class DataCollector {
+class SyntestDataCollector extends DataCollector {
   constructor(instrumentationData = {}) {
+    super(instrumentationData);
     this.instrumentationData = instrumentationData;
 
     this.validOpcodes = {
@@ -42,7 +44,11 @@ class DataCollector {
         if (this.instrumentationData[hash]) {
           this.instrumentationData[hash].hits++;
 
-          if (this.instrumentationData[hash].type === "branch") {
+          if (
+            this.instrumentationData[hash].type === "branch" ||
+            this.instrumentationData[hash].type === "requirePre" ||
+            this.instrumentationData[hash].type === "requirePost"
+          ) {
             this.instrumentationData[hash].left = this.lastComparison.left;
             this.instrumentationData[hash].right = this.lastComparison.right;
             this.instrumentationData[hash].opcode = this.lastComparison.opcode;
@@ -70,14 +76,6 @@ class DataCollector {
     }
     return hash;
   }
-
-  /**
-   * Unit test helper
-   * @param {Object} data  Instrumenter.instrumentationData
-   */
-  _setInstrumentationData(data) {
-    this.instrumentationData = data;
-  }
 }
 
-module.exports = DataCollector;
+module.exports = SyntestDataCollector;

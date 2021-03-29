@@ -6,11 +6,11 @@ const assert = require("assert");
 const detect = require("detect-port");
 const _ = require("lodash/lang");
 
-const ConfigValidator = require("./instrumentation/validator");
+const ConfigValidator = require("solidity-coverage/lib/validator");
 const Instrumenter = require("./instrumentation/instrumenter");
-const Coverage = require("./instrumentation/coverage");
+const Coverage = require("solidity-coverage/lib/coverage");
 const DataCollector = require("./instrumentation/collector");
-const AppUI = require("./instrumentation/app-ui");
+const { UI, AppUI } = require("solidity-coverage/lib/ui");
 
 /**
  * Coverage Runner
