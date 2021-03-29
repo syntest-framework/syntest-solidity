@@ -41,7 +41,10 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
-    const action = prng.pickOne(this.target.getPossibleActions("function"));
+    const actions = this.target
+      .getPossibleActions("function");
+    
+    const action = prng.pickOne(actions);
 
     const args: Statement[] = [];
 
@@ -168,7 +171,9 @@ export class SolidityRandomSampler extends SoliditySampler {
       } else if (type.startsWith("byte")) {
         return this.sampleByteStatement(type);
       } else if (type == "") {
-        throw new Error(`Type "" not recognized. It must be a bug in our parser!`);
+        throw new Error(
+          `Type "" not recognized. It must be a bug in our parser!`
+        );
       }
     } else if (geneType === "functionCall") {
       return this.sampleObjectFunctionCall(depth, type);
