@@ -1,5 +1,5 @@
 const web3Utils = require("web3-utils");
-const DataCollector = require("solidity-coverage/lib/injector")
+const DataCollector = require("solidity-coverage/lib/injector");
 
 /**
  * @author Annibale Panichella
@@ -44,9 +44,10 @@ class SyntestDataCollector extends DataCollector {
         if (this.instrumentationData[hash]) {
           this.instrumentationData[hash].hits++;
 
-          if (this.instrumentationData[hash].type === "branch" ||
-              this.instrumentationData[hash].type === "requirePre" ||
-              this.instrumentationData[hash].type === "requirePost"
+          if (
+            this.instrumentationData[hash].type === "branch" ||
+            this.instrumentationData[hash].type === "requirePre" ||
+            this.instrumentationData[hash].type === "requirePost"
           ) {
             this.instrumentationData[hash].left = this.lastComparison.left;
             this.instrumentationData[hash].right = this.lastComparison.right;
@@ -67,11 +68,11 @@ class SyntestDataCollector extends DataCollector {
    * @param  {String} hash  data hash from evm stack.
    * @return {String}       0x prefixed hash of length 66.
    */
-  _normalizeHash(hash){
-    if (hash.length < 66 && hash.length > 59){
+  _normalizeHash(hash) {
+    if (hash.length < 66 && hash.length > 59) {
       hash = hash.slice(2);
-      while(hash.length < 64) hash = '0' + hash;
-      hash = '0x' + hash
+      while (hash.length < 64) hash = "0" + hash;
+      hash = "0x" + hash;
     }
     return hash;
   }

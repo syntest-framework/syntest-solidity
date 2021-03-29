@@ -3,15 +3,15 @@ const Injector = require("solidity-coverage/lib/injector");
 
 class SyntestInjector extends Injector {
   constructor() {
-    super()
+    super();
   }
 
   _getMethodIdentifier(id) {
     return `coverage_${web3Utils.keccak256(id).slice(0, 10)}`;
   }
 
-  injectLine(contract, fileName, injectionPoint, injection, instrumentation){
-    const type = 'line';
+  injectLine(contract, fileName, injectionPoint, injection, instrumentation) {
+    const type = "line";
     const { start, end } = this._split(contract, injectionPoint);
     const id = `${fileName}:${injection.contractName}`;
 
@@ -33,16 +33,22 @@ class SyntestInjector extends Injector {
     contract.instrumented = `${start}${injectable}${end}`;
   }
 
-  injectStatement(contract, fileName, injectionPoint, injection, instrumentation) {
-    const type = 'statement';
+  injectStatement(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
+    const type = "statement";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.statementId,
@@ -53,18 +59,24 @@ class SyntestInjector extends Injector {
     };
 
     contract.instrumented = `${start}${injectable}${end}`;
-  };
+  }
 
-  injectFunction(contract, fileName, injectionPoint, injection, instrumentation){
-    const type = 'function';
+  injectFunction(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
+    const type = "function";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.fnId,
@@ -77,16 +89,16 @@ class SyntestInjector extends Injector {
     contract.instrumented = `${start}${injectable}${end}`;
   }
 
-  injectBranch(contract, fileName, injectionPoint, injection, instrumentation){
-    const type = 'branch';
+  injectBranch(contract, fileName, injectionPoint, injection, instrumentation) {
+    const type = "branch";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.branchId,
@@ -100,16 +112,22 @@ class SyntestInjector extends Injector {
     contract.instrumented = `${start}${injectable}${end}`;
   }
 
-  injectEmptyBranch(contract, fileName, injectionPoint, injection, instrumentation) {
-    const type = 'branch';
+  injectEmptyBranch(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
+    const type = "branch";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.branchId,
@@ -123,49 +141,61 @@ class SyntestInjector extends Injector {
     contract.instrumented = `${start}else { ${injectable}}${end}`;
   }
 
-  injectRequirePre(contract, fileName, injectionPoint, injection, instrumentation) {
-    const type = 'requirePre';
+  injectRequirePre(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
+    const type = "requirePre";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.branchId,
       type: type,
       contractPath: fileName,
       line: injection.line,
-      hits: 0
-    }
+      hits: 0,
+    };
 
     contract.instrumented = `${start}${injectable}${end}`;
   }
 
-  injectRequirePost(contract, fileName, injectionPoint, injection, instrumentation) {
-    const type = 'requirePost';
+  injectRequirePost(
+    contract,
+    fileName,
+    injectionPoint,
+    injection,
+    instrumentation
+  ) {
+    const type = "requirePost";
     const id = `${fileName}:${injection.contractName}`;
 
-    const {
-      start,
-      end,
-      hash,
-      injectable
-    } = this._getInjectionComponents(contract, injectionPoint, id, type);
+    const { start, end, hash, injectable } = this._getInjectionComponents(
+      contract,
+      injectionPoint,
+      id,
+      type
+    );
 
     instrumentation[hash] = {
       id: injection.branchId,
       type: type,
       contractPath: fileName,
       line: injection.line,
-      hits: 0
-    }
+      hits: 0,
+    };
 
     contract.instrumented = `${start}${injectable}${end}`;
   }
-};
+}
 
 module.exports = SyntestInjector;

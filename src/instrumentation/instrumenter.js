@@ -1,9 +1,9 @@
-const SolidityParser = require('@solidity-parser/parser');
+const SolidityParser = require("@solidity-parser/parser");
 
-const SyntestInjector = require('./injector');
-const preprocess = require('solidity-coverage/lib/preprocessor');
-const Instrumented = require('solidity-coverage/lib/instrumenter')
-const parse = require('./parse');
+const SyntestInjector = require("./injector");
+const preprocess = require("solidity-coverage/lib/preprocessor");
+const Instrumented = require("solidity-coverage/lib/instrumenter");
+const parse = require("./parse");
 
 const { finalizeCFG } = require("syntest-framework");
 
@@ -12,12 +12,10 @@ const { finalizeCFG } = require("syntest-framework");
  * @author Dimitri Stallenberg
  */
 class SyntestInstrumenter extends Instrumented {
-
-  constructor(config={}){
+  constructor(config = {}) {
     super(config);
     this.injector = new SyntestInjector();
   }
-
 
   instrument(contractSource, fileName) {
     const contract = {};
@@ -27,9 +25,8 @@ class SyntestInstrumenter extends Instrumented {
 
     this._initializeCoverageFields(contract);
 
-    parse.configureStatementCoverage(this.measureStatementCoverage)
-    parse.configureFunctionCoverage(this.measureFunctionCoverage)
-
+    parse.configureStatementCoverage(this.measureStatementCoverage);
+    parse.configureFunctionCoverage(this.measureFunctionCoverage);
 
     // create temp control flow graph
     let cfg = {
