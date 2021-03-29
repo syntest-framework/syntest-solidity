@@ -27,9 +27,10 @@ const {
   SolidityRandomSampler,
   SolidityRunner,
   SoliditySuiteBuilder,
-  SolidityTruffleStringifier,
-    Api
+  SolidityTruffleStringifier
 } = require("../dist/index");
+
+const Api = require('../api')
 
 const program = "syntest-solidity";
 

@@ -5,6 +5,7 @@ import {
   createCriterionFromConfig,
   createDirectoryStructure,
   deleteTempDirectories,
+  drawGraph,
   Fitness,
   getLogger,
   getProperty,
@@ -23,18 +24,15 @@ import {
   SolidityTruffleStringifier,
 } from "./index";
 
-const Api = require('./api')
-
 import * as path from "path";
+
+const Api = require('./api')
 
 const utils = require("../plugins/resources/plugin.utils");
 const truffleUtils = require("../plugins/resources/truffle.utils");
 const Web3 = require("web3");
 const death = require("death");
 const TruffleConfig = require("@truffle/config");
-
-// TODO get extra config options
-// const {properties} = require('./properties')
 
 const program = "syntest-solidity";
 
@@ -82,6 +80,8 @@ async function start() {
 
   targets = api.instrument(targets);
 
+  // utils.reportSkipped(config, skipped);
+
   // Filesystem & Compiler Re-configuration
   const { tempArtifactsDir, tempContractsDir } = utils.getTempLocations(
     truffleConfig
@@ -104,6 +104,7 @@ async function start() {
 
   // Compile Instrumented Contracts
   await truffle.contracts.compile(truffleConfig);
+
   await api.onCompileComplete(truffleConfig);
 
   await createDirectoryStructure();
@@ -127,6 +128,11 @@ async function start() {
     const targetName = target.instrumented.contractName;
     const targetCFG = target.instrumented.cfg;
     const targetFnMap = target.instrumented.fnMap;
+
+    drawGraph(
+        targetCFG,
+        path.join(getProperty("cfg_directory"), `${targetName}.svg`)
+    );
 
     const actualTarget = new SolidityTarget(targetName, targetCFG, targetFnMap);
 
@@ -154,7 +160,9 @@ async function start() {
 
   await deleteTempDirectories();
 
-  truffleConfig.test_files = await truffleUtils.getTestFilePaths(truffleConfig);
+  config.test_files = await truffleUtils.getTestFilePaths({
+    testDir: path.resolve(getProperty("final_suite_directory")),
+  });
   // Run tests
   try {
     const failures = await truffle.test.run(truffleConfig);
