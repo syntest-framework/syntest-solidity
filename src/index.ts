@@ -8,5 +8,3 @@ export * from "./testbuilding/SoliditySuiteBuilder";
 export * from "./testbuilding/SolidityTruffleStringifier";
 
 export * from "./testcase/AddressStatement";
-
-export * from "./Api"

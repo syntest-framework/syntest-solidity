@@ -21,8 +21,9 @@ import {
   SolidityRunner,
   SoliditySuiteBuilder,
   SolidityTruffleStringifier,
-  Api
 } from "./index";
+
+const Api = require('./api')
 
 import * as path from "path";
 
@@ -76,6 +77,7 @@ async function start() {
   const skipFiles = api.skipFiles || [];
   skipFiles.push("Migrations.sol");
 
+  // eslint-disable-next-line prefer-const
   let { targets, skipped } = utils.assembleFiles(truffleConfig, skipFiles);
 
   targets = api.instrument(targets);

@@ -1,53 +1,13 @@
 const web3Utils = require("web3-utils");
+const Injector = require("solidity-coverage/lib/injector");
 
-class Injector {
+class SyntestInjector extends Injector {
   constructor() {
-    this.hashCounter = 0;
-  }
-
-  _split(contract, injectionPoint) {
-    return {
-      start: contract.instrumented.slice(0, injectionPoint),
-      end: contract.instrumented.slice(injectionPoint),
-    };
-  }
-
-  _getInjectable(id, hash, type) {
-    return `${this._getMethodIdentifier(id)}(${hash}); /* ${type} */ \n`;
-  }
-
-  _getHash(id) {
-    this.hashCounter++;
-    return web3Utils.keccak256(`${id}:${this.hashCounter}`);
+    super();
   }
 
   _getMethodIdentifier(id) {
     return `coverage_${web3Utils.keccak256(id).slice(0, 10)}`;
-  }
-
-  _getInjectionComponents(contract, injectionPoint, id, type) {
-    const { start, end } = this._split(contract, injectionPoint);
-    const hash = this._getHash(id);
-    const injectable = this._getInjectable(id, hash, type);
-
-    return {
-      start: start,
-      end: end,
-      hash: hash,
-      injectable: injectable,
-    };
-  }
-
-  /**
-   * Generates a solidity statement injection. Declared once per fn.
-   * Definition is the same for every fn in file.
-   * @param  {String} id
-   * @return {String}          ex: bytes32[1] memory _sc_82e0891
-   */
-  _getHashMethodDefinition(id, contract) {
-    const hash = web3Utils.keccak256(id).slice(0, 10);
-    const method = this._getMethodIdentifier(id);
-    return `\nfunction ${method}(bytes32 c__${hash}) public pure {}\n`;
   }
 
   injectLine(contract, fileName, injectionPoint, injection, instrumentation) {
@@ -181,14 +141,14 @@ class Injector {
     contract.instrumented = `${start}else { ${injectable}}${end}`;
   }
 
-  injectAssertPre(
+  injectRequirePre(
     contract,
     fileName,
     injectionPoint,
     injection,
     instrumentation
   ) {
-    const type = "assertPre";
+    const type = "requirePre";
     const id = `${fileName}:${injection.contractName}`;
 
     const { start, end, hash, injectable } = this._getInjectionComponents(
@@ -202,20 +162,21 @@ class Injector {
       id: injection.branchId,
       type: type,
       contractPath: fileName,
+      line: injection.line,
       hits: 0,
     };
 
     contract.instrumented = `${start}${injectable}${end}`;
   }
 
-  injectAssertPost(
+  injectRequirePost(
     contract,
     fileName,
     injectionPoint,
     injection,
     instrumentation
   ) {
-    const type = "assertPost";
+    const type = "requirePost";
     const id = `${fileName}:${injection.contractName}`;
 
     const { start, end, hash, injectable } = this._getInjectionComponents(
@@ -229,26 +190,12 @@ class Injector {
       id: injection.branchId,
       type: type,
       contractPath: fileName,
+      line: injection.line,
       hits: 0,
     };
 
     contract.instrumented = `${start}${injectable}${end}`;
-  }
-
-  injectHashMethod(
-    contract,
-    fileName,
-    injectionPoint,
-    injection,
-    instrumentation
-  ) {
-    const start = contract.instrumented.slice(0, injectionPoint);
-    const end = contract.instrumented.slice(injectionPoint);
-    const id = `${fileName}:${injection.contractName}`;
-    contract.instrumented = `${start}${this._getHashMethodDefinition(
-      id
-    )}${end}`;
   }
 }
 
-module.exports = Injector;
+module.exports = SyntestInjector;

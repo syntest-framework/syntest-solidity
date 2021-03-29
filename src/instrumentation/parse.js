@@ -1,13 +1,20 @@
-/**
- * Methods in this file walk the AST and call the instrumenter
- * functions where appropriate, which determine where to inject events.
- * (Listed in alphabetical order)
- */
+const semver = require("semver");
 const Registrar = require("./registrar");
 const register = new Registrar();
 
+const FILE_SCOPED_ID = "fileScopedId";
 const parse = {};
 
+// Utilities
+parse.configureStatementCoverage = function (val) {
+  register.measureStatementCoverage = val;
+};
+
+parse.configureFunctionCoverage = function (val) {
+  register.measureFunctionCoverage = val;
+};
+
+// Nodes
 parse.AssignmentExpression = function (
   contract,
   expression,
@@ -43,11 +50,8 @@ parse.FunctionCall = function (contract, expression, graph, currentNode) {
   // This makes sure we don't instrument a chain of expressions multiple times.
   if (expression.expression.type !== "FunctionCall") {
     register.statement(contract, expression);
-    if (
-      expression.expression.name === "assert" ||
-      expression.expression.name === "require"
-    ) {
-      register.assertOrRequire(contract, expression, graph, currentNode);
+    if (expression.expression.name === "require") {
+      register.requireBranch(contract, expression);
     }
     parse[expression.expression.type] &&
       parse[expression.expression.type](
@@ -116,10 +120,13 @@ parse.ContractOrLibraryStatement = function (
   }
 
   if (expression.subNodes) {
+    contract.isContractScoped = true;
     expression.subNodes.forEach((construct) => {
       parse[construct.type] &&
         parse[construct.type](contract, construct, graph, currentNode);
     });
+    // Unset flag...
+    contract.isContractScoped = false;
   }
 };
 
@@ -360,6 +367,38 @@ parse.NewExpression = function (contract, expression, graph, currentNode) {
       graph,
       currentNode
     );
+};
+
+parse.PragmaDirective = function (contract, expression) {
+  let minVersion;
+
+  // Some solidity pragmas crash semver (ex: ABIEncoderV2)
+  try {
+    minVersion = semver.minVersion(expression.value);
+  } catch (e) {
+    return;
+  }
+
+  // pragma abicoder v2 passes the semver test above but needs to be ignored
+  if (expression.name === "abicoder") {
+    return;
+  }
+
+  // From solc >=0.7.4, every file should have instrumentation methods
+  // defined at the file level which file scoped fns can use...
+  if (semver.lt("0.7.3", minVersion)) {
+    const start = expression.range[0];
+    const end = contract.instrumented.slice(start).indexOf(";") + 1;
+    const loc = start + end;
+
+    const injectionObject = {
+      type: "injectHashMethod",
+      contractName: FILE_SCOPED_ID,
+      isFileScoped: true,
+    };
+
+    contract.injectionPoints[loc] = [injectionObject];
+  }
 };
 
 parse.SourceUnit = function (contract, expression, graph, currentNode) {

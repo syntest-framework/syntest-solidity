@@ -1,4 +1,4 @@
-const UI = require("../../src/instrumentation/ui");
+const { UI, AppUI } = require("solidity-coverage/lib/ui");
 
 /**
  * Truffle Plugin logging
