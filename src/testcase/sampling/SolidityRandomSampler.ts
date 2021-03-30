@@ -14,7 +14,7 @@ import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../AddressStatement";
 import BigNumber from "bignumber.js";
 import { SolidityTarget } from "../../search/objective/SolidityTarget";
-import { ByteStatement } from "./ByteStatement";
+import { ByteStatement } from "../statements/ByteStatement";
 
 /**
  * SolidityRandomSampler class
