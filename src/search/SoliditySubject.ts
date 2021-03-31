@@ -7,6 +7,12 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     super(name, cfg, functionMap);
   }
 
+  protected _extractObjectives(): void {
+    this._cfg.nodes.forEach((node) => {
+      // this._objectives.set(node.id, new BranchObjectiveFunction)
+    })
+  }
+
   get functionCalls(): FunctionDescription[] {
     if (this._functionCalls === null) {
       this._functionCalls = this.getPossibleActions();

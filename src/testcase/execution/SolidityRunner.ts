@@ -1,19 +1,13 @@
-import {
-  Datapoint,
-  getLogger,
-  getProperty,
-  TestCaseRunner,
-  SuiteBuilder,
-  TestCase,
-} from "syntest-framework";
+import {ExecutionResult, getLogger, getProperty, SuiteBuilder, TestCase, TestCaseRunner,} from "syntest-framework";
 import * as path from "path";
+import {SolidityExecutionResult} from "../../search/SolidityExecutionResult";
 
 const truffleUtils = require("../../../plugins/resources/truffle.utils");
 
 export class SolidityRunner extends TestCaseRunner {
-  private api: any;
-  private truffle: any;
-  private config: any;
+  protected api: any;
+  protected truffle: any;
+  protected config: any;
 
   constructor(suiteBuilder: SuiteBuilder, api: any, truffle: any, config: any) {
     super(suiteBuilder);
@@ -22,9 +16,7 @@ export class SolidityRunner extends TestCaseRunner {
     this.config = config;
   }
 
-  async runTestCase(testCase: TestCase): Promise<Datapoint[]> {
-    // TODO very stupid but we have to create actual files for truffle to run...
-
+  async execute(testCase: TestCase): Promise<ExecutionResult> {
     const testPath = path.join(
       getProperty("temp_test_directory"),
       "tempTest.js"
@@ -68,6 +60,6 @@ export class SolidityRunner extends TestCaseRunner {
       finalpoints.push(datapoints[key]);
     }
 
-    return finalpoints;
+    return new SolidityExecutionResult(finalpoints);
   }
 }
