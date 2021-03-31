@@ -1,6 +1,6 @@
-import { ActionDescription, CFG, Target } from "syntest-framework";
+import { ActionDescription, CFG, SearchSubject, Encoding } from "syntest-framework";
 
-export class SolidityTarget extends Target {
+export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   private _functionCalls: FunctionDescription[] | null = null;
 
   constructor(name: string, cfg: CFG, functionMap: any) {

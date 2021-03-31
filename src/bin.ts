@@ -19,7 +19,7 @@ import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleString
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
-import { SolidityTarget } from "./index";
+import { SoliditySubject } from "./index";
 import * as path from "path";
 
 const API = require("./api.js");
@@ -123,7 +123,7 @@ async function start() {
     const targetCFG = target.instrumented.cfg;
     const targetFnMap = target.instrumented.fnMap;
 
-    const actualTarget = new SolidityTarget(targetName, targetCFG, targetFnMap);
+    const actualTarget = new SoliditySubject(targetName, targetCFG, targetFnMap);
 
     const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
 
