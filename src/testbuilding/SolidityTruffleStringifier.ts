@@ -66,7 +66,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const args = (statement as ObjectFunctionCall).getChildren();
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
-      if (statement.type !== "none") {
+      if (statement.type !== "none" && !statement.varName.includes("[")) {
         return `const ${statement.varName} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
         }.call(${formattedArgs});`;
