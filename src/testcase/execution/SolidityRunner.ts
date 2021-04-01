@@ -1,6 +1,13 @@
-import {ExecutionResult, getLogger, getProperty, SuiteBuilder, TestCase, TestCaseRunner,} from "syntest-framework";
+import {
+  ExecutionResult,
+  getLogger,
+  getProperty,
+  SuiteBuilder,
+  TestCase,
+  TestCaseRunner,
+} from "syntest-framework";
 import * as path from "path";
-import {SolidityExecutionResult} from "../../search/SolidityExecutionResult";
+import { SolidityExecutionResult } from "../../search/SolidityExecutionResult";
 
 const truffleUtils = require("../../../plugins/resources/truffle.utils");
 
