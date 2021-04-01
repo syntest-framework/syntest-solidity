@@ -42,7 +42,7 @@ export class SolidityRandomSampler extends SoliditySampler {
 
   sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
     const actions = this._subject.getPossibleActions("function");
-    
+
     const action = prng.pickOne(actions);
 
     const args: Statement[] = [];
@@ -105,7 +105,8 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
 
     if (
-      this._subject.getPossibleActions().filter((a) => a.type === type).length &&
+      this._subject.getPossibleActions().filter((a) => a.type === type)
+        .length &&
       prng.nextBoolean(getProperty("sample_func_as_arg"))
     ) {
       // Pick function

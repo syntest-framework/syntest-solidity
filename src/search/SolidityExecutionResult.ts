@@ -8,9 +8,8 @@ export class SolidityExecutionResult implements ExecutionResult {
   }
 
   coversLine(line: number): boolean {
-    for (const trace of this._dataPoints){
-      if(trace.line === line && trace.hits>0)
-        return true;
+    for (const trace of this._dataPoints) {
+      if (trace.line === line && trace.hits > 0) return true;
     }
     return false;
   }

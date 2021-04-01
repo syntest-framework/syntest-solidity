@@ -4,7 +4,7 @@ import {
   SearchSubject,
   Encoding,
   BranchObjectiveFunction,
-    FunctionObjectiveFunction
+  FunctionObjectiveFunction,
 } from "syntest-framework";
 
 export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
@@ -15,18 +15,30 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   }
 
   protected _extractObjectives(): void {
-    this._cfg.nodes.filter((node) =>
-      "branchId" in node
-    ).forEach((node) => {
-      const type: boolean = (node as any).type == "true" ? true :  false;
-      this._objectives.set(new BranchObjectiveFunction(this, node.id ,node.line, node.locationIdx, type), [])
-    });
+    this._cfg.nodes
+      .filter((node) => "branchId" in node)
+      .forEach((node) => {
+        const type: boolean = (node as any).type == "true" ? true : false;
+        this._objectives.set(
+          new BranchObjectiveFunction(
+            this,
+            node.id,
+            node.line,
+            node.locationIdx,
+            type
+          ),
+          []
+        );
+      });
 
-    this._cfg.nodes.filter((node) =>
-        node.absoluteRoot
-    ).forEach((node) => {
-      this._objectives.set(new FunctionObjectiveFunction(this, node.id ,node.line), [])
-    });
+    this._cfg.nodes
+      .filter((node) => node.absoluteRoot)
+      .forEach((node) => {
+        this._objectives.set(
+          new FunctionObjectiveFunction(this, node.id, node.line),
+          []
+        );
+      });
   }
 
   get functionCalls(): FunctionDescription[] {
