@@ -7,6 +7,7 @@ import {
   StringStatement,
   TestCaseDecoder,
   TestCase,
+    NumericStatement
 } from "syntest-framework";
 import * as path from "path";
 import * as web3_utils from "web3-utils";
@@ -156,17 +157,15 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         }
 
         if (gene instanceof PrimitiveStatement) {
-          /*
           if (gene.type.startsWith("int") || gene.type.startsWith("uint")) {
             let value: string = (gene as NumericStatement).value.toFixed();
-            value = `BigInt(\"${value}\")`;
+            value = `BigInt("${value}")`;
             assertions += `\t\tassert.equal(${gene.varName}, ${value})\n`;
           } else if (gene instanceof StringStatement){
-            assertions += `\t\tassert.equal(${gene.varName}, \"${gene.value}\")\n`;
+            assertions += `\t\tassert.equal(${gene.varName}, "${gene.value}")\n`;
           } else {
             assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`;
           }
-           */
         } else if (addLogs && gene instanceof ObjectFunctionCall) {
           testString += `\t\tawait fs.writeFileSync('${path.join(
             getProperty("temp_log_directory"),
