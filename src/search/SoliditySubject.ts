@@ -67,11 +67,12 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
 
       visitedEdges.push(edge);
 
-      if (!this._cfg.nodes[edge.to].branchId) {
+      const found = this.getObjectives().filter((child) => child.getIdentifier() === edge.to);
+      if (found.length == 0) {
         const additionalEdges = this._cfg.edges.filter((nextEdge) => nextEdge.from === edge.to);
         edges2Visit = edges2Visit.concat(additionalEdges);
       } else {
-        childrenObj =  childrenObj.concat(this.getObjectives().filter((child) => child.getIdentifier() === edge.to));
+        childrenObj =  childrenObj.concat(found);
       }
     }
 
