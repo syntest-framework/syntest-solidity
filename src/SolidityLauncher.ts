@@ -13,12 +13,10 @@ const {
   getLogger,
   getProperty,
   processConfig,
-  Fitness,
   createAlgorithmFromConfig,
-  createCriterionFromConfig,
   BudgetManager,
   IterationBudget,
-  EvaluationBudget,
+  SearchTimeBudget,
   Archive,
 } = require("syntest-framework");
 
@@ -170,7 +168,14 @@ export class SolidityLauncher {
 
         await suiteBuilder.clearDirectory(getProperty("temp_test_directory"));
         const budgetManager = new BudgetManager();
-        budgetManager.addBudget(new IterationBudget(10));
+        const budgets = getProperty("stopping_criteria");
+        for (const budget of budgets) {
+          if (budget.criterion === "generation_limit") {
+            budgetManager.addBudget(new IterationBudget(budget.limit));
+          } else if (budget.criterion === "time_limit") {
+            budgetManager.addBudget(new SearchTimeBudget(budget.limit));
+          }
+        }
 
         // This searches for a covering population
         const archive = await algorithm.search(currentSubject, budgetManager);
