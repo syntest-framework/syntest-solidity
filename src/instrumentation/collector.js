@@ -25,8 +25,14 @@ class SyntestDataCollector extends DataCollector {
   step(info) {
     try {
       if (["GT", "SGT", "LT", "SLT", "EQ"].includes(info.opcode.name)) {
-        let left = web3Utils.toDecimal(info.stack[info.stack.length - 1]);
-        let right = web3Utils.toDecimal(info.stack[info.stack.length - 2]);
+        let left = [];
+        let right = [];
+        for (let index = 0; index < info.stack.length/2; index++){
+          left.push(web3Utils.toDecimal(info.stack[index*2 + 1]));
+          right.push(web3Utils.toDecimal(info.stack[index*2]));
+        }
+        //let left = web3Utils.toDecimal(info.stack[info.stack.length - 1]);
+        //let right = web3Utils.toDecimal(info.stack[info.stack.length - 2]);
 
         this.lastComparison = {
           // ...info.opcode,
