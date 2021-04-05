@@ -1,4 +1,4 @@
-const { SolidityLauncher } = require("../src/SolidityLauncher");
+const { SolidityLauncher } = require("../dist/SolidityLauncher");
 
 /**
  * Truffle Plugin: `truffle run coverage [options]`

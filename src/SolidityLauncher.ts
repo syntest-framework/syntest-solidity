@@ -1,4 +1,8 @@
 import { SoliditySubject } from "./search/SoliditySubject";
+import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleStringifier";
+import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
+import { SolidityRunner } from "./testcase/execution/SolidityRunner";
+import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
 
 const {
   guessCWD,
@@ -25,13 +29,6 @@ const PluginUI = require("../plugins/resources/truffle.ui");
 const pkg = require("../package.json");
 const path = require("path");
 const Web3 = require("web3");
-
-const {
-  SolidityRandomSampler,
-  SolidityRunner,
-  SoliditySuiteBuilder,
-  SolidityTruffleStringifier,
-} = require("../src");
 
 export class SolidityLauncher {
   private readonly _program = "syntest-solidity";
