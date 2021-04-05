@@ -6,8 +6,6 @@ const {
   setupOptions,
   createDirectoryStructure,
   deleteTempDirectories,
-} = require("syntest-framework");
-const {
   drawGraph,
   setupLogger,
   getLogger,
@@ -29,12 +27,11 @@ const path = require("path");
 const Web3 = require("web3");
 
 const {
-  SolidityTarget,
   SolidityRandomSampler,
   SolidityRunner,
   SoliditySuiteBuilder,
   SolidityTruffleStringifier,
-} = require("../dist/index");
+} = require("../src");
 
 export class SolidityLauncher {
   private readonly _program = "syntest-solidity";
