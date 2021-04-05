@@ -25,14 +25,8 @@ class SyntestDataCollector extends DataCollector {
   step(info) {
     try {
       if (["GT", "SGT", "LT", "SLT", "EQ"].includes(info.opcode.name)) {
-        let left = [];
-        let right = [];
-        for (let index = 0; index < info.stack.length/2; index++){
-          left.push(web3Utils.toDecimal(info.stack[index*2 + 1]));
-          right.push(web3Utils.toDecimal(info.stack[index*2]));
-        }
-        //let left = web3Utils.toDecimal(info.stack[info.stack.length - 1]);
-        //let right = web3Utils.toDecimal(info.stack[info.stack.length - 2]);
+        let left = web3Utils.toDecimal(info.stack[info.stack.length - 1]);
+        let right = web3Utils.toDecimal(info.stack[info.stack.length - 2]);
 
         this.lastComparison = {
           // ...info.opcode,
@@ -55,8 +49,19 @@ class SyntestDataCollector extends DataCollector {
             this.instrumentationData[hash].type === "requirePre" ||
             this.instrumentationData[hash].type === "requirePost"
           ) {
-            this.instrumentationData[hash].left = this.lastComparison.left;
-            this.instrumentationData[hash].right = this.lastComparison.right;
+            if (this.instrumentationData[hash].left === undefined) {
+              this.instrumentationData[hash].left = [this.lastComparison.left];
+              this.instrumentationData[hash].right = [
+                this.lastComparison.right,
+              ];
+            } else {
+              this.instrumentationData[hash].left.push(
+                this.lastComparison.left
+              );
+              this.instrumentationData[hash].right.push(
+                this.lastComparison.right
+              );
+            }
             this.instrumentationData[hash].opcode = this.lastComparison.opcode;
           }
         }
