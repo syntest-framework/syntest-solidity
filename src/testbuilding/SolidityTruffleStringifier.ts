@@ -12,7 +12,7 @@ import {
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
-import {AddressStatement} from "../testcase/AddressStatement";
+import {AddressStatement} from "../testcase/statements/AddressStatement";
 
 /**
  * @author Dimitri Stallenberg

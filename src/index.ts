@@ -7,6 +7,6 @@ export * from "./testcase/sampling/SoliditySampler";
 export * from "./testbuilding/SoliditySuiteBuilder";
 export * from "./testbuilding/SolidityTruffleStringifier";
 
-export * from "./testcase/AddressStatement";
+export * from "./testcase/statements/AddressStatement";
 
 export * from "./SolidityLauncher";
