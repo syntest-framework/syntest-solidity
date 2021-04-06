@@ -127,6 +127,12 @@ class API {
     for (let key of Object.keys(this.instrumenter.instrumentationData)) {
       let point = this.instrumenter.instrumentationData[key];
       point.hits = 0;
+
+      // clear data saved from the previous test executions
+      if (!(point.left === undefined)) {
+        point.left = [];
+        point.right = [];
+      }
     }
   }
 

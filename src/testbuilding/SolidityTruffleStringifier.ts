@@ -7,10 +7,12 @@ import {
   StringStatement,
   TestCaseDecoder,
   TestCase,
+    NumericStatement
 } from "syntest-framework";
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
+import {AddressStatement} from "../testcase/statements/AddressStatement";
 
 /**
  * @author Dimitri Stallenberg
@@ -66,7 +68,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const args = (statement as ObjectFunctionCall).getChildren();
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
-      if (statement.type !== "none" && !statement.varName.includes("[")) {
+      if (statement.type !== "none" && statement.type !== "") {
         return `const ${statement.varName} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
         }.call(${formattedArgs});`;
@@ -156,17 +158,16 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         }
 
         if (gene instanceof PrimitiveStatement) {
-          /*
-          if (gene.type.startsWith("int") || gene.type.startsWith("uint")) {
+/*          if (gene.type.startsWith("int") || gene.type.startsWith("uint")) {
             let value: string = (gene as NumericStatement).value.toFixed();
-            value = `BigInt(\"${value}\")`;
+            value = `BigInt("${value}")`;
             assertions += `\t\tassert.equal(${gene.varName}, ${value})\n`;
           } else if (gene instanceof StringStatement){
-            assertions += `\t\tassert.equal(${gene.varName}, \"${gene.value}\")\n`;
+            assertions += `\t\tassert.equal(${gene.varName}, "${gene.value}")\n`;
           } else {
             assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`;
           }
-           */
+ */
         } else if (addLogs && gene instanceof ObjectFunctionCall) {
           testString += `\t\tawait fs.writeFileSync('${path.join(
             getProperty("temp_log_directory"),
@@ -188,8 +189,16 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         if (additionalAssertions.has(ind)) {
           const assertion: any = additionalAssertions.get(ind);
           for (const variableName of Object.keys(assertion)) {
-            if (!(assertion[variableName] === "[object Object]"))
+            if (assertion[variableName] === "[object Object]")
+              continue;
+
+            if (variableName.includes("string")){
+              assertions += `\t\tassert.equal(${variableName}, "${assertion[variableName]}")\n`;
+            } else if (variableName.includes("int")){
+              assertions += `\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))\n`;
+            } else {
               assertions += `\t\tassert.equal(${variableName}, ${assertion[variableName]})\n`;
+            }
           }
         }
       }

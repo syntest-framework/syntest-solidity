@@ -49,8 +49,19 @@ class SyntestDataCollector extends DataCollector {
             this.instrumentationData[hash].type === "requirePre" ||
             this.instrumentationData[hash].type === "requirePost"
           ) {
-            this.instrumentationData[hash].left = this.lastComparison.left;
-            this.instrumentationData[hash].right = this.lastComparison.right;
+            if (this.instrumentationData[hash].left === undefined) {
+              this.instrumentationData[hash].left = [this.lastComparison.left];
+              this.instrumentationData[hash].right = [
+                this.lastComparison.right,
+              ];
+            } else {
+              this.instrumentationData[hash].left.push(
+                this.lastComparison.left
+              );
+              this.instrumentationData[hash].right.push(
+                this.lastComparison.right
+              );
+            }
             this.instrumentationData[hash].opcode = this.lastComparison.opcode;
           }
         }
