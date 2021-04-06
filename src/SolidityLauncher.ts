@@ -4,6 +4,7 @@ import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
 import { RuntimeVariable } from "syntest-framework";
+import TruffleConfig = require("@truffle/config");
 
 const {
   guessCWD,
@@ -25,6 +26,7 @@ const {
   StatisticsCollector,
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
+  TotalTimeBudget
 } = require("syntest-framework");
 
 const API = require("../src/api");
@@ -43,7 +45,7 @@ export class SolidityLauncher {
    * @param  {Object}   config   @truffle/config config
    * @return {Promise}
    */
-  async run(config) {
+  async run(config: TruffleConfig) {
     let api, error, failures, ui;
     try {
       config = truffleUtils.normalizeConfig(config);
@@ -178,15 +180,17 @@ export class SolidityLauncher {
           }
         }
         const iterationBudget = new IterationBudget(maxIterations);
-        const timeBudget = new SearchTimeBudget(maxTime)
+        const searchBudget = new SearchTimeBudget(maxTime)
+        const totalTimeBudget = new TotalTimeBudget(maxTime + 30);
         const budgetManager = new BudgetManager();
         budgetManager.addBudget(iterationBudget);
-        budgetManager.addBudget(timeBudget);
+        budgetManager.addBudget(searchBudget);
+        budgetManager.addBudget(totalTimeBudget);
 
         // This searches for a covering population
         const archive = await algorithm.search(currentSubject, budgetManager);
 
-        const collector = new StatisticsCollector(budgetManager);
+        const collector = new StatisticsCollector(totalTimeBudget);
         collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
         collector.recordVariable(
           RuntimeVariable.TOTAL_OBJECTIVES,
@@ -201,7 +205,12 @@ export class SolidityLauncher {
         collector.recordVariable(RuntimeVariable.SEED, getProperty("seed"));
         collector.recordVariable(
             RuntimeVariable.SEARCH_TIME,
-            timeBudget.getCurrentBudget()
+            searchBudget.getCurrentBudget()
+        );
+
+        collector.recordVariable(
+            RuntimeVariable.TOTAL_TIME,
+            totalTimeBudget.getCurrentBudget()
         );
 
         collector.recordVariable(
