@@ -11,7 +11,7 @@ import {
   TestCase,
 } from "syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
-import { AddressStatement } from "../AddressStatement";
+import { AddressStatement } from "../statements/AddressStatement";
 import BigNumber from "bignumber.js";
 import { ByteStatement } from "../statements/ByteStatement";
 import { SoliditySubject } from "../../search/SoliditySubject";
@@ -51,9 +51,13 @@ export class SolidityRandomSampler extends SoliditySampler {
       if (arg.type != "") args.push(this.sampleArgument(1, arg.type, arg.bits));
     }
 
+    let uniqueID = prng.uniqueId();
+    if (action.returnType == "")
+      uniqueID = "var" + uniqueID;
+
     const call = new ObjectFunctionCall(
       action.returnType,
-      prng.uniqueId(),
+      uniqueID,
       root,
       action.name,
       args
