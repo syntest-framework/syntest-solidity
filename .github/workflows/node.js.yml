@@ -44,7 +44,7 @@ jobs:
 
       # SynTest Framework
       - name: Framework - Install Dependencies
-        run: npm ci
+        run: npm install
         working-directory: syntest-framework
       - name: Framework - Build framework
         run: npm run build
