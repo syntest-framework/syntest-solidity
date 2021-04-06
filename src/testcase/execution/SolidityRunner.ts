@@ -43,14 +43,17 @@ export class SolidityRunner extends TestCaseRunner {
     let failures;
     // Run tests
 
+
     try {
       failures = await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
     }
 
+    let exception;
     if (failures) {
       // TODO maybe not stop? could be a bug that has been found
+      exception = this.truffle.test.mochaRunner.suite.suites[0].tests[0].err.stack;
       getLogger().error("Test case has failed!");
       //process.exit(1)
     }
@@ -59,7 +62,7 @@ export class SolidityRunner extends TestCaseRunner {
 
     this.api.resetInstrumentationData();
     // Remove test file
-    await this.suiteBuilder.deleteTestCase(testPath);
+    await this.suiteBuilder.deleteTestCase(this.config.test_files[0]);
 
     const finalpoints = [];
 
