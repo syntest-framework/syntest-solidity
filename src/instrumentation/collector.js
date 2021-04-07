@@ -1,5 +1,5 @@
 const web3Utils = require("web3-utils");
-const DataCollector = require("solidity-coverage/lib/injector");
+const DataCollector = require("solidity-coverage/lib/collector");
 
 /**
  * @author Annibale Panichella
@@ -69,23 +69,6 @@ class SyntestDataCollector extends DataCollector {
     } catch (err) {
       /*Ignore*/
     }
-  }
-
-  /**
-   * Left-pads zero prefixed bytes 32 hashes to length 66. The '59' in the
-   * comparison below is arbitrary. It provides a margin for recurring zeros
-   * but prevents left-padding shorter irrelevant hashes (like fn sigs)
-   *
-   * @param  {String} hash  data hash from evm stack.
-   * @return {String}       0x prefixed hash of length 66.
-   */
-  _normalizeHash(hash) {
-    if (hash.length < 66 && hash.length > 59) {
-      hash = hash.slice(2);
-      while (hash.length < 64) hash = "0" + hash;
-      hash = "0x" + hash;
-    }
-    return hash;
   }
 }
 
