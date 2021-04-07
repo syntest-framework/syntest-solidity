@@ -125,12 +125,14 @@ class SyntestRegistrar extends Registrar {
     this._createInjectionPoint(contract, expression.range[0], {
       type: "injectRequirePre",
       branchId: contract.branchId,
+      locationIdx: 0,
       line: expression.loc.start.line,
     });
     this._createInjectionPoint(contract, expression.range[1] + 2, {
       type: "injectRequirePost",
       branchId: contract.branchId,
-      line: expression.loc.start.line,
+      locationIdx: 1,
+      line: expression.loc.end.line,
     });
   }
 
