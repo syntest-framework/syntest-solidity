@@ -6,7 +6,7 @@ import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler
 import { RuntimeVariable } from "syntest-framework";
 import TruffleConfig = require("@truffle/config");
 
-const {
+import {
   guessCWD,
   loadConfig,
   setupOptions,
@@ -26,15 +26,17 @@ const {
   StatisticsCollector,
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
-  TotalTimeBudget
-} = require("syntest-framework");
+  TotalTimeBudget,
+  TestCase,
+} from "syntest-framework";
 
-const API = require("../src/api");
-const utils = require("../plugins/resources/plugin.utils");
-const truffleUtils = require("../plugins/resources/truffle.utils");
-const PluginUI = require("../plugins/resources/truffle.ui");
+import * as path from "path";
+
+import API = require("../src/api");
+import utils = require("../plugins/resources/plugin.utils");
+import truffleUtils = require("../plugins/resources/truffle.utils");
+import PluginUI = require("../plugins/resources/truffle.ui");
 const pkg = require("../package.json");
-const path = require("path");
 const Web3 = require("web3");
 
 export class SolidityLauncher {
@@ -45,7 +47,7 @@ export class SolidityLauncher {
    * @param  {Object}   config   @truffle/config config
    * @return {Promise}
    */
-  async run(config: TruffleConfig) {
+  public async run(config: TruffleConfig) {
     let api, error, failures, ui;
     try {
       config = truffleUtils.normalizeConfig(config);
@@ -143,7 +145,7 @@ export class SolidityLauncher {
         config
       );
 
-      const finalArchive = new Archive();
+      const finalArchive = new Archive<TestCase>();
 
       for (const target of targets) {
         getLogger().debug(`Testing target: ${target.relativePath}`);
@@ -171,7 +173,8 @@ export class SolidityLauncher {
 
         // allocate budget manager
         const budgets = getProperty("stopping_criteria");
-        let maxTime = 0, maxIterations = 0;
+        let maxTime = 0,
+          maxIterations = 0;
         for (const budget of budgets) {
           if (budget.criterion === "generation_limit") {
             maxIterations = budget.limit;
@@ -180,7 +183,7 @@ export class SolidityLauncher {
           }
         }
         const iterationBudget = new IterationBudget(maxIterations);
-        const searchBudget = new SearchTimeBudget(maxTime)
+        const searchBudget = new SearchTimeBudget(maxTime);
         const totalTimeBudget = new TotalTimeBudget(maxTime + 30);
         const budgetManager = new BudgetManager();
         budgetManager.addBudget(iterationBudget);
@@ -204,18 +207,18 @@ export class SolidityLauncher {
 
         collector.recordVariable(RuntimeVariable.SEED, getProperty("seed"));
         collector.recordVariable(
-            RuntimeVariable.SEARCH_TIME,
-            searchBudget.getCurrentBudget()
+          RuntimeVariable.SEARCH_TIME,
+          searchBudget.getCurrentBudget()
         );
 
         collector.recordVariable(
-            RuntimeVariable.TOTAL_TIME,
-            totalTimeBudget.getCurrentBudget()
+          RuntimeVariable.TOTAL_TIME,
+          totalTimeBudget.getCurrentBudget()
         );
 
         collector.recordVariable(
-            RuntimeVariable.ITERATIONS,
-            iterationBudget.getCurrentBudget()
+          RuntimeVariable.ITERATIONS,
+          iterationBudget.getCurrentBudget()
         );
 
         this.collectCoverageData(collector, currentSubject, archive);
@@ -259,7 +262,7 @@ export class SolidityLauncher {
     if (failures > 0) throw new Error(ui.generate("tests-fail", [failures]));
   }
 
-  collectCoverageData(collector, currentSubject, archive): void {
+  public collectCoverageData(collector, currentSubject, archive): void {
     let total_branches = 0;
     let total_functions = 0;
     for (const obj of currentSubject.getObjectives()) {

@@ -5,7 +5,7 @@ import {
   Encoding,
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
-    ObjectiveFunction
+  ObjectiveFunction,
 } from "syntest-framework";
 
 export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
@@ -29,11 +29,11 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
             node.locationIdx,
             type
           ),
-            []
+          []
         );
       });
 
-    for (const obj of this._objectives.keys()){
+    for (const obj of this._objectives.keys()) {
       const childrenObj = this.findChildren(obj);
       childrenObj.forEach((child) => this._objectives.get(obj).push(child));
     }
@@ -43,36 +43,44 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     this._cfg.nodes
       .filter((node) => node.absoluteRoot)
       .forEach((node) => {
-        const functionObjective = new FunctionObjectiveFunction(this, node.id, node.line);
+        const functionObjective = new FunctionObjectiveFunction(
+          this,
+          node.id,
+          node.line
+        );
         const childrenObj = this.findChildren(functionObjective);
 
-        this._objectives.set(
-            functionObjective,
-            childrenObj
-        );
+        this._objectives.set(functionObjective, childrenObj);
       });
   }
 
   findChildren(obj: ObjectiveFunction<T>): ObjectiveFunction<T>[] {
     let childrenObj = [];
 
-    let edges2Visit = this._cfg.edges.filter((edge) => edge.from === obj.getIdentifier());
+    let edges2Visit = this._cfg.edges.filter(
+      (edge) => edge.from === obj.getIdentifier()
+    );
     const visitedEdges = [];
 
     while (edges2Visit.length > 0) {
       const edge = edges2Visit.pop();
 
-      if (visitedEdges.includes(edge)) // this condition is made to avoid infinite loops
+      if (visitedEdges.includes(edge))
+        // this condition is made to avoid infinite loops
         continue;
 
       visitedEdges.push(edge);
 
-      const found = this.getObjectives().filter((child) => child.getIdentifier() === edge.to);
+      const found = this.getObjectives().filter(
+        (child) => child.getIdentifier() === edge.to
+      );
       if (found.length == 0) {
-        const additionalEdges = this._cfg.edges.filter((nextEdge) => nextEdge.from === edge.to);
+        const additionalEdges = this._cfg.edges.filter(
+          (nextEdge) => nextEdge.from === edge.to
+        );
         edges2Visit = edges2Visit.concat(additionalEdges);
       } else {
-        childrenObj =  childrenObj.concat(found);
+        childrenObj = childrenObj.concat(found);
       }
     }
 
