@@ -75,6 +75,7 @@ parse.RequireStatement = function (contract, expression, graph, currentNode) {
   register.requireBranch(contract, expression);
 
   // TODO variables
+  /**/
 
   if (currentNode !== null && currentNode !== undefined) {
     graph.edges.push({
@@ -90,7 +91,7 @@ parse.RequireStatement = function (contract, expression, graph, currentNode) {
     id: currentNode,
     root: true,
     splitPoint: true,
-    line: expression.loc.start.line
+    line: expression.loc.start.line,
   });
 
   let leftNode = graph.nodes.length;
@@ -110,14 +111,14 @@ parse.RequireStatement = function (contract, expression, graph, currentNode) {
     type: "false",
   });
 
-  let rightNode = graph.nodes.length
+  let rightNode = graph.nodes.length;
 
   graph.nodes.push({
     id: rightNode,
     branchId: contract.branchId,
     requireStatement: true,
     locationIdx: 1,
-    line: expression.loc.start.line,
+    line: expression.loc.end.line,
     type: "true",
   });
 
@@ -126,7 +127,9 @@ parse.RequireStatement = function (contract, expression, graph, currentNode) {
     to: rightNode,
     type: "true",
   });
-}
+
+  /**/
+};
 
 parse.Conditional = function (contract, expression, graph, currentNode) {
   register.statement(contract, expression);
