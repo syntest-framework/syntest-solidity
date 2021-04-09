@@ -25,8 +25,8 @@ class SyntestDataCollector extends DataCollector {
   step(info) {
     try {
       if (["GT", "SGT", "LT", "SLT", "EQ"].includes(info.opcode.name)) {
-        let left = web3Utils.toDecimal(info.stack[info.stack.length - 1]);
-        let right = web3Utils.toDecimal(info.stack[info.stack.length - 2]);
+        let left = this._convertToDecimal(info.stack[info.stack.length - 1]);
+        let right = this._convertToDecimal(info.stack[info.stack.length - 2]);
 
         this.lastComparison = {
           // ...info.opcode,
@@ -68,6 +68,14 @@ class SyntestDataCollector extends DataCollector {
       }
     } catch (err) {
       /*Ignore*/
+    }
+  }
+
+  _convertToDecimal(value) {
+    try {
+      return web3Utils.toDecimal(value);
+    } catch (err) {
+      return Number(BigInt.asUintN(64, ~BigInt(value) + BigInt(1))) * -1;
     }
   }
 }
