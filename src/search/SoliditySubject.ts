@@ -7,7 +7,7 @@ import {
   FunctionObjectiveFunction,
   ObjectiveFunction,
 } from "syntest-framework";
-import {RequireObjectiveFunction} from "../criterion/RequireObjectiveFunction";
+import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 
 export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   private _functionCalls: FunctionDescription[] | null = null;
@@ -36,23 +36,23 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
 
     // require statement coverage
     this._cfg.nodes
-        .filter((node) => "requireStatement" in node)
-        .forEach((node) => {
-          const type: boolean = (node as any).type == "true" ? true : false;
-          const requireObjective = new RequireObjectiveFunction(
-              this,
-              node.id,
-              node.line,
-              node.locationIdx,
-              type
-          );
+      .filter((node) => "requireStatement" in node)
+      .forEach((node) => {
+        const type: boolean = (node as any).type == "true" ? true : false;
+        const requireObjective = new RequireObjectiveFunction(
+          this,
+          node.id,
+          node.line,
+          node.locationIdx,
+          type
+        );
 
-          this._objectives.set(requireObjective, []);
-        });
+        this._objectives.set(requireObjective, []);
+      });
 
     // add children for branches and require statements
     for (const obj of this._objectives.keys()) {
-      if(obj instanceof RequireObjectiveFunction && obj.type === false)
+      if (obj instanceof RequireObjectiveFunction && obj.type === false)
         continue;
 
       const childrenObj = this.findChildren(obj);
