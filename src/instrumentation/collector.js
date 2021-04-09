@@ -23,51 +23,43 @@ class SyntestDataCollector extends DataCollector {
    * @param  {Object} info  vm step info
    */
   step(info) {
-    try {
-      if (["GT", "SGT", "LT", "SLT", "EQ"].includes(info.opcode.name)) {
-        let left = this._convertToDecimal(info.stack[info.stack.length - 1]);
-        let right = this._convertToDecimal(info.stack[info.stack.length - 2]);
+    if (["GT", "SGT", "LT", "SLT", "EQ"].includes(info.opcode.name)) {
+      let left = this._convertToDecimal(info.stack[info.stack.length - 1]);
+      let right = this._convertToDecimal(info.stack[info.stack.length - 2]);
 
-        this.lastComparison = {
-          // ...info.opcode,
-          left: left,
-          right: right,
-          opcode: info.opcode.name,
-        };
-      }
+      this.lastComparison = {
+        // ...info.opcode,
+        left: left,
+        right: right,
+        opcode: info.opcode.name,
+      };
+    }
 
-      if (this.validOpcodes[info.opcode.name] && info.stack.length > 0) {
-        const idx = info.stack.length - 1;
-        let hash = web3Utils.toHex(info.stack[idx]).toString();
-        hash = this._normalizeHash(hash);
+    if (this.validOpcodes[info.opcode.name] && info.stack.length > 0) {
+      const idx = info.stack.length - 1;
+      let hash = web3Utils.toHex(info.stack[idx]).toString();
+      hash = this._normalizeHash(hash);
 
-        if (this.instrumentationData[hash]) {
-          this.instrumentationData[hash].hits++;
+      if (this.instrumentationData[hash]) {
+        this.instrumentationData[hash].hits++;
 
-          if (
-            this.instrumentationData[hash].type === "branch" ||
-            this.instrumentationData[hash].type === "requirePre" ||
-            this.instrumentationData[hash].type === "requirePost"
-          ) {
-            if (this.instrumentationData[hash].left === undefined) {
-              this.instrumentationData[hash].left = [this.lastComparison.left];
-              this.instrumentationData[hash].right = [
-                this.lastComparison.right,
-              ];
-            } else {
-              this.instrumentationData[hash].left.push(
-                this.lastComparison.left
-              );
-              this.instrumentationData[hash].right.push(
-                this.lastComparison.right
-              );
-            }
-            this.instrumentationData[hash].opcode = this.lastComparison.opcode;
+        if (
+          this.instrumentationData[hash].type === "branch" ||
+          this.instrumentationData[hash].type === "requirePre" ||
+          this.instrumentationData[hash].type === "requirePost"
+        ) {
+          if (this.instrumentationData[hash].left === undefined) {
+            this.instrumentationData[hash].left = [this.lastComparison.left];
+            this.instrumentationData[hash].right = [this.lastComparison.right];
+          } else {
+            this.instrumentationData[hash].left.push(this.lastComparison.left);
+            this.instrumentationData[hash].right.push(
+              this.lastComparison.right
+            );
           }
+          this.instrumentationData[hash].opcode = this.lastComparison.opcode;
         }
       }
-    } catch (err) {
-      /*Ignore*/
     }
   }
 
