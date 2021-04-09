@@ -122,11 +122,20 @@ class SyntestRegistrar extends Registrar {
    */
   requireBranch(contract, expression) {
     this.addNewBranch(contract, expression);
+    // Add fictional if condition
+    // add: if (copied condition) {} /*pre*/ require(condition); /*post*/
+
+    const value = contract.instrumented;
+    const start = expression.arguments[0].range[0];
+    const end = expression.arguments[0].range[1];
+    const condition = value.substring(start, end + 1);
+
     this._createInjectionPoint(contract, expression.range[0], {
       type: "injectRequirePre",
       branchId: contract.branchId,
       locationIdx: 0,
       line: expression.loc.start.line,
+      condition: condition,
     });
     this._createInjectionPoint(contract, expression.range[1] + 2, {
       type: "injectRequirePost",
