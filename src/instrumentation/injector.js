@@ -1,5 +1,6 @@
 const web3Utils = require("web3-utils");
 const Injector = require("solidity-coverage/lib/injector");
+const crypto = require("crypto");
 
 class SyntestInjector extends Injector {
   constructor() {
@@ -166,8 +167,11 @@ class SyntestInjector extends Injector {
       line: injection.line,
       hits: 0,
     };
-
-    contract.instrumented = `${start}${injectable}${end}`;
+    const varName = crypto
+      .createHash("md5")
+      .update(injection.condition)
+      .digest("hex");
+    contract.instrumented = `${start}if(${injection.condition}){int temp${varName}=1;}${injectable}${end}`;
   }
 
   injectRequirePost(
