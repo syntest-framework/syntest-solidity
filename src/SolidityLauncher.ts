@@ -3,8 +3,16 @@ import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleString
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
-import { RuntimeVariable } from "syntest-framework";
+import {
+  Archive,
+  RuntimeVariable,
+  StatisticsCollector,
+  ExecutionResult,
+  TestCase,
+} from "syntest-framework";
+import { RequireObjectiveFunction } from "./criterion/RequireObjectiveFunction";
 import TruffleConfig = require("@truffle/config");
+import { Encoding } from "crypto";
 
 const {
   guessCWD,
@@ -21,12 +29,10 @@ const {
   BudgetManager,
   IterationBudget,
   SearchTimeBudget,
-  Archive,
   SummaryWriter,
-  StatisticsCollector,
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
-  TotalTimeBudget
+  TotalTimeBudget,
 } = require("syntest-framework");
 
 const API = require("../src/api");
@@ -171,7 +177,8 @@ export class SolidityLauncher {
 
         // allocate budget manager
         const budgets = getProperty("stopping_criteria");
-        let maxTime = 0, maxIterations = 0;
+        let maxTime = 0,
+          maxIterations = 0;
         for (const budget of budgets) {
           if (budget.criterion === "generation_limit") {
             maxIterations = budget.limit;
@@ -180,7 +187,7 @@ export class SolidityLauncher {
           }
         }
         const iterationBudget = new IterationBudget(maxIterations);
-        const searchBudget = new SearchTimeBudget(maxTime)
+        const searchBudget = new SearchTimeBudget(maxTime);
         const totalTimeBudget = new TotalTimeBudget(maxTime + 30);
         const budgetManager = new BudgetManager();
         budgetManager.addBudget(iterationBudget);
@@ -204,21 +211,24 @@ export class SolidityLauncher {
 
         collector.recordVariable(RuntimeVariable.SEED, getProperty("seed"));
         collector.recordVariable(
-            RuntimeVariable.SEARCH_TIME,
-            searchBudget.getCurrentBudget()
+          RuntimeVariable.SEARCH_TIME,
+          searchBudget.getCurrentBudget()
         );
 
         collector.recordVariable(
-            RuntimeVariable.TOTAL_TIME,
-            totalTimeBudget.getCurrentBudget()
+          RuntimeVariable.TOTAL_TIME,
+          totalTimeBudget.getCurrentBudget()
         );
 
         collector.recordVariable(
-            RuntimeVariable.ITERATIONS,
-            iterationBudget.getCurrentBudget()
+          RuntimeVariable.ITERATIONS,
+          iterationBudget.getCurrentBudget()
         );
 
-        this.collectCoverageData(collector, currentSubject, archive);
+        this.collectCoverageData(collector, archive, "branch");
+        this.collectCoverageData(collector, archive, "statement");
+        this.collectCoverageData(collector, archive, "function");
+        this.collectCoverageData(collector, archive, "probe");
 
         const statisticFile = path.resolve(getProperty("statistics_directory"));
 
@@ -230,7 +240,7 @@ export class SolidityLauncher {
         }
       }
 
-      await suiteBuilder.createSuite(finalArchive);
+      await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
 
       await deleteTempDirectories();
 
@@ -259,36 +269,50 @@ export class SolidityLauncher {
     if (failures > 0) throw new Error(ui.generate("tests-fail", [failures]));
   }
 
-  collectCoverageData(collector, currentSubject, archive): void {
-    let total_branches = 0;
-    let total_functions = 0;
-    for (const obj of currentSubject.getObjectives()) {
-      if (obj instanceof BranchObjectiveFunction) {
-        total_branches++;
-      } else if (obj instanceof FunctionObjectiveFunction) {
-        total_functions++;
-      }
-    }
-    collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, total_branches);
-    collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, total_functions);
+  collectCoverageData(
+    collector: StatisticsCollector<any>,
+    archive: Archive<any>,
+    type: string
+  ): void {
+    let total = 0;
+    let covered = 0;
 
-    let coveredBranches = 0;
-    let coveredFunctions = 0;
-    for (const obj of archive.getObjectives()) {
-      if (obj instanceof BranchObjectiveFunction) {
-        coveredBranches++;
-      } else if (obj instanceof FunctionObjectiveFunction) {
-        coveredFunctions++;
-      }
+    for (const key of archive.getObjectives()) {
+      const test = archive.getEncoding(key);
+      const result: ExecutionResult = test.getExecutionResult();
+      const elements = result
+        .getTraces()
+        .filter((element) => element.type.includes(type));
+
+      total += elements.length;
+      covered += elements.filter((element) => element.hits > 0).length;
     }
-    collector.recordVariable(RuntimeVariable.COVERED_BRANCHES, coveredBranches);
-    collector.recordVariable(
-      RuntimeVariable.COVERED_FUNCTIONS,
-      coveredFunctions
-    );
-    collector.recordVariable(
-      RuntimeVariable.COVERAGE,
-      archive.getObjectives().length / currentSubject.getObjectives().length
-    );
+
+    switch (type) {
+      case "branch":
+        {
+          collector.recordVariable(RuntimeVariable.COVERED_BRANCHES, covered);
+          collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, total);
+        }
+        break;
+      case "statement":
+        {
+          collector.recordVariable(RuntimeVariable.COVERED_LINES, covered);
+          collector.recordVariable(RuntimeVariable.TOTAL_LINES, total);
+        }
+        break;
+      case "function":
+        {
+          collector.recordVariable(RuntimeVariable.COVERED_FUNCTIONS, covered);
+          collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, total);
+        }
+        break;
+      case "probe":
+        {
+          collector.recordVariable(RuntimeVariable.COVERED_PROBES, covered);
+          collector.recordVariable(RuntimeVariable.COVERED_PROBES, total);
+        }
+        break;
+    }
   }
 }
