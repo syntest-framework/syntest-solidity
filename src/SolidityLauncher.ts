@@ -230,6 +230,11 @@ export class SolidityLauncher {
         this.collectCoverageData(collector, archive, "function");
         this.collectCoverageData(collector, archive, "probe");
 
+        collector.recordVariable(
+          RuntimeVariable.COVERAGE,
+          archive.getObjectives().length / currentSubject.getObjectives().length
+        );
+
         const statisticFile = path.resolve(getProperty("statistics_directory"));
 
         const writer = new SummaryWriter();
@@ -274,43 +279,59 @@ export class SolidityLauncher {
     archive: Archive<any>,
     type: string
   ): void {
-    let total = 0;
-    let covered = 0;
+    let total = new Set();
+    let covered = new Set();
 
     for (const key of archive.getObjectives()) {
       const test = archive.getEncoding(key);
       const result: ExecutionResult = test.getExecutionResult();
       const elements = result
         .getTraces()
-        .filter((element) => element.type.includes(type));
+        .filter((element) => element.type.includes(type))
+        .forEach((current) => {
+          total.add(
+            current.type + "_" + current.line + "_" + current.locationIdx
+          );
 
-      total += elements.length;
-      covered += elements.filter((element) => element.hits > 0).length;
+          if (current.hits > 0)
+            covered.add(
+              current.type + "_" + current.line + "_" + current.locationIdx
+            );
+        });
     }
 
     switch (type) {
       case "branch":
         {
-          collector.recordVariable(RuntimeVariable.COVERED_BRANCHES, covered);
-          collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, total);
+          collector.recordVariable(
+            RuntimeVariable.COVERED_BRANCHES,
+            covered.size
+          );
+          collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, total.size);
         }
         break;
       case "statement":
         {
-          collector.recordVariable(RuntimeVariable.COVERED_LINES, covered);
-          collector.recordVariable(RuntimeVariable.TOTAL_LINES, total);
+          collector.recordVariable(RuntimeVariable.COVERED_LINES, covered.size);
+          collector.recordVariable(RuntimeVariable.TOTAL_LINES, total.size);
         }
         break;
       case "function":
         {
-          collector.recordVariable(RuntimeVariable.COVERED_FUNCTIONS, covered);
-          collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, total);
+          collector.recordVariable(
+            RuntimeVariable.COVERED_FUNCTIONS,
+            covered.size
+          );
+          collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, total.size);
         }
         break;
       case "probe":
         {
-          collector.recordVariable(RuntimeVariable.COVERED_PROBES, covered);
-          collector.recordVariable(RuntimeVariable.COVERED_PROBES, total);
+          collector.recordVariable(
+            RuntimeVariable.COVERED_PROBES,
+            covered.size
+          );
+          collector.recordVariable(RuntimeVariable.TOTAL_PROBES, total.size);
         }
         break;
     }
