@@ -34,22 +34,20 @@ export class RequireObjectiveFunction<
       if (postCondition.hits > 0) return 0;
       else {
         if (preCondition.hits > 0) {
-          return (
-            BranchDistance.branchDistanceNumeric(
-              preCondition.opcode,
-              preCondition.left,
-              preCondition.right,
-              true
-            )
+          return BranchDistance.branchDistanceNumeric(
+            preCondition.opcode,
+            preCondition.left,
+            preCondition.right,
+            true
           );
         }
       }
     } else {
       return BranchDistance.branchDistanceNumeric(
-              preCondition.opcode,
-              preCondition.left,
-              preCondition.right,
-              false
+        preCondition.opcode,
+        preCondition.left,
+        preCondition.right,
+        false
       );
     }
 
@@ -69,7 +67,8 @@ export class RequireObjectiveFunction<
             trace.line === n.line &&
             (trace.type === "branch" ||
               trace.type === "probePre" ||
-              trace.type === "probePost") &&
+              trace.type === "probePost" ||
+              trace.type === "function") &&
             trace.hits > 0
         );
       for (const trace of traces) {
@@ -86,14 +85,10 @@ export class RequireObjectiveFunction<
       return Number.MAX_VALUE;
     }
 
-    // calculate the branch distance between: covering the branch needed to get a closer approach distance and the currently covered branch
-    // always between 0 and 1
-    const branchDistance = BranchDistance.branchDistanceNumeric(
-      closestHitNode.opcode,
-      closestHitNode.left,
-      closestHitNode.right,
-      this._type // we have to revert/negate the condition for the closest covered node
-    );
+    let branchDistance: number;
+
+    if (closestHitNode.type === "function") branchDistance = 1;
+    else branchDistance = this.computeBranchDistance(closestHitNode);
 
     // add the distances
     const distance = approachLevel + branchDistance;
