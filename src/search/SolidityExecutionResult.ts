@@ -105,7 +105,7 @@ export class SolidityExecutionResult implements ExecutionResult {
    * @inheritDoc
    */
   public hasExceptions(): boolean {
-    return this._exception === null;
+    return this._exception !== null;
   }
 
   /**
