@@ -20,7 +20,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     this._cfg.nodes
       .filter((node) => "branchId" in node && !("requireStatement" in node))
       .forEach((node) => {
-        const type: boolean = (node as any).type == "true" ? true : false;
+        const type: boolean = (node as any).type == "true";
 
         this._objectives.set(
           new BranchObjectiveFunction(
@@ -38,7 +38,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     this._cfg.nodes
       .filter((node) => "requireStatement" in node)
       .forEach((node) => {
-        const type: boolean = (node as any).type == "true" ? true : false;
+        const type: boolean = (node as any).type == "true";
         const requireObjective = new RequireObjectiveFunction(
           this,
           node.id,
