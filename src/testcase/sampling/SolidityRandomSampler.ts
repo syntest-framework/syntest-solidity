@@ -52,8 +52,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
 
     let uniqueID = prng.uniqueId();
-    if (action.returnType == "")
-      uniqueID = "var" + uniqueID;
+    if (action.returnType == "") uniqueID = "var" + uniqueID;
 
     const call = new ObjectFunctionCall(
       action.returnType,

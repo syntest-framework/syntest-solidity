@@ -5,8 +5,9 @@ import {
   Encoding,
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
-    ObjectiveFunction
+  ObjectiveFunction,
 } from "syntest-framework";
+import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 
 export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   private _functionCalls: FunctionDescription[] | null = null;
@@ -17,9 +18,9 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
 
   protected _extractObjectives(): void {
     this._cfg.nodes
-      .filter((node) => "branchId" in node)
+      .filter((node) => "branchId" in node && !("requireStatement" in node))
       .forEach((node) => {
-        const type: boolean = (node as any).type == "true" ? true : false;
+        const type: boolean = (node as any).type == "true";
 
         this._objectives.set(
           new BranchObjectiveFunction(
@@ -29,50 +30,77 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
             node.locationIdx,
             type
           ),
-            []
+          []
         );
       });
 
-    for (const obj of this._objectives.keys()){
+    // require statement coverage
+    this._cfg.nodes
+      .filter((node) => "requireStatement" in node)
+      .forEach((node) => {
+        const type: boolean = (node as any).type == "true";
+        const requireObjective = new RequireObjectiveFunction(
+          this,
+          node.id,
+          node.line,
+          node.locationIdx,
+          type
+        );
+
+        this._objectives.set(requireObjective, []);
+      });
+
+    // add children for branches and require statements
+    for (const obj of this._objectives.keys()) {
+      if (obj instanceof RequireObjectiveFunction && obj.type === false)
+        continue;
+
       const childrenObj = this.findChildren(obj);
       childrenObj.forEach((child) => this._objectives.get(obj).push(child));
     }
 
-    // TODO: Add require statement
-
+    // function coverage
     this._cfg.nodes
       .filter((node) => node.absoluteRoot)
       .forEach((node) => {
-        const functionObjective = new FunctionObjectiveFunction(this, node.id, node.line);
+        const functionObjective = new FunctionObjectiveFunction(
+          this,
+          node.id,
+          node.line
+        );
         const childrenObj = this.findChildren(functionObjective);
 
-        this._objectives.set(
-            functionObjective,
-            childrenObj
-        );
+        this._objectives.set(functionObjective, childrenObj);
       });
   }
 
   findChildren(obj: ObjectiveFunction<T>): ObjectiveFunction<T>[] {
     let childrenObj = [];
 
-    let edges2Visit = this._cfg.edges.filter((edge) => edge.from === obj.getIdentifier());
+    let edges2Visit = this._cfg.edges.filter(
+      (edge) => edge.from === obj.getIdentifier()
+    );
     const visitedEdges = [];
 
     while (edges2Visit.length > 0) {
       const edge = edges2Visit.pop();
 
-      if (visitedEdges.includes(edge)) // this condition is made to avoid infinite loops
+      if (visitedEdges.includes(edge))
+        // this condition is made to avoid infinite loops
         continue;
 
       visitedEdges.push(edge);
 
-      const found = this.getObjectives().filter((child) => child.getIdentifier() === edge.to);
+      const found = this.getObjectives().filter(
+        (child) => child.getIdentifier() === edge.to
+      );
       if (found.length == 0) {
-        const additionalEdges = this._cfg.edges.filter((nextEdge) => nextEdge.from === edge.to);
+        const additionalEdges = this._cfg.edges.filter(
+          (nextEdge) => nextEdge.from === edge.to
+        );
         edges2Visit = edges2Visit.concat(additionalEdges);
       } else {
-        childrenObj =  childrenObj.concat(found);
+        childrenObj = childrenObj.concat(found);
       }
     }
 
