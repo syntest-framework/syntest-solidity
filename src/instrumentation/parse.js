@@ -1,6 +1,7 @@
 const semver = require("semver");
 const Registrar = require("./registrar");
 const register = new Registrar();
+const { getProperty } = require("syntest-framework");
 
 const FILE_SCOPED_ID = "fileScopedId";
 const parse = {};
@@ -51,7 +52,7 @@ parse.FunctionCall = function (contract, expression, graph, currentNode) {
   if (expression.expression.type !== "FunctionCall") {
     register.statement(contract, expression);
     if (expression.expression.name === "require") {
-      register.requireBranch(contract, expression);
+      parse.RequireStatement(contract, expression, graph, currentNode);
     }
     parse[expression.expression.type] &&
       parse[expression.expression.type](
@@ -68,6 +69,63 @@ parse.FunctionCall = function (contract, expression, graph, currentNode) {
         graph,
         currentNode
       );
+  }
+};
+
+parse.RequireStatement = function (contract, expression, graph, currentNode) {
+  register.requireBranch(contract, expression);
+
+  if (getProperty("probe_objective")) {
+    if (currentNode !== null && currentNode !== undefined) {
+      graph.edges.push({
+        from: currentNode,
+        to: graph.nodes.length,
+        type: "-",
+      });
+    }
+
+    currentNode = graph.nodes.length;
+
+    graph.nodes.push({
+      id: currentNode,
+      root: true,
+      splitPoint: true,
+      line: expression.loc.start.line,
+    });
+
+    let leftNode = graph.nodes.length;
+
+    graph.nodes.push({
+      id: leftNode,
+      branchId: contract.branchId,
+      requireStatement: true,
+      locationIdx: 0,
+      line: expression.loc.start.line,
+      type: "false",
+    });
+
+    graph.edges.push({
+      from: currentNode,
+      to: leftNode,
+      type: "false",
+    });
+
+    let rightNode = graph.nodes.length;
+
+    graph.nodes.push({
+      id: rightNode,
+      branchId: contract.branchId,
+      requireStatement: true,
+      locationIdx: 1,
+      line: expression.loc.end.line,
+      type: "true",
+    });
+
+    graph.edges.push({
+      from: currentNode,
+      to: rightNode,
+      type: "true",
+    });
   }
 };
 

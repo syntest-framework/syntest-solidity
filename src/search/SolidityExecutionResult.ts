@@ -54,6 +54,13 @@ export class SolidityExecutionResult implements ExecutionResult {
     this._traces = traces;
     this._duration = duration;
     this._exception = exception;
+
+    this._traces.forEach((point) => {
+      if (point.type === "requirePost") point.type = "probePost";
+
+      if (point.type === "requirePre") point.type = "probePre";
+      //point..satisfied = true;
+    });
   }
 
   /**
@@ -61,7 +68,14 @@ export class SolidityExecutionResult implements ExecutionResult {
    */
   public coversLine(line: number): boolean {
     for (const trace of this._traces) {
-      if (trace.line === line && trace.hits > 0) return true;
+      if (
+        (trace.type === "statement" ||
+          trace.type === "function" ||
+          trace.type === "requirePre") &&
+        trace.line === line &&
+        trace.hits > 0
+      )
+        return true;
     }
     return false;
   }

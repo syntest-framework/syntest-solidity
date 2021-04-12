@@ -3,7 +3,6 @@ import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleString
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
-import { RuntimeVariable } from "syntest-framework";
 import TruffleConfig = require("@truffle/config");
 
 import {
@@ -21,13 +20,13 @@ import {
   BudgetManager,
   IterationBudget,
   SearchTimeBudget,
-  Archive,
   SummaryWriter,
-  StatisticsCollector,
-  BranchObjectiveFunction,
-  FunctionObjectiveFunction,
   TotalTimeBudget,
   TestCase,
+  Archive,
+  RuntimeVariable,
+  StatisticsCollector,
+  ExecutionResult,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -221,7 +220,15 @@ export class SolidityLauncher {
           iterationBudget.getCurrentBudget()
         );
 
-        this.collectCoverageData(collector, currentSubject, archive);
+        this.collectCoverageData(collector, archive, "branch");
+        this.collectCoverageData(collector, archive, "statement");
+        this.collectCoverageData(collector, archive, "function");
+        this.collectCoverageData(collector, archive, "probe");
+
+        collector.recordVariable(
+          RuntimeVariable.COVERAGE,
+          archive.getObjectives().length / currentSubject.getObjectives().length
+        );
 
         const statisticFile = path.resolve(getProperty("statistics_directory"));
 
@@ -233,7 +240,7 @@ export class SolidityLauncher {
         }
       }
 
-      await suiteBuilder.createSuite(finalArchive);
+      await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
 
       await deleteTempDirectories();
 
@@ -262,36 +269,66 @@ export class SolidityLauncher {
     if (failures > 0) throw new Error(ui.generate("tests-fail", [failures]));
   }
 
-  public collectCoverageData(collector, currentSubject, archive): void {
-    let total_branches = 0;
-    let total_functions = 0;
-    for (const obj of currentSubject.getObjectives()) {
-      if (obj instanceof BranchObjectiveFunction) {
-        total_branches++;
-      } else if (obj instanceof FunctionObjectiveFunction) {
-        total_functions++;
-      }
-    }
-    collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, total_branches);
-    collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, total_functions);
+  collectCoverageData(
+    collector: StatisticsCollector<any>,
+    archive: Archive<any>,
+    type: string
+  ): void {
+    const total = new Set();
+    const covered = new Set();
 
-    let coveredBranches = 0;
-    let coveredFunctions = 0;
-    for (const obj of archive.getObjectives()) {
-      if (obj instanceof BranchObjectiveFunction) {
-        coveredBranches++;
-      } else if (obj instanceof FunctionObjectiveFunction) {
-        coveredFunctions++;
-      }
+    for (const key of archive.getObjectives()) {
+      const test = archive.getEncoding(key);
+      const result: ExecutionResult = test.getExecutionResult();
+      result
+        .getTraces()
+        .filter((element) => element.type.includes(type))
+        .forEach((current) => {
+          total.add(
+            current.type + "_" + current.line + "_" + current.locationIdx
+          );
+
+          if (current.hits > 0)
+            covered.add(
+              current.type + "_" + current.line + "_" + current.locationIdx
+            );
+        });
     }
-    collector.recordVariable(RuntimeVariable.COVERED_BRANCHES, coveredBranches);
-    collector.recordVariable(
-      RuntimeVariable.COVERED_FUNCTIONS,
-      coveredFunctions
-    );
-    collector.recordVariable(
-      RuntimeVariable.COVERAGE,
-      archive.getObjectives().length / currentSubject.getObjectives().length
-    );
+
+    switch (type) {
+      case "branch":
+        {
+          collector.recordVariable(
+            RuntimeVariable.COVERED_BRANCHES,
+            covered.size
+          );
+          collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, total.size);
+        }
+        break;
+      case "statement":
+        {
+          collector.recordVariable(RuntimeVariable.COVERED_LINES, covered.size);
+          collector.recordVariable(RuntimeVariable.TOTAL_LINES, total.size);
+        }
+        break;
+      case "function":
+        {
+          collector.recordVariable(
+            RuntimeVariable.COVERED_FUNCTIONS,
+            covered.size
+          );
+          collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, total.size);
+        }
+        break;
+      case "probe":
+        {
+          collector.recordVariable(
+            RuntimeVariable.COVERED_PROBES,
+            covered.size
+          );
+          collector.recordVariable(RuntimeVariable.TOTAL_PROBES, total.size);
+        }
+        break;
+    }
   }
 }
