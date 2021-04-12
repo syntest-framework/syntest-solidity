@@ -3,42 +3,41 @@ import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleString
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
+
 import {
   Archive,
-  RuntimeVariable,
-  StatisticsCollector,
-  ExecutionResult,
-  TestCase,
-} from "syntest-framework";
-import TruffleConfig = require("@truffle/config");
-
-const {
-  guessCWD,
-  loadConfig,
-  setupOptions,
+  BudgetManager,
+  createAlgorithmFromConfig,
   createDirectoryStructure,
   deleteTempDirectories,
   drawGraph,
-  setupLogger,
+  ExecutionResult,
   getLogger,
   getProperty,
-  processConfig,
-  createAlgorithmFromConfig,
-  BudgetManager,
+  guessCWD,
   IterationBudget,
+  loadConfig,
+  processConfig,
+  RuntimeVariable,
   SearchTimeBudget,
+  setupLogger,
+  setupOptions,
+  StatisticsCollector,
   SummaryWriter,
-  BranchObjectiveFunction,
-  FunctionObjectiveFunction,
+  TestCase,
   TotalTimeBudget,
-} = require("syntest-framework");
+  ExceptionObjectiveFunction,
+} from "syntest-framework";
 
-const API = require("../src/api");
-const utils = require("../plugins/resources/plugin.utils");
-const truffleUtils = require("../plugins/resources/truffle.utils");
-const PluginUI = require("../plugins/resources/truffle.ui");
+import * as path from "path";
+import TruffleConfig = require("@truffle/config");
+
+import API = require("../src/api");
+import utils = require("../plugins/resources/plugin.utils");
+import truffleUtils = require("../plugins/resources/truffle.utils");
+import PluginUI = require("../plugins/resources/truffle.ui");
+
 const pkg = require("../package.json");
-const path = require("path");
 const Web3 = require("web3");
 
 export class SolidityLauncher {
@@ -49,7 +48,7 @@ export class SolidityLauncher {
    * @param  {Object}   config   @truffle/config config
    * @return {Promise}
    */
-  async run(config: TruffleConfig) {
+  public async run(config: TruffleConfig) {
     let api, error, failures, ui;
     try {
       config = truffleUtils.normalizeConfig(config);
@@ -147,7 +146,7 @@ export class SolidityLauncher {
         config
       );
 
-      const finalArchive = new Archive();
+      const finalArchive = new Archive<TestCase>();
 
       for (const target of targets) {
         getLogger().debug(`Testing target: ${target.relativePath}`);
@@ -228,6 +227,16 @@ export class SolidityLauncher {
         this.collectCoverageData(collector, archive, "function");
         this.collectCoverageData(collector, archive, "probe");
 
+        const numOfExceptions = archive
+          .getObjectives()
+          .filter(
+            (objective) => objective instanceof ExceptionObjectiveFunction
+          ).length;
+        collector.recordVariable(
+          RuntimeVariable.COVERED_EXCEPTIONS,
+          numOfExceptions
+        );
+
         collector.recordVariable(
           RuntimeVariable.COVERAGE,
           archive.getObjectives().length / currentSubject.getObjectives().length
@@ -277,8 +286,8 @@ export class SolidityLauncher {
     archive: Archive<any>,
     type: string
   ): void {
-    let total = new Set();
-    let covered = new Set();
+    const total = new Set();
+    const covered = new Set();
 
     for (const key of archive.getObjectives()) {
       const test = archive.getEncoding(key);

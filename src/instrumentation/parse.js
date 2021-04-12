@@ -1,7 +1,7 @@
 const semver = require("semver");
 const Registrar = require("./registrar");
 const register = new Registrar();
-const {getProperty} = require("syntest-framework");
+const { getProperty } = require("syntest-framework");
 
 const FILE_SCOPED_ID = "fileScopedId";
 const parse = {};
