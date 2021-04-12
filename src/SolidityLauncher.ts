@@ -3,38 +3,40 @@ import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleString
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
-import TruffleConfig = require("@truffle/config");
 
 import {
-  guessCWD,
-  loadConfig,
-  setupOptions,
+  Archive,
+  BudgetManager,
+  createAlgorithmFromConfig,
   createDirectoryStructure,
   deleteTempDirectories,
   drawGraph,
-  setupLogger,
+  ExecutionResult,
   getLogger,
   getProperty,
-  processConfig,
-  createAlgorithmFromConfig,
-  BudgetManager,
+  guessCWD,
   IterationBudget,
-  SearchTimeBudget,
-  SummaryWriter,
-  TotalTimeBudget,
-  TestCase,
-  Archive,
+  loadConfig,
+  processConfig,
   RuntimeVariable,
+  SearchTimeBudget,
+  setupLogger,
+  setupOptions,
   StatisticsCollector,
-  ExecutionResult,
+  SummaryWriter,
+  TestCase,
+  TotalTimeBudget,
+  ExceptionObjectiveFunction,
 } from "syntest-framework";
 
 import * as path from "path";
+import TruffleConfig = require("@truffle/config");
 
 import API = require("../src/api");
 import utils = require("../plugins/resources/plugin.utils");
 import truffleUtils = require("../plugins/resources/truffle.utils");
 import PluginUI = require("../plugins/resources/truffle.ui");
+
 const pkg = require("../package.json");
 const Web3 = require("web3");
 
@@ -224,6 +226,16 @@ export class SolidityLauncher {
         this.collectCoverageData(collector, archive, "statement");
         this.collectCoverageData(collector, archive, "function");
         this.collectCoverageData(collector, archive, "probe");
+
+        const numOfExceptions = archive
+          .getObjectives()
+          .filter(
+            (objective) => objective instanceof ExceptionObjectiveFunction
+          ).length;
+        collector.recordVariable(
+          RuntimeVariable.COVERED_EXCEPTIONS,
+          numOfExceptions
+        );
 
         collector.recordVariable(
           RuntimeVariable.COVERAGE,
