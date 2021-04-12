@@ -10,9 +10,7 @@ import {
   ExecutionResult,
   TestCase,
 } from "syntest-framework";
-import { RequireObjectiveFunction } from "./criterion/RequireObjectiveFunction";
 import TruffleConfig = require("@truffle/config");
-import { Encoding } from "crypto";
 
 const {
   guessCWD,
@@ -285,7 +283,7 @@ export class SolidityLauncher {
     for (const key of archive.getObjectives()) {
       const test = archive.getEncoding(key);
       const result: ExecutionResult = test.getExecutionResult();
-      const elements = result
+      result
         .getTraces()
         .filter((element) => element.type.includes(type))
         .forEach((current) => {
