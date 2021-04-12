@@ -11,10 +11,10 @@ import {
   TestCase,
 } from "syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
-import { AddressStatement } from "../AddressStatement";
+import { AddressStatement } from "../statements/AddressStatement";
 import BigNumber from "bignumber.js";
-import { SolidityTarget } from "../../search/objective/SolidityTarget";
-import { ByteStatement } from "./ByteStatement";
+import { ByteStatement } from "../statements/ByteStatement";
+import { SoliditySubject } from "../../search/SoliditySubject";
 
 /**
  * SolidityRandomSampler class
@@ -25,11 +25,11 @@ export class SolidityRandomSampler extends SoliditySampler {
   /**
    * Constructor
    */
-  constructor(target: SolidityTarget) {
-    super(target);
+  constructor(subject: SoliditySubject<TestCase>) {
+    super(subject);
   }
 
-  sampleTestCase(): TestCase {
+  sample(): TestCase {
     const root = this.sampleConstructor(0);
 
     const nCalls = prng.nextInt(1, 5);
@@ -41,9 +41,8 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
-    const actions = this.target
-      .getPossibleActions("function")
-      .filter((a) => a.visibility === "public" || a.visibility === "external");
+    const actions = this._subject.getPossibleActions("function");
+
     const action = prng.pickOne(actions);
 
     const args: Statement[] = [];
@@ -52,9 +51,13 @@ export class SolidityRandomSampler extends SoliditySampler {
       if (arg.type != "") args.push(this.sampleArgument(1, arg.type, arg.bits));
     }
 
+    let uniqueID = prng.uniqueId();
+    if (action.returnType == "")
+      uniqueID = "var" + uniqueID;
+
     const call = new ObjectFunctionCall(
       action.returnType,
-      prng.uniqueId(),
+      uniqueID,
       root,
       action.name,
       args
@@ -63,10 +66,10 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleConstructor(depth: number): ConstructorCall {
-    const constructors = this.target.getPossibleActions("constructor");
+    const constructors = this._subject.getPossibleActions("constructor");
     if (constructors.length > 0) {
       const action = prng.pickOne(
-        this.target.getPossibleActions("constructor")
+        this._subject.getPossibleActions("constructor")
       );
 
       const args: Statement[] = [];
@@ -85,9 +88,9 @@ export class SolidityRandomSampler extends SoliditySampler {
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
       return new ConstructorCall(
-        this.target.name,
+        this._subject.name,
         prng.uniqueId(),
-        `${this.target.name}`,
+        `${this._subject.name}`,
         [],
         []
       );
@@ -106,7 +109,8 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
 
     if (
-      this.target.getPossibleActions().filter((a) => a.type === type).length &&
+      this._subject.getPossibleActions().filter((a) => a.type === type)
+        .length &&
       prng.nextBoolean(getProperty("sample_func_as_arg"))
     ) {
       // Pick function
@@ -198,7 +202,7 @@ export class SolidityRandomSampler extends SoliditySampler {
 
   sampleObjectFunctionCall(depth: number, type: string): ObjectFunctionCall {
     const action = prng.pickOne(
-      this.target.getPossibleActions("function", type)
+      this._subject.getPossibleActions("function", type)
     );
 
     const args: Statement[] = [];

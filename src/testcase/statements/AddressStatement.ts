@@ -28,7 +28,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
     return new AddressStatement(this.type, this.id, this.value);
   }
 
-  static getRandom(type = "string") {
+  static getRandom(type = "address") {
     const value = `accounts[${prng.nextInt(0, 10)}]`;
 
     return new AddressStatement(type, prng.uniqueId(), value);

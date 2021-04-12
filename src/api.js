@@ -8,9 +8,9 @@ const _ = require("lodash/lang");
 
 const ConfigValidator = require("solidity-coverage/lib/validator");
 const Instrumenter = require("./instrumentation/instrumenter");
-const Coverage = require("solidity-coverage/lib//coverage");
+const Coverage = require("solidity-coverage/lib/coverage");
 const DataCollector = require("./instrumentation/collector");
-const AppUI = require("./instrumentation/app-ui");
+const { UI, AppUI } = require("solidity-coverage/lib/ui");
 
 /**
  * Coverage Runner
@@ -127,6 +127,12 @@ class API {
     for (let key of Object.keys(this.instrumenter.instrumentationData)) {
       let point = this.instrumenter.instrumentationData[key];
       point.hits = 0;
+
+      // clear data saved from the previous test executions
+      if (!(point.left === undefined)) {
+        point.left = [];
+        point.right = [];
+      }
     }
   }
 

@@ -1,4 +1,4 @@
-const semver = require('semver');
+const semver = require("semver");
 const Registrar = require("./registrar");
 const register = new Registrar();
 
@@ -6,13 +6,13 @@ const FILE_SCOPED_ID = "fileScopedId";
 const parse = {};
 
 // Utilities
-parse.configureStatementCoverage = function(val){
+parse.configureStatementCoverage = function (val) {
   register.measureStatementCoverage = val;
-}
+};
 
-parse.configureFunctionCoverage = function(val){
+parse.configureFunctionCoverage = function (val) {
   register.measureFunctionCoverage = val;
-}
+};
 
 // Nodes
 parse.AssignmentExpression = function (
@@ -50,7 +50,7 @@ parse.FunctionCall = function (contract, expression, graph, currentNode) {
   // This makes sure we don't instrument a chain of expressions multiple times.
   if (expression.expression.type !== "FunctionCall") {
     register.statement(contract, expression);
-    if (expression.expression.name === 'require') {
+    if (expression.expression.name === "require") {
       register.requireBranch(contract, expression);
     }
     parse[expression.expression.type] &&
@@ -369,37 +369,37 @@ parse.NewExpression = function (contract, expression, graph, currentNode) {
     );
 };
 
-parse.PragmaDirective = function(contract, expression){
+parse.PragmaDirective = function (contract, expression) {
   let minVersion;
 
   // Some solidity pragmas crash semver (ex: ABIEncoderV2)
   try {
     minVersion = semver.minVersion(expression.value);
-  } catch(e){
+  } catch (e) {
     return;
   }
 
   // pragma abicoder v2 passes the semver test above but needs to be ignored
-  if (expression.name === 'abicoder'){
-    return
+  if (expression.name === "abicoder") {
+    return;
   }
 
   // From solc >=0.7.4, every file should have instrumentation methods
   // defined at the file level which file scoped fns can use...
-  if (semver.lt("0.7.3", minVersion)){
+  if (semver.lt("0.7.3", minVersion)) {
     const start = expression.range[0];
-    const end = contract.instrumented.slice(start).indexOf(';') + 1;
+    const end = contract.instrumented.slice(start).indexOf(";") + 1;
     const loc = start + end;
 
     const injectionObject = {
-      type: 'injectHashMethod',
+      type: "injectHashMethod",
       contractName: FILE_SCOPED_ID,
-      isFileScoped: true
+      isFileScoped: true,
     };
 
     contract.injectionPoints[loc] = [injectionObject];
   }
-}
+};
 
 parse.SourceUnit = function (contract, expression, graph, currentNode) {
   expression.children.forEach((construct) => {

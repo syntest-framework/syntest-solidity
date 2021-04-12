@@ -1,10 +1,82 @@
-import { ActionDescription, CFG, Target } from "syntest-framework";
+import {
+  ActionDescription,
+  CFG,
+  SearchSubject,
+  Encoding,
+  BranchObjectiveFunction,
+  FunctionObjectiveFunction,
+    ObjectiveFunction
+} from "syntest-framework";
 
-export class SolidityTarget extends Target {
+export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   private _functionCalls: FunctionDescription[] | null = null;
 
   constructor(name: string, cfg: CFG, functionMap: any) {
     super(name, cfg, functionMap);
+  }
+
+  protected _extractObjectives(): void {
+    this._cfg.nodes
+      .filter((node) => "branchId" in node)
+      .forEach((node) => {
+        const type: boolean = (node as any).type == "true" ? true : false;
+
+        this._objectives.set(
+          new BranchObjectiveFunction(
+            this,
+            node.id,
+            node.line,
+            node.locationIdx,
+            type
+          ),
+            []
+        );
+      });
+
+    for (const obj of this._objectives.keys()){
+      const childrenObj = this.findChildren(obj);
+      childrenObj.forEach((child) => this._objectives.get(obj).push(child));
+    }
+
+    // TODO: Add require statement
+
+    this._cfg.nodes
+      .filter((node) => node.absoluteRoot)
+      .forEach((node) => {
+        const functionObjective = new FunctionObjectiveFunction(this, node.id, node.line);
+        const childrenObj = this.findChildren(functionObjective);
+
+        this._objectives.set(
+            functionObjective,
+            childrenObj
+        );
+      });
+  }
+
+  findChildren(obj: ObjectiveFunction<T>): ObjectiveFunction<T>[] {
+    let childrenObj = [];
+
+    let edges2Visit = this._cfg.edges.filter((edge) => edge.from === obj.getIdentifier());
+    const visitedEdges = [];
+
+    while (edges2Visit.length > 0) {
+      const edge = edges2Visit.pop();
+
+      if (visitedEdges.includes(edge)) // this condition is made to avoid infinite loops
+        continue;
+
+      visitedEdges.push(edge);
+
+      const found = this.getObjectives().filter((child) => child.getIdentifier() === edge.to);
+      if (found.length == 0) {
+        const additionalEdges = this._cfg.edges.filter((nextEdge) => nextEdge.from === edge.to);
+        edges2Visit = edges2Visit.concat(additionalEdges);
+      } else {
+        childrenObj =  childrenObj.concat(found);
+      }
+    }
+
+    return childrenObj;
   }
 
   get functionCalls(): FunctionDescription[] {
@@ -30,7 +102,8 @@ export class SolidityTarget extends Target {
     return this._functionCalls!.filter((f) => {
       return (
         (type === undefined || f.type === type) &&
-        (returnType === undefined || f.returnType === returnType)
+        (returnType === undefined || f.returnType === returnType) &&
+        (f.visibility === "public" || f.visibility === "external")
       );
     });
   }

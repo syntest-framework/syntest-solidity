@@ -74,14 +74,11 @@ class SyntestRegistrar extends Registrar {
     const instrumented = this.removeModifier(contract, expression);
 
     const startContract = instrumented.slice(0, start);
-    const startline = ( startContract.match(/\n/g) || [] ).length + 1;
-    const startcol = start - startContract.lastIndexOf('\n') - 1;
-    
-    const endlineDelta = instrumented.slice(start).indexOf('{');
-    const functionDefinition = instrumented.slice(
-        start,
-        start + endlineDelta
-    );
+    const startline = (startContract.match(/\n/g) || []).length + 1;
+    const startcol = start - startContract.lastIndexOf("\n") - 1;
+
+    const endlineDelta = instrumented.slice(start).indexOf("{");
+    const functionDefinition = instrumented.slice(start, start + endlineDelta);
 
     contract.fnId += 1;
     contract.fnMap[contract.fnId] = {
@@ -103,13 +100,16 @@ class SyntestRegistrar extends Registrar {
 
     // It's possible functions will have modifiers that take string args
     // which contains an open curly brace. Skip ahead...
-    if (expression.modifiers && expression.modifiers.length){
-      for (let modifier of expression.modifiers ){
+    if (expression.modifiers && expression.modifiers.length) {
+      for (let modifier of expression.modifiers) {
         let str = "";
         for (let index = modifier.range[0]; index <= modifier.range[1]; index++)
           str = str + " ";
 
-        copy = copy.substring(0, modifier.range[0]) + str + copy.substring(modifier.range[1]+1, copy.length);
+        copy =
+          copy.substring(0, modifier.range[0]) +
+          str +
+          copy.substring(modifier.range[1] + 1, copy.length);
       }
     }
     return copy;
@@ -122,25 +122,17 @@ class SyntestRegistrar extends Registrar {
    */
   requireBranch(contract, expression) {
     this.addNewBranch(contract, expression);
-    this._createInjectionPoint(
-        contract,
-        expression.range[0],
-        {
-          type: 'injectRequirePre',
-          branchId: contract.branchId,
-          line:  expression.loc.start.line
-        }
-    );
-    this._createInjectionPoint(
-        contract,
-        expression.range[1] + 2,
-        {
-          type: 'injectRequirePost',
-          branchId: contract.branchId,
-          line:  expression.loc.start.line
-        }
-    );
-  };
+    this._createInjectionPoint(contract, expression.range[0], {
+      type: "injectRequirePre",
+      branchId: contract.branchId,
+      line: expression.loc.start.line,
+    });
+    this._createInjectionPoint(contract, expression.range[1] + 2, {
+      type: "injectRequirePost",
+      branchId: contract.branchId,
+      line: expression.loc.start.line,
+    });
+  }
 
   /**
    * Registers injections for if statement measurements (branches)
