@@ -1,13 +1,10 @@
 import {CFG, Node, Operation, Edge, CFGFactory} from 'syntest-framework'
 
-interface TempNode extends Node {
-    id: string;
-    line: number;
-    branch: boolean;
-    condition?: Operation;
-    temporary: boolean;
-}
+// TODO break and continue statements
 
+/**
+ * @author Dimitri Stallenberg
+ */
 export class SolidityCFGFactory implements CFGFactory {
 
     private count = 0;
@@ -19,9 +16,8 @@ export class SolidityCFGFactory implements CFGFactory {
             edges: [], nodes: []
         }
 
-        this[AST.type](AST, cfg)
+        this.visitChild(cfg, AST, [])
 
-        // throw new Error('Method not implemented.');
         return this.compress(cfg)
     }
 
@@ -30,12 +26,16 @@ export class SolidityCFGFactory implements CFGFactory {
         return cfg
     }
 
-    private connectParents(cfg: CFG, parents: TempNode[], children: TempNode[]) {
+    /**
+     * This method creates edges to connect the given parents to the given children
+     * @param cfg the cfg to add the edges to
+     * @param parents the parent nodes
+     * @param children the child nodes
+     * @private
+     */
+    private connectParents(cfg: CFG, parents: Node[], children: Node[]) {
         for (const parent of parents) {
             for (const child of children) {
-                if (parent.line === 15 && child.line === 21) {
-                    throw new Error('xxx')
-                }
                 cfg.edges.push({
                     from: parent.id,
                     to: child.id
@@ -44,11 +44,19 @@ export class SolidityCFGFactory implements CFGFactory {
         }
     }
 
-    private createNode(cfg: CFG, line: number, temporary: boolean, branch: boolean, condition?: Operation): TempNode {
-        const node: TempNode = {
+    /**
+     * This method creates a new node in the cfg
+     * @param cfg the cfg to add the node to
+     * @param line the line number of the node
+     * @param branch whether this nodes is a branching node (i.e. multiple outgoing edges)
+     * @param condition if it is a branch node this is the condition to branch on
+     * @private
+     */
+    private createNode(cfg: CFG, line: number, branch: boolean, condition?: Operation): Node {
+        const node: Node = {
             id: `${this.count++}`,
             line: line,
-            temporary: temporary,
+            root: false,
             branch: branch,
             condition: condition
         }
@@ -58,97 +66,109 @@ export class SolidityCFGFactory implements CFGFactory {
         return node
     }
 
-    private SourceUnit(AST: any, cfg: CFG) {
-        const root: TempNode = this.createNode(cfg, AST.loc.start.line, false, false)
+    /**
+     * This method visit a child node in the AST using the visitor design pattern.
+     *
+     * @param cfg the Control Flow Graph we are generating
+     * @param child the child AST node
+     * @param parents the parents of the child
+     * @private
+     */
+    private visitChild(cfg: CFG, child: any, parents: Node[], contractName?: string): Node[] {
+         const skipable: string[] = [
+             'PragmaDirective',
+             'StateVariableDeclaration',
+             'ImportDirective', // TODO maybe we should also connect the other contract?
+             'EventDefinition', // TODO
+             'EmitStatement', // TODO
+             'ModifierDefinition', // TODO
+             'StructDefinition', // TODO
+             'UsingForDeclaration', // TODO
+             'InlineAssemblyStatement', // TODO
+        ]
 
+        if (skipable.includes(child.type)) {
+            return parents
+        }
+
+        switch (child.type) {
+            case 'SourceUnit': return this.SourceUnit(cfg, child);
+            case 'ContractDefinition': return this.ContractDefinition(cfg, child, parents)
+            case 'FunctionDefinition': return this.FunctionDefinition(cfg, child, contractName)
+            case 'Block': return this.Block(cfg, child, parents)
+            case 'IfStatement': return this.IfStatement(cfg, child, parents)
+            case 'ForStatement': return this.ForStatement(cfg, child, parents)
+            case 'WhileStatement': return this.WhileStatement(cfg, child, parents)
+            case 'VariableDeclarationStatement': return this.VariableDeclarationStatement(cfg, child, parents)
+            case 'ExpressionStatement': return this.ExpressionStatement(cfg, child, parents)
+
+            case 'ReturnStatement': return this.ReturnStatement(cfg, child, parents)
+        }
+
+        console.log(child)
+        throw new Error(`AST type: ${child.type} is not supported currently!`)
+    }
+
+    private SourceUnit(cfg: CFG, AST: any): Node[] {
         for (const child of AST.children) {
-            this[child.type](child, cfg, [root])
+            this.visitChild(cfg, child, [])
         }
+
+        return []
     }
 
-    private PragmaDirective(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
-        // const node: TempNode = {
-        //     id: `${this.count++}`,
-        //     line: AST.loc.start.line,
-        //     temporary: true
-        // }
-        //
-        // cfg.nodes.push(node)
-        //
-        // cfg.edges.push({
-        //     from: parent.id,
-        //     to: node.id
-        // })
-
-        // skip
-
-        return parents
-    }
-
-    private ContractDefinition(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
-        const node: TempNode = this.createNode(cfg, AST.loc.start.line, true, false)
-
-        this.connectParents(cfg, parents, [node])
-
+    private ContractDefinition(cfg: CFG, AST: any, parents: Node[]): Node[] {
         for (const child of AST.subNodes) {
-            this[child.type](child, cfg, [node])
+            this.visitChild(cfg, child, [], AST.name)
         }
 
-        return [node]
+        return []
     }
 
-    private StateVariableDeclaration(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
-        // const node: TempNode = {
-        //     id: `${this.count++}`,
-        //     line: AST.loc.start.line,
-        //     temporary: true
-        // }
-        //
-        // cfg.nodes.push(node)
-        //
-        // cfg.edges.push({
-        //     from: parent.id,
-        //     to: node.id
-        // })
+    private FunctionDefinition(cfg: CFG, AST: any, contractName?: string): Node[] {
+        // only visible functions?
+        if (['internal', 'private'].includes(AST.visibility)) {
+            return []
+        }
 
-        // skip
+        const node: Node = {
+            id: `${this.count++}`,
+            line: AST.loc.start.lin,
+            branch: false,
+            root: true,
+            functionName: AST.name,
+            contractName: contractName,
+            isConstructor: AST.isConstructor
+        }
 
-        return parents
-    }
+        cfg.nodes.push(node)
 
-    private FunctionDefinition(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
-        const node: TempNode = this.createNode(cfg, AST.loc.start.line, false, false)
-
-
-        this.connectParents(cfg, parents, [node])
-
+        // This is a root so no parent nodes needed
+        // this.connectParents(cfg, parents, [node])
 
         // TODO parameters
         // TODO return parameters
-        // TODO visibility
-        // TODO isConstructor
 
-        // TODO check if body is block
-
-        this[AST.body.type](AST.body, cfg, [node])
+        // check if body is block (idk if abstract function definitions are allowed for example)
+        if (AST.body) {
+            this.visitChild(cfg, AST.body, [node])
+        }
 
         return [node]
     }
 
-    private Block(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
+    private Block(cfg: CFG, AST: any, parents: Node[]): Node[] {
         let nodes = parents
 
-        // console.log(AST)
         for (const child of AST.statements) {
-            console.log(child)
-            nodes = this[child.type](child, cfg, nodes)
+            nodes = this.visitChild(cfg, child, nodes)
         }
 
         return nodes // TODO
     }
 
-    private IfStatement(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
-        const node: TempNode = this.createNode(cfg, AST.loc.start.line, false, true, {
+    private IfStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+        const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
                 type: AST.condition.type,
                 operator: AST.condition.operator
             })
@@ -156,17 +176,17 @@ export class SolidityCFGFactory implements CFGFactory {
         this.connectParents(cfg, parents, [node])
 
         let count = cfg.edges.length
-        const trueNodes = this[AST.trueBody.type](AST.trueBody, cfg, [node])
+        const trueNodes = this.visitChild(cfg, AST.trueBody, [node])
         // change first added edge
         cfg.edges[count].branchType = true
 
         if (AST.falseBody) {
             count = cfg.edges.length
-            const falseNodes = this[AST.falseBody.type](AST.falseBody, cfg, [node])
+            const falseNodes = this.visitChild(cfg, AST.falseBody, [node])
             cfg.edges[count].branchType = false
             return [...trueNodes, ...falseNodes]
         } else {
-            const falseNode: TempNode = this.createNode(cfg, AST.loc.end.line, false, false)
+            const falseNode: Node = this.createNode(cfg, AST.loc.end.line, false)
 
             cfg.edges.push({
                 from: node.id,
@@ -178,8 +198,8 @@ export class SolidityCFGFactory implements CFGFactory {
         }
     }
 
-    private ForStatement(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
-        const node: TempNode = this.createNode(cfg, AST.loc.start.line, false, true, {
+    private ForStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+        const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
             type: AST.conditionExpression.type,
             operator: AST.conditionExpression.operator
         })
@@ -192,9 +212,9 @@ export class SolidityCFGFactory implements CFGFactory {
         this.connectParents(cfg, parents, [node])
 
         const count = cfg.edges.length
-        const trueNodes = this[AST.body.type](AST.body, cfg, [node])
+        const trueNodes = this.visitChild(cfg, AST.body, [node])
         cfg.edges[count].branchType = true
-        const falseNode: TempNode = this.createNode(cfg, AST.loc.end.line, false, false)
+        const falseNode: Node = this.createNode(cfg, AST.loc.end.line,  false)
 
         cfg.edges.push({
             from: node.id,
@@ -207,8 +227,8 @@ export class SolidityCFGFactory implements CFGFactory {
         return [falseNode]
     }
 
-    private WhileStatement(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
-        const node: TempNode = this.createNode(cfg, AST.loc.start.line, false, true, {
+    private WhileStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+        const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
             type: AST.condition.type,
             operator: AST.condition.operator
         })
@@ -216,9 +236,9 @@ export class SolidityCFGFactory implements CFGFactory {
         this.connectParents(cfg, parents, [node])
 
         const count = cfg.edges.length
-        const trueNodes = this[AST.body.type](AST.body, cfg, [node])
+        const trueNodes = this.visitChild(cfg, AST.body, [node])
         cfg.edges[count].branchType = true
-        const falseNode: TempNode = this.createNode(cfg, AST.loc.end.line, false, false)
+        const falseNode: Node = this.createNode(cfg, AST.loc.end.line, false)
 
         cfg.edges.push({
             from: node.id,
@@ -231,8 +251,8 @@ export class SolidityCFGFactory implements CFGFactory {
         return [falseNode]
     }
 
-    private VariableDeclarationStatement(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
-        const node: TempNode = this.createNode(cfg, AST.loc.start.line, true, false)
+    private VariableDeclarationStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+        const node: Node = this.createNode(cfg, AST.loc.start.line, false)
 
         this.connectParents(cfg, parents, [node])
 
@@ -240,20 +260,30 @@ export class SolidityCFGFactory implements CFGFactory {
     }
 
 
-    private ExpressionStatement(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
-        const node: TempNode = this.createNode(cfg, AST.loc.start.line, true, false)
+    private ExpressionStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+        const node: Node = this.createNode(cfg, AST.loc.start.line, false)
 
         this.connectParents(cfg, parents, [node])
 
         return [node]
     }
 
-    // TODO this is a terminating node sooo maybe not return anything? and then check in the parent node
-    private ReturnStatement(AST: any, cfg: CFG, parents: TempNode[]): TempNode[] {
-        const node: TempNode = this.createNode(cfg, AST.loc.start.line, true, false)
+    //  this is a terminating node sooo maybe not return anything? and then check in the parent node
+
+    /**
+     * This is a terminating node
+     * @param cfg
+     * @param AST
+     * @param parents
+     * @constructor
+     * @private
+     */
+    private ReturnStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+        const node: Node = this.createNode(cfg, AST.loc.start.line, false)
 
         this.connectParents(cfg, parents, [node])
 
+        // TODO we should still check for ternary expressions here
         return []
     }
 }

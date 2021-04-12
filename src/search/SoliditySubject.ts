@@ -17,18 +17,27 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
 
   protected _extractObjectives(): void {
     this._cfg.nodes
-      .filter((node) => "branchId" in node)
+      // only add branch nodes as objectives
+      .filter((node) => node.branch)
       .forEach((node) => {
-        const type: boolean = (node as any).type == "true" ? true : false;
-
+        // add both the true and false branch
         this._objectives.set(
           new BranchObjectiveFunction(
             this,
             node.id,
             node.line,
-            node.locationIdx,
-            type
+            true
           ),
+            []
+        );
+
+        this._objectives.set(
+            new BranchObjectiveFunction(
+                this,
+                node.id,
+                node.line,
+                false
+            ),
             []
         );
       });
@@ -41,7 +50,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     // TODO: Add require statement
 
     this._cfg.nodes
-      .filter((node) => node.absoluteRoot)
+      .filter((node) => node.root)
       .forEach((node) => {
         const functionObjective = new FunctionObjectiveFunction(this, node.id, node.line);
         const childrenObj = this.findChildren(functionObjective);

@@ -165,6 +165,7 @@ export class SolidityLauncher {
           path.join(getProperty("cfg_directory"), `${contractName}.svg`)
         );
 
+        continue
         const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
 
         const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
