@@ -11,7 +11,7 @@ import {
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
-import {AddressStatement} from "../testcase/statements/AddressStatement";
+import { AddressStatement } from "../testcase/statements/AddressStatement";
 
 /**
  * @author Dimitri Stallenberg
@@ -51,7 +51,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     const primitive: PrimitiveStatement<any> = statement as PrimitiveStatement<any>;
     if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
       const value = primitive.value.toFixed();
-      return `const ${statement.varName} = ${value}`;
+      return `const ${statement.varName} = BigInt("${value}")`;
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = "${primitive.value}"`;
     } else if (statement instanceof ByteStatement) {
