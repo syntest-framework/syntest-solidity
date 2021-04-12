@@ -43,7 +43,6 @@ export class SolidityRunner extends TestCaseRunner {
     let failures;
     // Run tests
 
-
     try {
       failures = await this.truffle.test.run(this.config);
     } catch (e) {
@@ -53,7 +52,8 @@ export class SolidityRunner extends TestCaseRunner {
     let exception;
     if (failures) {
       // TODO maybe not stop? could be a bug that has been found
-      exception = this.truffle.test.mochaRunner.suite.suites[0].tests[0].err.stack;
+      exception = this.truffle.test.mochaRunner.suite.suites[0].tests[0].err
+        .stack;
       getLogger().error("Test case has failed!");
       //process.exit(1)
     }
