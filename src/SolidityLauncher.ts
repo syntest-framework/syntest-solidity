@@ -237,6 +237,7 @@ export class SolidityLauncher {
           numOfExceptions
         );
 
+        // TODO: fix bug that causes coverage to be higher than one
         collector.recordVariable(
           RuntimeVariable.COVERAGE,
           archive.getObjectives().length / currentSubject.getObjectives().length
