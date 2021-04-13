@@ -284,7 +284,7 @@ export class SolidityLauncher {
   collectCoverageData(
     collector: StatisticsCollector<any>,
     archive: Archive<any>,
-    type: string
+    objectiveType: string
   ): void {
     const total = new Set();
     const covered = new Set();
@@ -292,9 +292,15 @@ export class SolidityLauncher {
     for (const key of archive.getObjectives()) {
       const test = archive.getEncoding(key);
       const result: ExecutionResult = test.getExecutionResult();
+      const contractName = key.getSubject().name.concat(".sol");
+
       result
         .getTraces()
-        .filter((element) => element.type.includes(type))
+        .filter((element) => element.type.includes(objectiveType))
+        .filter((element) => {
+          const paths = (element as any).contractPath.split("/");
+          return paths[paths.length - 1].includes(contractName);
+        })
         .forEach((current) => {
           total.add(
             current.type + "_" + current.line + "_" + current.locationIdx
@@ -307,7 +313,7 @@ export class SolidityLauncher {
         });
     }
 
-    switch (type) {
+    switch (objectiveType) {
       case "branch":
         {
           collector.recordVariable(
