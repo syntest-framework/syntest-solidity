@@ -11,6 +11,7 @@ import {
   createDirectoryStructure,
   deleteTempDirectories,
   drawGraph,
+  ExceptionObjectiveFunction,
   ExecutionResult,
   getLogger,
   getProperty,
@@ -26,7 +27,6 @@ import {
   SummaryWriter,
   TestCase,
   TotalTimeBudget,
-  ExceptionObjectiveFunction,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -315,12 +315,20 @@ export class SolidityLauncher {
             covered.size
           );
           collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, total.size);
+          collector.recordVariable(
+            RuntimeVariable.BRANCH_COVERAGE,
+            covered.size / total.size
+          );
         }
         break;
       case "statement":
         {
           collector.recordVariable(RuntimeVariable.COVERED_LINES, covered.size);
           collector.recordVariable(RuntimeVariable.TOTAL_LINES, total.size);
+          collector.recordVariable(
+            RuntimeVariable.LINE_COVERAGE,
+            covered.size / total.size
+          );
         }
         break;
       case "function":
@@ -330,6 +338,10 @@ export class SolidityLauncher {
             covered.size
           );
           collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, total.size);
+          collector.recordVariable(
+            RuntimeVariable.FUNCTION_COVERAGE,
+            covered.size / total.size
+          );
         }
         break;
       case "probe":
@@ -339,6 +351,10 @@ export class SolidityLauncher {
             covered.size
           );
           collector.recordVariable(RuntimeVariable.TOTAL_PROBES, total.size);
+          collector.recordVariable(
+            RuntimeVariable.PROBE_COVERAGE,
+            covered.size / total.size
+          );
         }
         break;
     }
