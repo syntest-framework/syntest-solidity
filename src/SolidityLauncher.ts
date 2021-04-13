@@ -321,20 +321,30 @@ export class SolidityLauncher {
             covered.size
           );
           collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, total.size);
-          collector.recordVariable(
-            RuntimeVariable.BRANCH_COVERAGE,
-            covered.size / total.size
-          );
+
+          if (total.size > 0.0) {
+            collector.recordVariable(
+              RuntimeVariable.BRANCH_COVERAGE,
+              covered.size / total.size
+            );
+          } else {
+            collector.recordVariable(RuntimeVariable.BRANCH_COVERAGE, 0);
+          }
         }
         break;
       case "statement":
         {
           collector.recordVariable(RuntimeVariable.COVERED_LINES, covered.size);
           collector.recordVariable(RuntimeVariable.TOTAL_LINES, total.size);
-          collector.recordVariable(
-            RuntimeVariable.LINE_COVERAGE,
-            covered.size / total.size
-          );
+
+          if (total.size > 0.0) {
+            collector.recordVariable(
+              RuntimeVariable.LINE_COVERAGE,
+              covered.size / total.size
+            );
+          } else {
+            collector.recordVariable(RuntimeVariable.LINE_COVERAGE, 0);
+          }
         }
         break;
       case "function":
@@ -344,10 +354,15 @@ export class SolidityLauncher {
             covered.size
           );
           collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, total.size);
-          collector.recordVariable(
-            RuntimeVariable.FUNCTION_COVERAGE,
-            covered.size / total.size
-          );
+
+          if (total.size > 0.0) {
+            collector.recordVariable(
+              RuntimeVariable.FUNCTION_COVERAGE,
+              covered.size / total.size
+            );
+          } else {
+            collector.recordVariable(RuntimeVariable.FUNCTION_COVERAGE, 0);
+          }
         }
         break;
       case "probe":
@@ -357,10 +372,15 @@ export class SolidityLauncher {
             covered.size
           );
           collector.recordVariable(RuntimeVariable.TOTAL_PROBES, total.size);
-          collector.recordVariable(
-            RuntimeVariable.PROBE_COVERAGE,
-            covered.size / total.size
-          );
+
+          if (total.size > 0.0) {
+            collector.recordVariable(
+              RuntimeVariable.PROBE_COVERAGE,
+              covered.size / total.size
+            );
+          } else {
+            collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, 0);
+          }
         }
         break;
     }
