@@ -131,7 +131,8 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
       return (
         (type === undefined || f.type === type) &&
         (returnType === undefined || f.returnType === returnType) &&
-        (f.visibility === "public" || f.visibility === "external")
+        (f.visibility === "public" || f.visibility === "external") &&
+        (f.name !=="") // fallback function has no name
       );
     });
   }
