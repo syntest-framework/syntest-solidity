@@ -49,6 +49,7 @@ export class SolidityRunner extends TestCaseRunner {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
+      getLogger().error(e);
     }
 
     // Retrieve execution information from the Mocha runner
@@ -84,7 +85,7 @@ export class SolidityRunner extends TestCaseRunner {
         status = SolidityExecutionStatus.TIMED_OUT;
       } else {
         status = SolidityExecutionStatus.FAILED;
-        exception = test.err.stack;
+        exception = test.err.message;
       }
 
       const duration = test.duration;
