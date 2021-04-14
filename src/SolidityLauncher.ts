@@ -199,6 +199,10 @@ export class SolidityLauncher {
           getProperty("probe_objective")
         );
         collector.recordVariable(
+          RuntimeVariable.ALGORITHM,
+          getProperty("algorithm")
+        );
+        collector.recordVariable(
           RuntimeVariable.TOTAL_OBJECTIVES,
           currentSubject.getObjectives().length
         );
