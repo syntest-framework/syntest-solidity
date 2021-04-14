@@ -10,7 +10,7 @@ import {
  * @author Dimitri Stallenberg
  */
 export class AddressStatement extends PrimitiveStatement<string> {
- protected account: number;
+  protected account: number;
 
   constructor(type: string, uniqueId: string, value: string, account: number) {
     super(type, uniqueId, value);
@@ -24,9 +24,19 @@ export class AddressStatement extends PrimitiveStatement<string> {
       );
     }
     if (prng.nextBoolean || this.account === 0)
-        return new AddressStatement(this.type, prng.uniqueId(), `accounts[${this.account+1}]`, this.account + 1);
+      return new AddressStatement(
+        this.type,
+        prng.uniqueId(),
+        `accounts[${this.account + 1}]`,
+        this.account + 1
+      );
     else
-      return new AddressStatement(this.type, prng.uniqueId(), `accounts[${this.account - 1}]`, this.account  - 1);
+      return new AddressStatement(
+        this.type,
+        prng.uniqueId(),
+        `accounts[${this.account - 1}]`,
+        this.account - 1
+      );
   }
 
   copy(): AddressStatement {
