@@ -173,19 +173,13 @@ export class SolidityLauncher {
         await suiteBuilder.clearDirectory(getProperty("temp_test_directory"));
 
         // allocate budget manager
-        const budgets = getProperty("stopping_criteria");
-        let maxTime = 0,
-          maxIterations = 0;
-        for (const budget of budgets) {
-          if (budget.criterion === "generation_limit") {
-            maxIterations = budget.limit;
-          } else if (budget.criterion === "time_limit") {
-            maxTime = budget.limit;
-          }
-        }
-        const iterationBudget = new IterationBudget(maxIterations);
-        const searchBudget = new SearchTimeBudget(maxTime);
-        const totalTimeBudget = new TotalTimeBudget(maxTime + 30);
+        const maxSearchTime = getProperty("search_time");
+        const maxTotalTime = getProperty("total_time");
+        const maxIterationBudget = getProperty("iteration_budget");
+
+        const iterationBudget = new IterationBudget(maxIterationBudget);
+        const searchBudget = new SearchTimeBudget(maxSearchTime);
+        const totalTimeBudget = new TotalTimeBudget(maxTotalTime);
         const budgetManager = new BudgetManager();
         budgetManager.addBudget(iterationBudget);
         budgetManager.addBudget(searchBudget);
