@@ -189,7 +189,15 @@ export class SolidityLauncher {
         const archive = await algorithm.search(currentSubject, budgetManager);
 
         const collector = new StatisticsCollector(totalTimeBudget);
+        collector.recordVariable(
+          RuntimeVariable.CONFIGURATION,
+          getProperty("configuration")
+        );
         collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
+        collector.recordVariable(
+          RuntimeVariable.PROBE_ENABLED,
+          getProperty("probe_objective")
+        );
         collector.recordVariable(
           RuntimeVariable.TOTAL_OBJECTIVES,
           currentSubject.getObjectives().length
