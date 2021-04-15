@@ -4,15 +4,17 @@ import {
   prng,
   TestCaseSampler,
 } from "syntest-framework";
+import BigNumber from "bignumber.js";
+import {BigIntStats} from "fs";
 
 /**
  * Special statement specific to solidity contracts
  * @author Dimitri Stallenberg
  */
 export class AddressStatement extends PrimitiveStatement<string> {
-  protected account: number;
+  protected account: BigNumber;
 
-  constructor(type: string, uniqueId: string, value: string, account: number) {
+  constructor(type: string, uniqueId: string, value: string, account: BigNumber) {
     super(type, uniqueId, value);
     this.account = account;
   }
@@ -23,19 +25,18 @@ export class AddressStatement extends PrimitiveStatement<string> {
         sampler.sampleStatement(depth, this.type, "primitive")
       );
     }
-    if (prng.nextBoolean || this.account === 0)
+
+    let change = prng.nextGaussian(0, 100000);
+    change = Math.round(change);
+
+    if (change == 0)
+      change = prng.nextBoolean() ? -1 : 1;
+
       return new AddressStatement(
         this.type,
         prng.uniqueId(),
-        `accounts[${this.account + 1}]`,
-        this.account + 1
-      );
-    else
-      return new AddressStatement(
-        this.type,
-        prng.uniqueId(),
-        `accounts[${this.account - 1}]`,
-        this.account - 1
+          AddressStatement._getAddress(this.account.plus(change)),
+          this.account.plus(change)
       );
   }
 
@@ -44,9 +45,13 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   static getRandom(type = "address") {
-    const account = prng.nextInt(0, 5);
-    const value = `accounts[${account}]`;
+    const account = prng.nextBigInt(new BigNumber(0), new BigNumber('1208925819614629174706175'));
+    const value = AddressStatement._getAddress(account);
 
     return new AddressStatement(type, prng.uniqueId(), value, account);
+  }
+
+  protected static _getAddress(int: BigNumber): string {
+    return '0x'.concat(int.toString(16).padStart(40, "0"))
   }
 }

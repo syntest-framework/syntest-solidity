@@ -11,6 +11,7 @@ import {
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
+import {AddressStatement} from "../testcase/statements/AddressStatement";
 
 /**
  * @author Dimitri Stallenberg
@@ -53,7 +54,9 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       return `const ${statement.varName} = BigInt("${value}")`;
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = "${primitive.value}"`;
-    } else if (statement instanceof ByteStatement) {
+    } else if (statement instanceof AddressStatement) {
+      return `const ${statement.varName} = "${primitive.value}"`;
+    }  else if (statement instanceof ByteStatement) {
       const bytes = web3_utils.bytesToHex((statement as ByteStatement).value);
       return `const ${statement.varName} = "${bytes}"`;
     } else {
