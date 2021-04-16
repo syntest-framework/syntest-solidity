@@ -284,8 +284,8 @@ export class SolidityLauncher {
     // Finish
     await utils.finish(config, api);
 
-    if (error !== undefined) throw error;
-    if (failures > 0) throw new Error(ui.generate("tests-fail", [failures]));
+    //if (error !== undefined) throw error;
+    //if (failures > 0) throw new Error(ui.generate("tests-fail", [failures]));
   }
 
   collectCoverageData(
