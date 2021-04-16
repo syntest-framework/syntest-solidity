@@ -11,6 +11,7 @@ import {
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
+import { AddressStatement } from "../testcase/statements/AddressStatement";
 
 /**
  * @author Dimitri Stallenberg
@@ -53,6 +54,15 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       return `const ${statement.varName} = BigInt("${value}")`;
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = "${primitive.value}"`;
+    } else if (statement instanceof AddressStatement) {
+      if (statement.account < 0) {
+        const address = "0x".concat(
+          (-statement.account).toString(16).padStart(40, "0")
+        );
+        return `const ${statement.varName} = "${address}"`;
+      } else {
+        return `const ${statement.varName} = ${primitive.value}`;
+      }
     } else if (statement instanceof ByteStatement) {
       const bytes = web3_utils.bytesToHex((statement as ByteStatement).value);
       return `const ${statement.varName} = "${bytes}"`;
@@ -66,7 +76,11 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const args = (statement as ObjectFunctionCall).getChildren();
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
-      if (statement.type !== "none" && statement.type !== "") {
+      if (
+        statement.type !== "none" &&
+        statement.type !== "" &&
+        !statement.varName.includes(",")
+      ) {
         return `const ${statement.varName} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
         }.call(${formattedArgs});`;
