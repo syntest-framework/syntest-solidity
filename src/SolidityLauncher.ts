@@ -11,6 +11,7 @@ import {
   createDirectoryStructure,
   deleteTempDirectories,
   drawGraph,
+  EvaluationBudget,
   ExceptionObjectiveFunction,
   ExecutionResult,
   getLogger,
@@ -173,15 +174,14 @@ export class SolidityLauncher {
         await suiteBuilder.clearDirectory(getProperty("temp_test_directory"));
 
         // allocate budget manager
-        const maxSearchTime = getProperty("search_time");
-        const maxTotalTime = getProperty("total_time");
-        const maxIterationBudget = getProperty("iteration_budget");
 
-        const iterationBudget = new IterationBudget(maxIterationBudget);
-        const searchBudget = new SearchTimeBudget(maxSearchTime);
-        const totalTimeBudget = new TotalTimeBudget(maxTotalTime);
+        const iterationBudget = new IterationBudget(getProperty("iteration_budget"));
+        const evaluationBudget = new EvaluationBudget();
+        const searchBudget = new SearchTimeBudget(getProperty("search_time"));
+        const totalTimeBudget = new TotalTimeBudget(getProperty("total_time"));
         const budgetManager = new BudgetManager();
         budgetManager.addBudget(iterationBudget);
+        budgetManager.addBudget(evaluationBudget);
         budgetManager.addBudget(searchBudget);
         budgetManager.addBudget(totalTimeBudget);
 
@@ -226,6 +226,11 @@ export class SolidityLauncher {
         collector.recordVariable(
           RuntimeVariable.ITERATIONS,
           iterationBudget.getCurrentBudget()
+        );
+
+        collector.recordVariable(
+          RuntimeVariable.EVALUATIONS,
+          evaluationBudget.getCurrentBudget()
         );
 
         this.collectCoverageData(collector, archive, "branch");
