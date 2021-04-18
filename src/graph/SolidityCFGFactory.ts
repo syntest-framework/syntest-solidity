@@ -83,32 +83,30 @@ export class SolidityCFGFactory implements CFGFactory {
                     }
 
                     if (possibleCompression.length > 0) {
+                        let nodeId = currentNode.id
                         if (outGoingEdges.length === 0) {
                             // no next nodes so we can also remove the last one
                             const lastNode = possibleCompression[possibleCompression.length - 1]
-                            removedNodes.push(lastNode)
-                            description.push(lastNode.line)
+                            // unless it is a root node
+                            if (!lastNode.root) {
+                                removedNodes.push(lastNode)
+                                description.push(lastNode.line)
 
-                            incomingEdges.push(cfg.edges.filter((e) => e.to === lastNode.id))
+                                incomingEdges.push(cfg.edges.filter((e) => e.to === lastNode.id))
+                            }
 
                             // change the current node to be the compressed version of all previous nodes
                             currentNode.description = description.join(', ')
-                            const lastNodeId = currentNode.id
-                            // change the edges pointing to any of the removed nodes
-                            for (const edges of incomingEdges) {
-                                for (const edge of edges) {
-                                    edge.to = lastNodeId
-                                }
-                            }
                         } else {
                             // change the current node to be the compressed version of all previous nodes
                             possibleCompression[possibleCompression.length - 1].description = description.join(', ')
-                            const lastNodeId = possibleCompression[possibleCompression.length - 1].id
-                            // change the edges pointing to any of the removed nodes
-                            for (const edges of incomingEdges) {
-                                for (const edge of edges) {
-                                    edge.to = lastNodeId
-                                }
+                            nodeId = possibleCompression[possibleCompression.length - 1].id
+                        }
+
+                        // change the edges pointing to any of the removed nodes
+                        for (const edges of incomingEdges) {
+                            for (const edge of edges) {
+                                edge.to = nodeId
                             }
                         }
                     }
@@ -192,12 +190,15 @@ export class SolidityCFGFactory implements CFGFactory {
              'PragmaDirective',
              'StateVariableDeclaration',
              'ImportDirective', // TODO maybe we should also connect the other contract?
-             'EventDefinition', // TODO
-             'EmitStatement', // TODO
-             'ModifierDefinition', // TODO
-             'StructDefinition', // TODO
-             'UsingForDeclaration', // TODO
-             'InlineAssemblyStatement', // TODO
+             'EventDefinition', // TODO ternary/conditionals
+             'EmitStatement', // TODO ternary/conditionals
+             'ModifierDefinition', // TODO ternary/conditionals
+             'StructDefinition', // TODO ternary/conditionals
+             'UsingForDeclaration', // TODO ternary/conditionals
+             'InlineAssemblyStatement', // TODO ternary/conditionals
+             'BinaryOperation',
+             'Identifier',
+             'BooleanLiteral'
         ]
 
         if (skipable.includes(child.type)) {
@@ -212,7 +213,10 @@ export class SolidityCFGFactory implements CFGFactory {
             case 'ContractDefinition': return this.ContractDefinition(cfg, child)
             case 'FunctionDefinition': return this.FunctionDefinition(cfg, child, contractName)
             case 'Block': return this.Block(cfg, child, parents)
+
             case 'IfStatement': return this.IfStatement(cfg, child, parents)
+            case 'Conditional': return this.Conditional(cfg, child, parents)
+
             case 'ForStatement': return this.ForStatement(cfg, child, parents)
             case 'WhileStatement': return this.WhileStatement(cfg, child, parents)
             case 'DoWhileStatement': return this.DoWhileStatement(cfg, child, parents)
@@ -311,6 +315,12 @@ export class SolidityCFGFactory implements CFGFactory {
         const trueNodes = childNodes
         totalBreakNodes.push(...breakNodes)
         // change first added edge
+        if (!cfg.edges[count]) {
+            // apparently there is no childnode/edge being created so we add one
+            const emptyChildNode = this.createNode(cfg, AST.trueBody.loc.start.line, false)
+            this.connectParents(cfg, [node], [emptyChildNode])
+            trueNodes.push(emptyChildNode)
+        }
         cfg.edges[count].branchType = true
 
         if (AST.falseBody) {
@@ -318,6 +328,66 @@ export class SolidityCFGFactory implements CFGFactory {
             const {childNodes, breakNodes} = this.visitChild(cfg, AST.falseBody, [node])
             const falseNodes = childNodes
             totalBreakNodes.push(...breakNodes)
+            if (!cfg.edges[count]) {
+                // apparently there is no childnode/edge being created so we add one
+                const emptyChildNode = this.createNode(cfg, AST.falseBody.loc.start.line, false)
+                this.connectParents(cfg, [node], [emptyChildNode])
+                trueNodes.push(emptyChildNode)
+            }
+            cfg.edges[count].branchType = false
+            return {
+                childNodes: [...trueNodes, ...falseNodes],
+                breakNodes: totalBreakNodes
+            }
+        } else {
+            const falseNode: Node = this.createNode(cfg, AST.loc.end.line, false)
+
+            cfg.edges.push({
+                from: node.id,
+                to: falseNode.id,
+                branchType: false
+            })
+
+            return{
+                childNodes: [...trueNodes, falseNode],
+                breakNodes: totalBreakNodes
+            }
+        }
+    }
+
+    private Conditional(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+        const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
+            type: AST.condition.type,
+            operator: AST.condition.operator
+        })
+
+        this.connectParents(cfg, parents, [node])
+
+        const totalBreakNodes = []
+        let count = cfg.edges.length
+        const {childNodes, breakNodes} = this.visitChild(cfg, AST.trueExpression, [node])
+        const trueNodes = childNodes
+        totalBreakNodes.push(...breakNodes)
+        // change first added edge
+        if (!cfg.edges[count]) {
+            // apparently there is no childnode/edge being created so we add one
+            const emptyChildNode = this.createNode(cfg, AST.trueExpression.loc.start.line, false)
+            this.connectParents(cfg, [node], [emptyChildNode])
+            trueNodes.push(emptyChildNode)
+        }
+        cfg.edges[count].branchType = true
+
+        if (AST.falseBody) {
+            count = cfg.edges.length
+            const {childNodes, breakNodes} = this.visitChild(cfg, AST.falseExpression, [node])
+            const falseNodes = childNodes
+            totalBreakNodes.push(...breakNodes)
+            if (!cfg.edges[count]) {
+                // apparently there is no childnode/edge being created so we add one
+                const emptyChildNode = this.createNode(cfg, AST.falseExpression.loc.start.line, false)
+                this.connectParents(cfg, [node], [emptyChildNode])
+                falseNodes.push(emptyChildNode)
+            }
             cfg.edges[count].branchType = false
             return {
                 childNodes: [...trueNodes, ...falseNodes],
@@ -474,7 +544,6 @@ export class SolidityCFGFactory implements CFGFactory {
         }
     }
 
-
     private ExpressionStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
         const node: Node = this.createNode(cfg, AST.loc.start.line, false)
 
@@ -499,7 +568,8 @@ export class SolidityCFGFactory implements CFGFactory {
 
         this.connectParents(cfg, parents, [node])
 
-        // TODO we should still check for ternary expressions here
+        this.visitChild(cfg, AST.expression, [node])
+
         return {
             childNodes: [],
             breakNodes: []
