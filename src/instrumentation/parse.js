@@ -412,9 +412,7 @@ parse.Modifiers = function (contract, modifiers, graph, newNode) {
 };
 
 parse.ModifierDefinition = function (contract, expression, graph, currentNode) {
-  register.functionDeclaration(contract, expression, graph, currentNode);
-  parse[expression.body.type] &&
-    parse[expression.body.type](contract, expression.body, graph, currentNode);
+  parse.FunctionDefinition(contract, expression, graph, currentNode)
 };
 
 parse.NewExpression = function (contract, expression, graph, currentNode) {
