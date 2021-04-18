@@ -198,8 +198,9 @@ export class SolidityCFGFactory implements CFGFactory {
              'InlineAssemblyStatement', // TODO ternary/conditionals
              'BinaryOperation',
              'Identifier',
-             'BooleanLiteral'
-        ]
+             'BooleanLiteral',
+             'NumberLiteral'
+         ]
 
         if (skipable.includes(child.type)) {
             return {
