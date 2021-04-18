@@ -12,6 +12,7 @@ import {
   SolidityExecutionStatus,
 } from "../../search/SolidityExecutionResult";
 import { Runner } from "mocha";
+import {SoliditySubject} from "../../search/SoliditySubject";
 
 const truffleUtils = require("../../../plugins/resources/truffle.utils");
 
@@ -27,7 +28,7 @@ export class SolidityRunner extends TestCaseRunner {
     this.config = config;
   }
 
-  async execute(testCase: TestCase): Promise<ExecutionResult> {
+  async execute(subject: SoliditySubject<TestCase>,testCase: TestCase): Promise<ExecutionResult> {
     const testPath = path.join(
       getProperty("temp_test_directory"),
       "tempTest.js"
@@ -66,6 +67,7 @@ export class SolidityRunner extends TestCaseRunner {
 
     const traces = [];
     for (const key of Object.keys(instrumentationData)) {
+      if (instrumentationData[key].contractPath.includes(subject.name + ".sol"))
       traces.push(instrumentationData[key]);
     }
 
