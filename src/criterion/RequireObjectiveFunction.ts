@@ -22,6 +22,10 @@ export class RequireObjectiveFunction<
   calculateDistance(encoding: T): number {
     const executionResult = encoding.getExecutionResult();
 
+    if (executionResult === undefined){
+      return Number.MAX_VALUE;
+    }
+
     const postCondition = executionResult
       .getTraces()
       .find((trace) => trace.type === "probePost" && trace.line === this._line);
