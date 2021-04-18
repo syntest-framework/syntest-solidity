@@ -153,7 +153,7 @@ export class SolidityLauncher {
           continue;
         }
 
-        const ast = SolidityParser.parse(target.source, { loc: true, range: true });
+        const ast = SolidityParser.parse(target.actualSource, { loc: true, range: true });
 
         const contractName = target.instrumented.contractName;
         // const cfg = target.instrumented.cfg;
@@ -165,7 +165,7 @@ export class SolidityLauncher {
           path.join(getProperty("cfg_directory"), `${contractName}.svg`)
         );
 
-        continue
+        break
         const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
 
         const runner = new SolidityRunner(suiteBuilder, api, truffle, config);

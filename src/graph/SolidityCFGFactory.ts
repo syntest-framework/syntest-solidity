@@ -2,6 +2,11 @@ import {CFG, Node, Operation, Edge, CFGFactory} from 'syntest-framework'
 
 // TODO break and continue statements
 
+interface ReturnValue {
+    childNodes: Node[]
+    breakNodes: Node[]
+}
+
 /**
  * @author Dimitri Stallenberg
  */
@@ -9,7 +14,7 @@ export class SolidityCFGFactory implements CFGFactory {
 
     private count = 0;
 
-    convertAST(AST: any): CFG {
+    convertAST(AST: any, compress = true): CFG {
         this.count = 0;
 
         const cfg: CFG = {
@@ -18,12 +23,120 @@ export class SolidityCFGFactory implements CFGFactory {
 
         this.visitChild(cfg, AST, [])
 
-        return this.compress(cfg)
+        if (compress) {
+            this.compress(cfg)
+        }
+
+        return cfg
     }
 
-    compress(cfg: CFG): CFG {
-        // TODO
-        return cfg
+    compress(cfg: CFG) {
+        const roots = cfg.nodes.filter((n) => n.root)
+
+        // create  node map for easy lookup
+        const nodeMap = new Map<string, Node>()
+        for (const node of cfg.nodes) {
+            nodeMap[node.id] = node
+        }
+
+        // create outgoing edge map for easy lookup
+        const outEdgeMap = new Map<string, string[]>()
+        for (const edge of cfg.edges) {
+            if (!outEdgeMap[edge.from]) {
+                outEdgeMap[edge.from] = []
+            }
+            outEdgeMap[edge.from].push(edge.to)
+        }
+
+        const discoveredMap = new Map<string, boolean>()
+
+        const removedNodes = []
+        // const removedEdges = []
+
+        let possibleCompression = []
+        for (const root of roots) {
+            const stack: Node[] = [root]
+            while (stack.length != 0) {
+                const currentNode = stack.pop()
+                const outGoingEdges = outEdgeMap[currentNode.id] || []
+
+                if (outGoingEdges.length === 1) {
+                    // exactly one next node so compression might be possible
+                    possibleCompression.push(currentNode)
+                } else if (outGoingEdges.length !== 1) {
+                    // zero or more than one outgoing edges so the compression ends here
+                    const description = []
+
+                    const incomingEdges: Edge[][] = []
+
+                    for (let i = 0; i < possibleCompression.length - 1; i++) {
+                        const node = possibleCompression[i]
+                        if (node.root) {
+                            // do not remove root nodes
+                            continue
+                        }
+
+                        removedNodes.push(node)
+                        description.push(node.line)
+
+                        incomingEdges.push(cfg.edges.filter((e) => e.to === node.id))
+                    }
+
+                    if (possibleCompression.length > 0) {
+                        if (outGoingEdges.length === 0) {
+                            // no next nodes so we can also remove the last one
+                            const lastNode = possibleCompression[possibleCompression.length - 1]
+                            removedNodes.push(lastNode)
+                            description.push(lastNode.line)
+
+                            incomingEdges.push(cfg.edges.filter((e) => e.to === lastNode.id))
+
+                            // change the current node to be the compressed version of all previous nodes
+                            currentNode.description = description.join(', ')
+                            const lastNodeId = currentNode.id
+                            // change the edges pointing to any of the removed nodes
+                            for (const edges of incomingEdges) {
+                                for (const edge of edges) {
+                                    edge.to = lastNodeId
+                                }
+                            }
+                        } else {
+                            // change the current node to be the compressed version of all previous nodes
+                            possibleCompression[possibleCompression.length - 1].description = description.join(', ')
+                            const lastNodeId = possibleCompression[possibleCompression.length - 1].id
+                            // change the edges pointing to any of the removed nodes
+                            for (const edges of incomingEdges) {
+                                for (const edge of edges) {
+                                    edge.to = lastNodeId
+                                }
+                            }
+                        }
+                    }
+
+
+
+                    // reset compression
+                    possibleCompression = []
+                }
+
+                if (!discoveredMap[currentNode.id]) {
+                    discoveredMap[currentNode.id] = true
+                    for (const to of outGoingEdges) {
+                        stack.push(nodeMap[to])
+                    }
+                }
+            }
+
+            // reset compressions before going to the next root
+            possibleCompression = []
+        }
+
+
+        cfg.nodes = cfg.nodes.filter((n) => !removedNodes.includes(n))
+        // remove edges of which the to/from has been removed
+        cfg.edges = cfg.edges.filter((e) => !removedNodes.find((n) => n.id === e.to || n.id === e.from))
+
+        // TODO also remove unreachable code
     }
 
     /**
@@ -74,7 +187,7 @@ export class SolidityCFGFactory implements CFGFactory {
      * @param parents the parents of the child
      * @private
      */
-    private visitChild(cfg: CFG, child: any, parents: Node[], contractName?: string): Node[] {
+    private visitChild(cfg: CFG, child: any, parents: Node[], contractName?: string): ReturnValue {
          const skipable: string[] = [
              'PragmaDirective',
              'StateVariableDeclaration',
@@ -88,52 +201,59 @@ export class SolidityCFGFactory implements CFGFactory {
         ]
 
         if (skipable.includes(child.type)) {
-            return parents
+            return {
+                childNodes: parents,
+                breakNodes: []
+            }
         }
 
         switch (child.type) {
             case 'SourceUnit': return this.SourceUnit(cfg, child);
-            case 'ContractDefinition': return this.ContractDefinition(cfg, child, parents)
+            case 'ContractDefinition': return this.ContractDefinition(cfg, child)
             case 'FunctionDefinition': return this.FunctionDefinition(cfg, child, contractName)
             case 'Block': return this.Block(cfg, child, parents)
             case 'IfStatement': return this.IfStatement(cfg, child, parents)
             case 'ForStatement': return this.ForStatement(cfg, child, parents)
             case 'WhileStatement': return this.WhileStatement(cfg, child, parents)
+            case 'DoWhileStatement': return this.DoWhileStatement(cfg, child, parents)
+
             case 'VariableDeclarationStatement': return this.VariableDeclarationStatement(cfg, child, parents)
             case 'ExpressionStatement': return this.ExpressionStatement(cfg, child, parents)
-
             case 'ReturnStatement': return this.ReturnStatement(cfg, child, parents)
+            case 'BreakStatement': return this.BreakStatement(cfg, child, parents)
+
         }
 
         console.log(child)
         throw new Error(`AST type: ${child.type} is not supported currently!`)
     }
 
-    private SourceUnit(cfg: CFG, AST: any): Node[] {
+    private SourceUnit(cfg: CFG, AST: any): ReturnValue {
         for (const child of AST.children) {
             this.visitChild(cfg, child, [])
         }
 
-        return []
+        return {
+            childNodes: [],
+            breakNodes: []
+        }
     }
 
-    private ContractDefinition(cfg: CFG, AST: any, parents: Node[]): Node[] {
+    private ContractDefinition(cfg: CFG, AST: any): ReturnValue {
         for (const child of AST.subNodes) {
             this.visitChild(cfg, child, [], AST.name)
         }
 
-        return []
+        return {
+            childNodes: [],
+            breakNodes: []
+        }
     }
 
-    private FunctionDefinition(cfg: CFG, AST: any, contractName?: string): Node[] {
-        // only visible functions?
-        if (['internal', 'private'].includes(AST.visibility)) {
-            return []
-        }
-
+    private FunctionDefinition(cfg: CFG, AST: any, contractName?: string): ReturnValue {
         const node: Node = {
             id: `${this.count++}`,
-            line: AST.loc.start.lin,
+            line: AST.loc.start.line,
             branch: false,
             root: true,
             functionName: AST.name,
@@ -154,20 +274,30 @@ export class SolidityCFGFactory implements CFGFactory {
             this.visitChild(cfg, AST.body, [node])
         }
 
-        return [node]
+        return {
+            childNodes: [node],
+            breakNodes: []
+        }
     }
 
-    private Block(cfg: CFG, AST: any, parents: Node[]): Node[] {
+    private Block(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
         let nodes = parents
 
+        const totalBreakNodes = []
         for (const child of AST.statements) {
-            nodes = this.visitChild(cfg, child, nodes)
+            const {childNodes, breakNodes} = this.visitChild(cfg, child, nodes)
+            nodes = childNodes
+            totalBreakNodes.push(...breakNodes)
         }
 
-        return nodes // TODO
+        return {
+            childNodes: nodes,
+            breakNodes: totalBreakNodes
+        } // TODO
+
     }
 
-    private IfStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+    private IfStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
         const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
                 type: AST.condition.type,
                 operator: AST.condition.operator
@@ -175,16 +305,24 @@ export class SolidityCFGFactory implements CFGFactory {
 
         this.connectParents(cfg, parents, [node])
 
+        const totalBreakNodes = []
         let count = cfg.edges.length
-        const trueNodes = this.visitChild(cfg, AST.trueBody, [node])
+        const {childNodes, breakNodes} = this.visitChild(cfg, AST.trueBody, [node])
+        const trueNodes = childNodes
+        totalBreakNodes.push(...breakNodes)
         // change first added edge
         cfg.edges[count].branchType = true
 
         if (AST.falseBody) {
             count = cfg.edges.length
-            const falseNodes = this.visitChild(cfg, AST.falseBody, [node])
+            const {childNodes, breakNodes} = this.visitChild(cfg, AST.falseBody, [node])
+            const falseNodes = childNodes
+            totalBreakNodes.push(...breakNodes)
             cfg.edges[count].branchType = false
-            return [...trueNodes, ...falseNodes]
+            return {
+                childNodes: [...trueNodes, ...falseNodes],
+                breakNodes: totalBreakNodes
+            }
         } else {
             const falseNode: Node = this.createNode(cfg, AST.loc.end.line, false)
 
@@ -194,11 +332,14 @@ export class SolidityCFGFactory implements CFGFactory {
                 branchType: false
             })
 
-            return [...trueNodes, falseNode]
+            return{
+                childNodes: [...trueNodes, falseNode],
+                breakNodes: totalBreakNodes
+            }
         }
     }
 
-    private ForStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+    private ForStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
         const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
             type: AST.conditionExpression.type,
             operator: AST.conditionExpression.operator
@@ -212,7 +353,8 @@ export class SolidityCFGFactory implements CFGFactory {
         this.connectParents(cfg, parents, [node])
 
         const count = cfg.edges.length
-        const trueNodes = this.visitChild(cfg, AST.body, [node])
+        const {childNodes, breakNodes} = this.visitChild(cfg, AST.body, [node])
+        const trueNodes = childNodes
         cfg.edges[count].branchType = true
         const falseNode: Node = this.createNode(cfg, AST.loc.end.line,  false)
 
@@ -222,12 +364,22 @@ export class SolidityCFGFactory implements CFGFactory {
             branchType: false
         })
 
+        for (const breakNode of breakNodes) {
+            cfg.edges.push({
+                from: breakNode.id,
+                to: falseNode.id
+            })
+        }
+
         this.connectParents(cfg, trueNodes, [node])
 
-        return [falseNode]
+        return {
+            childNodes: [falseNode],
+            breakNodes: []
+        }
     }
 
-    private WhileStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+    private WhileStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
         const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
             type: AST.condition.type,
             operator: AST.condition.operator
@@ -236,7 +388,9 @@ export class SolidityCFGFactory implements CFGFactory {
         this.connectParents(cfg, parents, [node])
 
         const count = cfg.edges.length
-        const trueNodes = this.visitChild(cfg, AST.body, [node])
+        const {childNodes, breakNodes} = this.visitChild(cfg, AST.body, [node])
+        const trueNodes = childNodes
+
         cfg.edges[count].branchType = true
         const falseNode: Node = this.createNode(cfg, AST.loc.end.line, false)
 
@@ -246,29 +400,91 @@ export class SolidityCFGFactory implements CFGFactory {
             branchType: false
         })
 
+        for (const breakNode of breakNodes) {
+            cfg.edges.push({
+                from: breakNode.id,
+                to: falseNode.id
+            })
+        }
+
         this.connectParents(cfg, trueNodes, [node])
 
-        return [falseNode]
+        return {
+            childNodes: [falseNode],
+            breakNodes: []
+        }
     }
 
-    private VariableDeclarationStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+    private DoWhileStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+        // entry node
+        const entryNode: Node = this.createNode(cfg, AST.loc.start.line, true, {
+            type: AST.condition.type,
+            operator: AST.condition.operator
+        })
+
+        this.connectParents(cfg, parents, [entryNode])
+
+        // 'do' block
+        const {childNodes, breakNodes} = this.visitChild(cfg, AST.body, [entryNode])
+        const trueNodes = childNodes
+
+        // while check
+        const whileNode: Node = this.createNode(cfg, AST.loc.start.line, true, {
+            type: AST.condition.type,
+            operator: AST.condition.operator
+        })
+
+        this.connectParents(cfg, trueNodes, [whileNode])
+
+        // connect back to the entry node and mark as true branch
+        const count = cfg.edges.length
+        this.connectParents(cfg, [whileNode], [entryNode])
+        cfg.edges[count].branchType = true
+
+        const falseNode: Node = this.createNode(cfg, AST.loc.end.line, false)
+
+        cfg.edges.push({
+            from: whileNode.id,
+            to: falseNode.id,
+            branchType: false
+        })
+
+        // check for breaks
+        for (const breakNode of breakNodes) {
+            cfg.edges.push({
+                from: breakNode.id,
+                to: falseNode.id
+            })
+        }
+
+        return {
+            childNodes: [falseNode],
+            breakNodes: []
+        }
+    }
+
+    private VariableDeclarationStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
         const node: Node = this.createNode(cfg, AST.loc.start.line, false)
 
         this.connectParents(cfg, parents, [node])
 
-        return [node]
+        return {
+            childNodes: [node],
+            breakNodes: []
+        }
     }
 
 
-    private ExpressionStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+    private ExpressionStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
         const node: Node = this.createNode(cfg, AST.loc.start.line, false)
 
         this.connectParents(cfg, parents, [node])
 
-        return [node]
+        return {
+            childNodes: [node],
+            breakNodes: []
+        }
     }
-
-    //  this is a terminating node sooo maybe not return anything? and then check in the parent node
 
     /**
      * This is a terminating node
@@ -278,12 +494,34 @@ export class SolidityCFGFactory implements CFGFactory {
      * @constructor
      * @private
      */
-    private ReturnStatement(cfg: CFG, AST: any, parents: Node[]): Node[] {
+    private ReturnStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
         const node: Node = this.createNode(cfg, AST.loc.start.line, false)
 
         this.connectParents(cfg, parents, [node])
 
         // TODO we should still check for ternary expressions here
-        return []
+        return {
+            childNodes: [],
+            breakNodes: []
+        }
+    }
+
+    /**
+     * This is a break statement
+     * @param cfg
+     * @param AST
+     * @param parents
+     * @constructor
+     * @private
+     */
+    private BreakStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+        const node: Node = this.createNode(cfg, AST.loc.start.line, false)
+
+        this.connectParents(cfg, parents, [node])
+
+        return {
+            childNodes: [],
+            breakNodes: [node]
+        }
     }
 }
