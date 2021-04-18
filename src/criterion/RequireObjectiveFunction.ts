@@ -26,33 +26,35 @@ export class RequireObjectiveFunction<
       return Number.MAX_VALUE;
     }
 
-    const postCondition = executionResult
-      .getTraces()
-      .find((trace) => trace.type === "probePost" && trace.line === this._line);
+    if (executionResult.coversLine(this._line)) {
+      const postCondition = executionResult
+          .getTraces()
+          .find((trace) => trace.type === "probePost" && trace.line === this._line);
 
-    const preCondition = executionResult
-      .getTraces()
-      .find((trace) => trace.type === "probePre" && trace.line === this._line);
+      const preCondition = executionResult
+          .getTraces()
+          .find((trace) => trace.type === "probePre" && trace.line === this._line);
 
-    if (this.type) {
-      if (postCondition.hits > 0) return 0;
-      else {
-        if (preCondition.hits > 0) {
-          return BranchDistance.branchDistanceNumeric(
+      if (this.type) {
+        if (postCondition.hits > 0) return 0;
+        else {
+          if (preCondition.hits > 0) {
+            return BranchDistance.branchDistanceNumeric(
+                preCondition.opcode,
+                preCondition.left,
+                preCondition.right,
+                true
+            );
+          }
+        }
+      } else {
+        return BranchDistance.branchDistanceNumeric(
             preCondition.opcode,
             preCondition.left,
             preCondition.right,
-            true
-          );
-        }
+            false
+        );
       }
-    } else {
-      return BranchDistance.branchDistanceNumeric(
-        preCondition.opcode,
-        preCondition.left,
-        preCondition.right,
-        false
-      );
     }
 
     // find the corresponding branch node inside the cfg
