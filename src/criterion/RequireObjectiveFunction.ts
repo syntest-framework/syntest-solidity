@@ -22,37 +22,41 @@ export class RequireObjectiveFunction<
   calculateDistance(encoding: T): number {
     const executionResult = encoding.getExecutionResult();
 
-    if (executionResult === undefined){
+    if (executionResult === undefined) {
       return Number.MAX_VALUE;
     }
 
     if (executionResult.coversLine(this._line)) {
       const postCondition = executionResult
-          .getTraces()
-          .find((trace) => trace.type === "probePost" && trace.line === this._line);
+        .getTraces()
+        .find(
+          (trace) => trace.type === "probePost" && trace.line === this._line
+        );
 
       const preCondition = executionResult
-          .getTraces()
-          .find((trace) => trace.type === "probePre" && trace.line === this._line);
+        .getTraces()
+        .find(
+          (trace) => trace.type === "probePre" && trace.line === this._line
+        );
 
       if (this.type) {
         if (postCondition.hits > 0) return 0;
         else {
           if (preCondition.hits > 0) {
             return BranchDistance.branchDistanceNumeric(
-                preCondition.opcode,
-                preCondition.left,
-                preCondition.right,
-                true
+              preCondition.opcode,
+              preCondition.left,
+              preCondition.right,
+              true
             );
           }
         }
       } else {
         return BranchDistance.branchDistanceNumeric(
-            preCondition.opcode,
-            preCondition.left,
-            preCondition.right,
-            false
+          preCondition.opcode,
+          preCondition.left,
+          preCondition.right,
+          false
         );
       }
     }

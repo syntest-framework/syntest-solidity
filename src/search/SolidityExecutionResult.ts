@@ -72,8 +72,7 @@ export class SolidityExecutionResult implements ExecutionResult {
         (trace.type === "statement" ||
           trace.type === "function" ||
           trace.type === "requirePre" ||
-          trace.type === "branch"  // this line is needed for branches with no control dependent statements
-        ) &&
+          trace.type === "branch") && // this line is needed for branches with no control dependent statements
         trace.line === line &&
         trace.hits > 0
       )

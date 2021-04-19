@@ -207,6 +207,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
               assertions += `\t\tassert.equal(${variableName}, "${assertion[variableName]}")\n`;
             } else if (variableName.includes("int")) {
               assertions += `\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))\n`;
+            } else if (variableName.includes("exception")) {
+              assertions += `\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))\n`;
             } else {
               assertions += `\t\tassert.equal(${variableName}, ${assertion[variableName]})\n`;
             }
