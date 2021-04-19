@@ -175,7 +175,9 @@ export class SolidityLauncher {
 
         // allocate budget manager
 
-        const iterationBudget = new IterationBudget(getProperty("iteration_budget"));
+        const iterationBudget = new IterationBudget(
+          getProperty("iteration_budget")
+        );
         const evaluationBudget = new EvaluationBudget();
         const searchBudget = new SearchTimeBudget(getProperty("search_time"));
         const totalTimeBudget = new TotalTimeBudget(getProperty("total_time"));
@@ -189,6 +191,7 @@ export class SolidityLauncher {
         const archive = await algorithm.search(currentSubject, budgetManager);
 
         const collector = new StatisticsCollector(totalTimeBudget);
+        collector.recordVariable(RuntimeVariable.VERSION, 1);
         collector.recordVariable(
           RuntimeVariable.CONFIGURATION,
           getProperty("configuration")
