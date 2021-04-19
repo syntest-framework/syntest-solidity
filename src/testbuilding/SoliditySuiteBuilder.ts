@@ -95,28 +95,22 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       const assertions = new Map();
 
       for (const testCase of reducedArchive.get(key)!) {
-        if (testCase instanceof ExceptionObjectiveFunction) {
-          assertions.set(testCase);
-        } else {
-          const additionalAssertions: { [key: string]: string } = {};
+        const additionalAssertions: { [key: string]: string } = {};
 
-          try {
-            // extract the log statements
-            const dir = await readdirSync(
-              path.join(getProperty("temp_log_directory"), testCase.id)
+        try {
+          // extract the log statements
+          const dir = await readdirSync(
+            path.join(getProperty("temp_log_directory"), testCase.id)
+          );
+
+          for (const file of dir) {
+            additionalAssertions[file] = await readFileSync(
+              path.join(getProperty("temp_log_directory"), testCase.id, file),
+              "utf8"
             );
-
-            for (const file of dir) {
-              additionalAssertions[file] = await readFileSync(
-                path.join(getProperty("temp_log_directory"), testCase.id, file),
-                "utf8"
-              );
-            }
-          } catch (error) {
-            continue;
           }
-
-          assertions.set(testCase, additionalAssertions);
+        } catch (error) {
+          continue;
         }
 
         await this.clearDirectory(
