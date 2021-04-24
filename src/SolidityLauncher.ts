@@ -107,11 +107,7 @@ export class SolidityLauncher {
       const included = obj['included']
       const excluded = obj['excluded']
 
-      // // Instrument
-      // const skipFiles = api.skipFiles || [];
-      // skipFiles.push("Migrations.sol");
-
-      // targets = api.instrument(targets);
+      // Instrument
       const targets = api.instrument(included);
       const skipped = excluded
 
