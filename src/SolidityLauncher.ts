@@ -152,9 +152,6 @@ export class SolidityLauncher {
 
       for (const target of targets) {
         getLogger().info(`Testing target: ${target.relativePath}`);
-        // if (getProperty("exclude").includes(target.relativePath)) {
-        //   continue;
-        // }
 
         const contractName = target.instrumented.contractName;
         const cfg = target.instrumented.cfg;
