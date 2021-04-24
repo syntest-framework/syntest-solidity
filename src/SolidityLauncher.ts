@@ -106,6 +106,9 @@ export class SolidityLauncher {
       const obj = await loadTargetFiles()
       const included = obj['included']
       const excluded = obj['excluded']
+      console.log(included.length)
+      console.log(excluded.length)
+
 
       // Instrument
       const targets = api.instrument(included);
