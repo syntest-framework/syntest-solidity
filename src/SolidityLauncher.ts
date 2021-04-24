@@ -38,6 +38,7 @@ import API = require("../src/api");
 import utils = require("../plugins/resources/plugin.utils");
 import truffleUtils = require("../plugins/resources/truffle.utils");
 import PluginUI = require("../plugins/resources/truffle.ui");
+import {createMigrationsDir, generateDeployContracts, generateInitialMigration} from "./util/deployment";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -106,9 +107,10 @@ export class SolidityLauncher {
       const obj = await loadTargetFiles()
       const included = obj['included']
       const excluded = obj['excluded']
-      console.log(included.length)
-      console.log(excluded.length)
 
+      await createMigrationsDir()
+      await generateInitialMigration()
+      await generateDeployContracts(included.map((x) => x.relativePath))
 
       // Instrument
       const targets = api.instrument(included);
