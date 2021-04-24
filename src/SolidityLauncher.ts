@@ -28,6 +28,7 @@ import {
   SummaryWriter,
   TestCase,
   TotalTimeBudget,
+  loadTargetFiles,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -102,13 +103,17 @@ export class SolidityLauncher {
       // Run post-launch server hook;
       await api.onServerReady(config);
 
-      // Instrument
-      const skipFiles = api.skipFiles || [];
-      skipFiles.push("Migrations.sol");
+      const obj = await loadTargetFiles()
+      const included = obj['included']
+      const excluded = obj['excluded']
 
-      let { targets, skipped } = utils.assembleFiles(config, skipFiles);
+      // // Instrument
+      // const skipFiles = api.skipFiles || [];
+      // skipFiles.push("Migrations.sol");
 
-      targets = api.instrument(targets);
+      // targets = api.instrument(targets);
+      const targets = api.instrument(included);
+      const skipped = excluded
 
       utils.reportSkipped(config, skipped);
 
@@ -150,10 +155,10 @@ export class SolidityLauncher {
       const finalArchive = new Archive<TestCase>();
 
       for (const target of targets) {
-        getLogger().debug(`Testing target: ${target.relativePath}`);
-        if (getProperty("exclude").includes(target.relativePath)) {
-          continue;
-        }
+        getLogger().info(`Testing target: ${target.relativePath}`);
+        // if (getProperty("exclude").includes(target.relativePath)) {
+        //   continue;
+        // }
 
         const contractName = target.instrumented.contractName;
         const cfg = target.instrumented.cfg;
