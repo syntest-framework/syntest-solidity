@@ -1,5 +1,6 @@
 import {mkdirSync, rmdirSync, writeFileSync} from "fs";
 import * as path from 'path'
+import { TargetFile } from "syntest-framework";
 
 export async function createMigrationsDir() {
     await rmdirSync(`migrations`, { recursive: true });
@@ -18,26 +19,62 @@ module.exports = function(deployer) {
     await writeFileSync(file, text)
 }
 
-export async function generateDeployContracts(contracts: string[]) {
+export async function generateDeployContracts(contracts: TargetFile[]) {
     const file = 'migrations/2_deploy_contracts.js'
-    const imports = []
-    const deployments = []
-    // TODO check for dependencies
+    const importsStatements = []
+    const deploymentStatements = []
 
+    const orderedContracts: string[] = []
+
+    // check and order for dependencies
     for (const contract of contracts) {
-        console.log(contract)
-        const base = path.basename(contract)
-        const name = base.split('.')[0]
+        const base = path.basename(contract.relativePath)
+        const fileName = base.split('.')[0]
+        // TODO this assumes that the contract has the same name as the file (not sure if thats a problem maybe we done need the contract name at all)
 
-        // TODO this assumes that the contract has the same name as the file
-        imports.push(`const ${name} = artifacts.require("${name}");`)
-        deployments.push(`\tdeployer.deploy(${name});`)
+        // check if it is already included
+        if (orderedContracts.includes(fileName)) {
+            break;
+        }
+
+        const imports = contract.source.match(/import ["].*["];/g)
+
+        if (imports && imports.length) {
+            for (const _import of imports) {
+                let stripped = _import.split('"')[1]
+
+                if (stripped.includes("/")) {
+                    stripped = path.basename(stripped)
+                }
+
+                if (stripped.includes(".")) {
+                    stripped = stripped.split(".")[0]
+                }
+
+                // check if already in ordered
+                if (!orderedContracts.includes(stripped)) {
+                    // if not in there add it to the deployment and import it
+                    importsStatements.push(`const ${stripped} = artifacts.require("${stripped}");`)
+                    deploymentStatements.push(`\tdeployer.deploy(${stripped});`)
+                }
+
+                // else add it before the current contract
+                orderedContracts.push(stripped)
+
+                // link to contract
+                deploymentStatements.push(`\tdeployer.link(${fileName}, ${stripped});`)
+            }
+        }
+
+        orderedContracts.push(fileName)
+        importsStatements.push(`const ${fileName} = artifacts.require("${fileName}");`)
+        deploymentStatements.push(`\tdeployer.deploy(${fileName});`)
     }
 
     const text = [
-        imports.join('\n'),
+        importsStatements.join('\n'),
         `module.exports = async function (deployer) {`,
-        deployments.join('\n'),
+        deploymentStatements.join('\n'),
         `};`
     ].join('\n\n')
 

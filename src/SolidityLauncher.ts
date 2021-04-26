@@ -110,7 +110,7 @@ export class SolidityLauncher {
 
       await createMigrationsDir()
       await generateInitialMigration()
-      await generateDeployContracts(included.map((x) => x.relativePath))
+      await generateDeployContracts(included)
 
       // Instrument
       const targets = api.instrument(included);
@@ -290,6 +290,7 @@ export class SolidityLauncher {
       await api.onIstanbulComplete(config);
     } catch (e) {
       error = e;
+      console.trace(e)
     }
 
     // Finish
