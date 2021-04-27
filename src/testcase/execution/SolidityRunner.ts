@@ -54,6 +54,8 @@ export class SolidityRunner extends TestCaseRunner {
     } catch (e) {
       // TODO
       getLogger().error(e);
+      console.log(e)
+      console.trace(e)
     }
 
     // Retrieve execution information from the Mocha runner

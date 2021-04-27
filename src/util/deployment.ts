@@ -9,7 +9,11 @@ export async function createMigrationsDir() {
 
 export async function generateInitialMigration () {
     const file = 'migrations/1_initial_migration.js'
-    const text = `const Migrations = artifacts.require("Migrations");
+    const text = `// the deployer has many advanced features we are not using yet,
+// for more info goto:
+// https://www.trufflesuite.com/docs/truffle/getting-started/running-migrations
+
+const Migrations = artifacts.require("Migrations");
 
 module.exports = function(deployer) {
   deployer.deploy(Migrations);
@@ -19,7 +23,7 @@ module.exports = function(deployer) {
     await writeFileSync(file, text)
 }
 
-export async function generateDeployContracts(contracts: TargetFile[]) {
+export async function generateDeployContracts(contracts: TargetFile[], excluded: string[]) {
     const file = 'migrations/2_deploy_contracts.js'
     const importsStatements = []
     const deploymentStatements = []
@@ -49,6 +53,10 @@ export async function generateDeployContracts(contracts: TargetFile[]) {
 
                 if (stripped.includes(".")) {
                     stripped = stripped.split(".")[0]
+                }
+
+                if (excluded.includes(stripped)) {
+                    continue
                 }
 
                 // check if already in ordered

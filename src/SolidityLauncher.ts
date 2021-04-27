@@ -110,7 +110,7 @@ export class SolidityLauncher {
 
       await createMigrationsDir()
       await generateInitialMigration()
-      await generateDeployContracts(included)
+      await generateDeployContracts(included, excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
 
       // Instrument
       const targets = api.instrument(included);
