@@ -9,6 +9,7 @@ import {
   BudgetManager,
   createAlgorithmFromConfig,
   createDirectoryStructure,
+  createTempDirectoryStructure,
   deleteTempDirectories,
   drawGraph,
   EvaluationBudget,
@@ -144,6 +145,7 @@ export class SolidityLauncher {
       await api.onCompileComplete(config);
 
       await createDirectoryStructure();
+      await createTempDirectoryStructure();
 
       const stringifier = new SolidityTruffleStringifier();
       const suiteBuilder = new SoliditySuiteBuilder(

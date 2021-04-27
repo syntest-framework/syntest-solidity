@@ -1,4 +1,4 @@
-import {mkdirSync, rmdirSync, writeFileSync} from "fs";
+import {mkdirSync, rmdirSync, writeFileSync, existsSync} from "fs";
 import * as path from 'path'
 import { TargetFile } from "syntest-framework";
 
@@ -7,17 +7,53 @@ export async function createMigrationsDir() {
     await mkdirSync(`migrations`);
 }
 
-export async function generateInitialMigration () {
-    const file = 'migrations/1_initial_migration.js'
-    const text = `// the deployer has many advanced features we are not using yet,
-// for more info goto:
-// https://www.trufflesuite.com/docs/truffle/getting-started/running-migrations
+async function createMigrationsContract () {
+    const file = `contracts/Migrations.sol`
 
-const Migrations = artifacts.require("Migrations");
+    if (existsSync(file)) {
+        return
+    }
+
+    if (!existsSync('contracts')) {
+        await mkdirSync('contracts')
+    }
+
+    const text = `// SPDX-License-Identifier: MIT
+pragma solidity >=0.4.25 <0.7.0;
+
+contract Migrations {
+  address public owner;
+  uint public last_completed_migration;
+
+  modifier restricted() {
+    if (msg.sender == owner) _;
+  }
+
+  constructor() public {
+    owner = msg.sender;
+  }
+
+  function setCompleted(uint completed) public restricted {
+    last_completed_migration = completed;
+  }
+}
+`
+    await writeFileSync(file, text)
+}
+
+export async function generateInitialMigration () {
+    await createMigrationsContract()
+
+    const file = 'migrations/1_initial_migration.js'
+    const text = `const Migrations = artifacts.require("Migrations");
 
 module.exports = function(deployer) {
   deployer.deploy(Migrations);
 };
+
+// the deployer has many advanced features we are not using yet,
+// for more info goto:
+// https://www.trufflesuite.com/docs/truffle/getting-started/running-migrations
 `
 
     await writeFileSync(file, text)
