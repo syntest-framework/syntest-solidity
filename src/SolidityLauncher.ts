@@ -39,12 +39,7 @@ import API = require("../src/api");
 import utils = require("../plugins/resources/plugin.utils");
 import truffleUtils = require("../plugins/resources/truffle.utils");
 import PluginUI = require("../plugins/resources/truffle.ui");
-import {
-  createMigrationsDir,
-  generateDeployContracts,
-  generateInitialMigration,
-  removeMigrationsDir
-} from "./util/deployment";
+import {createMigrationsDir, generateDeployContracts, generateInitialMigration} from "./util/deployment";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -114,6 +109,10 @@ export class SolidityLauncher {
       const included = obj['included']
       const excluded = obj['excluded']
 
+      await createMigrationsDir()
+      await generateInitialMigration()
+      await generateDeployContracts(included, excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
+
       // Instrument
       const targets = api.instrument(included);
       const skipped = excluded
@@ -145,6 +144,9 @@ export class SolidityLauncher {
       await truffle.contracts.compile(config);
       await api.onCompileComplete(config);
 
+      await createDirectoryStructure();
+      await createTempDirectoryStructure();
+
       const stringifier = new SolidityTruffleStringifier();
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
@@ -156,13 +158,6 @@ export class SolidityLauncher {
       const finalArchive = new Archive<TestCase>();
 
       for (const target of targets) {
-        await createDirectoryStructure();
-        await createTempDirectoryStructure();
-
-        await createMigrationsDir()
-        await generateInitialMigration()
-        await generateDeployContracts(included, excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
-
         getLogger().info(`Testing target: ${target.relativePath}`);
 
         const contractName = target.instrumented.contractName;
@@ -275,12 +270,11 @@ export class SolidityLauncher {
         for (const key of archive.getObjectives()) {
           finalArchive.update(key, archive.getEncoding(key));
         }
-
-        await deleteTempDirectories();
-        await removeMigrationsDir();
       }
 
       await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
+
+      await deleteTempDirectories();
 
       config.test_files = await truffleUtils.getTestFilePaths({
         testDir: path.resolve(getProperty("final_suite_directory")),
