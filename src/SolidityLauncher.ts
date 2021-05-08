@@ -109,9 +109,10 @@ export class SolidityLauncher {
       const included = obj['included']
       const excluded = obj['excluded']
 
-      await createMigrationsDir()
-      await generateInitialMigration()
-      await generateDeployContracts(included, excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
+      if (!included.length) {
+        getLogger().error(`No targets where selected! Try changing the 'include' parameter`);
+        process.exit(1)
+      }
 
       // Instrument
       const targets = api.instrument(included);
@@ -144,9 +145,6 @@ export class SolidityLauncher {
       await truffle.contracts.compile(config);
       await api.onCompileComplete(config);
 
-      await createDirectoryStructure();
-      await createTempDirectoryStructure();
-
       const stringifier = new SolidityTruffleStringifier();
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
@@ -158,6 +156,13 @@ export class SolidityLauncher {
       const finalArchive = new Archive<TestCase>();
 
       for (const target of targets) {
+        await createMigrationsDir()
+        await generateInitialMigration()
+        await generateDeployContracts([target], excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
+
+        await createDirectoryStructure();
+        await createTempDirectoryStructure();
+
         getLogger().info(`Testing target: ${target.relativePath}`);
 
         const contractName = target.instrumented.contractName;
@@ -270,7 +275,12 @@ export class SolidityLauncher {
         for (const key of archive.getObjectives()) {
           finalArchive.update(key, archive.getEncoding(key));
         }
+
+        await deleteTempDirectories();
+
       }
+      await createDirectoryStructure();
+      await createTempDirectoryStructure();
 
       await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
 
@@ -279,6 +289,7 @@ export class SolidityLauncher {
       config.test_files = await truffleUtils.getTestFilePaths({
         testDir: path.resolve(getProperty("final_suite_directory")),
       });
+
       // Run tests
       try {
         failures = await truffle.test.run(config);

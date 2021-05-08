@@ -95,9 +95,10 @@ export async function generateDeployContracts(contracts: TargetFile[], excluded:
                     stripped = stripped.split(".")[0]
                 }
 
-                if (excluded.includes(stripped)) {
-                    continue
-                }
+                // TODO not sure if to include or exclude...
+                // if (excluded.includes(stripped)) {
+                //     continue
+                // }
 
                 // check if already in ordered
                 if (!orderedContracts.includes(stripped)) {
@@ -110,7 +111,7 @@ export async function generateDeployContracts(contracts: TargetFile[], excluded:
                 orderedContracts.push(stripped)
 
                 // link to contract
-                deploymentStatements.push(`\tdeployer.link(${fileName}, ${stripped});`)
+                deploymentStatements.push(`\tdeployer.link(${stripped}, ${fileName});`)
             }
         }
 
