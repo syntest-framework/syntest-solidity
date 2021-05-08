@@ -227,22 +227,6 @@ function loadSyntestJS(config = {}) {
 // Finishing / Cleanup
 // ==========================
 
-/**
- * Silently removes temporary folders and calls api.finish to shut server down
- * @param  {TruffleConfig}     config
- * @param  {SolidityCoverage}  api
- * @return {Promise}
- */
-async function finish(config, api) {
-  const { tempContractsDir, tempArtifactsDir } = getTempLocations(config);
-
-  shell.config.silent = true;
-  shell.rm("-Rf", tempContractsDir);
-  shell.rm("-Rf", tempArtifactsDir);
-  shell.config.silent = false;
-
-  if (api) await api.finish();
-}
 
 module.exports = {
   assembleFiles: assembleFiles,

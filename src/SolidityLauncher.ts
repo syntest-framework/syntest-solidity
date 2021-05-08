@@ -39,7 +39,12 @@ import API = require("../src/api");
 import utils = require("../plugins/resources/plugin.utils");
 import truffleUtils = require("../plugins/resources/truffle.utils");
 import PluginUI = require("../plugins/resources/truffle.ui");
-import {createMigrationsDir, generateDeployContracts, generateInitialMigration} from "./util/deployment";
+import {
+  createMigrationsDir,
+  generateDeployContracts,
+  generateInitialMigration,
+  removeMigrationsDir
+} from "./util/deployment";
 import {rmdirSync} from "fs";
 
 const pkg = require("../package.json");
@@ -55,6 +60,11 @@ export class SolidityLauncher {
    */
   public async run(config: TruffleConfig) {
     let api, error, failures, ui;
+
+    // Filesystem & Compiler Re-configuration
+    const tempContractsDir = path.join('.syntest_coverage')
+    const tempArtifactsDir = path.join('.syntest_artifacts')
+
     try {
       config = truffleUtils.normalizeConfig(config);
 
@@ -121,43 +131,37 @@ export class SolidityLauncher {
 
       utils.reportSkipped(config, skipped);
 
+      utils.setupTempFolders(config, tempContractsDir, tempArtifactsDir);
+      utils.save(targets, config.contracts_directory, tempContractsDir);
+      utils.save(skipped, config.contracts_directory, tempContractsDir);
+
+      config.contracts_directory = tempContractsDir;
+      config.build_directory = tempArtifactsDir;
+
+      config.contracts_build_directory = path.join(
+        tempArtifactsDir,
+        path.basename(config.contracts_build_directory)
+      );
+
+      config.all = true;
+      config.compilers.solc.settings.optimizer.enabled = false;
+      config.quiet = true;
+
+      // Compile Instrumented Contracts
+      await truffle.contracts.compile(config);
+      await api.onCompileComplete(config);
+
+      const stringifier = new SolidityTruffleStringifier();
+      const suiteBuilder = new SoliditySuiteBuilder(
+        stringifier,
+        api,
+        truffle,
+        config
+      );
 
       const finalArchive = new Archive<TestCase>();
 
       for (const target of targets) {
-
-        // Filesystem & Compiler Re-configuration
-        const tempContractsDir = path.join('.syntest_coverage')
-        const tempArtifactsDir = path.join('.syntest_artifacts')
-
-        utils.setupTempFolders(config, tempContractsDir, tempArtifactsDir);
-        utils.save(targets, config.contracts_directory, tempContractsDir);
-        utils.save(skipped, config.contracts_directory, tempContractsDir);
-
-        config.contracts_directory = tempContractsDir;
-        config.build_directory = tempArtifactsDir;
-
-        config.contracts_build_directory = path.join(
-            tempArtifactsDir,
-            path.basename(config.contracts_build_directory)
-        );
-
-        config.all = true;
-        config.compilers.solc.settings.optimizer.enabled = false;
-        config.quiet = true;
-
-        // Compile Instrumented Contracts
-        await truffle.contracts.compile(config);
-        await api.onCompileComplete(config);
-
-        const stringifier = new SolidityTruffleStringifier();
-        const suiteBuilder = new SoliditySuiteBuilder(
-            stringifier,
-            api,
-            truffle,
-            config
-        );
-
         await createMigrationsDir()
         await generateInitialMigration()
         await generateDeployContracts([target], excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
@@ -279,16 +283,21 @@ export class SolidityLauncher {
         }
 
         await deleteTempDirectories();
-        await rmdirSync(tempContractsDir, { recursive: true });
-        await rmdirSync(tempArtifactsDir, { recursive: true });
+
+        await removeMigrationsDir()
       }
-      
+
+      await createMigrationsDir()
+      await generateInitialMigration()
+      await generateDeployContracts(targets, excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
+
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
       await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
 
       await deleteTempDirectories();
+      await removeMigrationsDir()
 
       config.test_files = await truffleUtils.getTestFilePaths({
         testDir: path.resolve(getProperty("final_suite_directory")),
@@ -311,8 +320,11 @@ export class SolidityLauncher {
     }
 
     // Finish
-    await utils.finish(config, api);
-
+    await rmdirSync(tempContractsDir, { recursive: true });
+    await rmdirSync(tempContractsDir, { recursive: true });
+    // Shut server down
+    await api.finish()
+    
     //if (error !== undefined) throw error;
     //if (failures > 0) throw new Error(ui.generate("tests-fail", [failures]));
   }
