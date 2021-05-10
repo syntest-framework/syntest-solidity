@@ -46,6 +46,7 @@ import {
   removeMigrationsDir
 } from "./util/deployment";
 import {rmdirSync} from "fs";
+import {setupTempFolders, tearDownTempFolders} from "./util/fileSystem";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -131,7 +132,7 @@ export class SolidityLauncher {
 
       utils.reportSkipped(config, skipped);
 
-      utils.setupTempFolders(config, tempContractsDir, tempArtifactsDir);
+      await setupTempFolders(tempContractsDir, tempArtifactsDir)
       utils.save(targets, config.contracts_directory, tempContractsDir);
       utils.save(skipped, config.contracts_directory, tempContractsDir);
 
@@ -320,8 +321,8 @@ export class SolidityLauncher {
     }
 
     // Finish
-    await rmdirSync(tempContractsDir, { recursive: true });
-    await rmdirSync(tempContractsDir, { recursive: true });
+    await tearDownTempFolders(tempContractsDir, tempArtifactsDir)
+
     // Shut server down
     await api.finish()
 
