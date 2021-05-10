@@ -324,7 +324,7 @@ export class SolidityLauncher {
     await rmdirSync(tempContractsDir, { recursive: true });
     // Shut server down
     await api.finish()
-    
+
     //if (error !== undefined) throw error;
     //if (failures > 0) throw new Error(ui.generate("tests-fail", [failures]));
   }
