@@ -1,7 +1,7 @@
 import {
   ExecutionResult,
   getLogger,
-  getProperty,
+  Properties,
   SuiteBuilder,
   TestCase,
   TestCaseRunner,
@@ -13,8 +13,7 @@ import {
 } from "../../search/SolidityExecutionResult";
 import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
-
-const truffleUtils = require("../../../plugins/resources/truffle.utils");
+import {getTestFilePaths} from "../../util/fileSystem";
 
 export class SolidityRunner extends TestCaseRunner {
   protected api: any;
@@ -33,7 +32,7 @@ export class SolidityRunner extends TestCaseRunner {
     testCase: TestCase
   ): Promise<ExecutionResult> {
     const testPath = path.join(
-      getProperty("temp_test_directory"),
+      Properties.temp_test_directory,
       "tempTest.js"
     );
     await this.suiteBuilder.writeTestCase(
@@ -42,8 +41,8 @@ export class SolidityRunner extends TestCaseRunner {
       testCase.root.constructorName
     );
 
-    this.config.testDir = path.resolve(getProperty("temp_test_directory"));
-    this.config.test_files = await truffleUtils.getTestFilePaths(this.config);
+    this.config.testDir = path.resolve(Properties.temp_test_directory);
+    this.config.test_files = await getTestFilePaths(this.config);
 
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();

@@ -36,20 +36,57 @@ import * as path from "path";
 import TruffleConfig = require("@truffle/config");
 
 import API = require("../src/api");
-import utils = require("../plugins/resources/plugin.utils");
-import truffleUtils = require("../plugins/resources/truffle.utils");
-import PluginUI = require("../plugins/resources/truffle.ui");
+
 import {
   createMigrationsDir,
   generateDeployContracts,
   generateInitialMigration,
   removeMigrationsDir
 } from "./util/deployment";
-import {rmdirSync} from "fs";
-import {setupTempFolders, tearDownTempFolders} from "./util/fileSystem";
+
+import {getTestFilePaths, save, setupTempFolders, tearDownTempFolders} from "./util/fileSystem";
+import CLI from "./ui/CLI";
+import {setNetwork, setNetworkFrom} from "./util/network";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
+const globalModules = require("global-modules");
+
+
+/**
+ * Tries to load truffle module library and reports source. User can force use of
+ * a non-local version using cli flags (see option). It's necessary to maintain
+ * a fail-safe lib because feature was only introduced in 5.0.30. Load order is:
+ *
+ * 1. local node_modules
+ * 2. global node_modules
+ * 3. fail-safe (truffle lib v 5.0.31 at ./plugin-assets/truffle.library)
+ *
+ * @param  {Object} truffleConfig config
+ * @return {Module}
+ */
+function loadLibrary(config) {
+  // Local
+  try {
+    if (config.useGlobalTruffle || config.usePluginTruffle) throw null;
+
+    const lib = require("truffle");
+    getLogger().info("lib-local");
+    return lib;
+  } catch (err) {}
+
+  // Global
+  try {
+    if (config.usePluginTruffle) throw null;
+
+    const globalTruffle = path.join(globalModules, "truffle");
+    const lib = require(globalTruffle);
+    getLogger().info("lib-global");
+    return lib;
+  } catch (err) {}
+}
+
+
 
 export class SolidityLauncher {
   private readonly _program = "syntest-solidity";
@@ -60,14 +97,16 @@ export class SolidityLauncher {
    * @return {Promise}
    */
   public async run(config: TruffleConfig) {
-    let api, error, failures, ui;
+    let api, error, failures;
 
     // Filesystem & Compiler Re-configuration
     const tempContractsDir = path.join('.syntest_coverage')
     const tempArtifactsDir = path.join('.syntest_artifacts')
 
     try {
-      config = truffleUtils.normalizeConfig(config);
+      const ui = new CLI(true)
+
+      config = normalizeConfig(config);
 
       await guessCWD(null);
 
@@ -82,14 +121,12 @@ export class SolidityLauncher {
 
       config.testDir = getProperty("temp_test_directory");
 
-      ui = new PluginUI(config.logger.log);
-
       if (config.help) return ui.report("help"); // Exit if --help
 
-      const truffle = truffleUtils.loadLibrary(config);
+      const truffle = loadLibrary(config);
       api = new API(myConfig);
 
-      truffleUtils.setNetwork(config, api);
+      setNetwork(config, api);
 
       // Server launch
       const client = api.client || truffle.ganache;
@@ -100,13 +137,19 @@ export class SolidityLauncher {
       const nodeInfo = await web3.eth.getNodeInfo();
       const ganacheVersion = nodeInfo.split("/")[1];
 
-      truffleUtils.setNetworkFrom(config, accounts);
+      setNetworkFrom(config, accounts);
 
       // Version Info
       ui.report("versions", [truffle.version, ganacheVersion, pkg.version]);
 
       // Exit if --version
-      if (config.version) return await utils.finish(config, api);
+      if (config.version) {
+        // Finish
+        await tearDownTempFolders(tempContractsDir, tempArtifactsDir)
+
+        // Shut server down
+        await api.finish()
+      }
 
       ui.report("network", [
         config.network,
@@ -130,11 +173,12 @@ export class SolidityLauncher {
       const targets = api.instrument(included);
       const skipped = excluded
 
-      utils.reportSkipped(config, skipped);
+      ui.reportSkipped(config, skipped);
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir)
-      utils.save(targets, config.contracts_directory, tempContractsDir);
-      utils.save(skipped, config.contracts_directory, tempContractsDir);
+      save(targets, config.contracts_directory, tempContractsDir);
+
+      save(skipped, config.contracts_directory, tempContractsDir);
 
       config.contracts_directory = tempContractsDir;
       config.build_directory = tempArtifactsDir;
@@ -300,7 +344,7 @@ export class SolidityLauncher {
       await deleteTempDirectories();
       await removeMigrationsDir()
 
-      config.test_files = await truffleUtils.getTestFilePaths({
+      config.test_files = await getTestFilePaths({
         testDir: path.resolve(getProperty("final_suite_directory")),
       });
 
