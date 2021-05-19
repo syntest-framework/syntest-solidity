@@ -11,7 +11,7 @@ export async function createMigrationsDir() {
     await mkdirSync(`migrations`);
 }
 
-async function createMigrationsContract () {
+export async function createMigrationsContract () {
     const file = `contracts/Migrations.sol`
 
     if (existsSync(file)) {

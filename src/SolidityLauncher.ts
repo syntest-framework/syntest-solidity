@@ -16,7 +16,7 @@ import {
   ExceptionObjectiveFunction,
   ExecutionResult,
   getLogger,
-  getProperty,
+  Properties,
   guessCWD,
   IterationBudget,
   loadConfig,
@@ -30,6 +30,7 @@ import {
   TestCase,
   TotalTimeBudget,
   loadTargetFiles,
+  TargetFile,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -44,9 +45,13 @@ import {
   removeMigrationsDir
 } from "./util/deployment";
 
+import {
+  normalizeConfig
+} from "./util/config"
+import {setNetwork, setNetworkFrom} from "./util/network";
+
 import {getTestFilePaths, save, setupTempFolders, tearDownTempFolders} from "./util/fileSystem";
 import CLI from "./ui/CLI";
-import {setNetwork, setNetworkFrom} from "./util/network";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -119,7 +124,7 @@ export class SolidityLauncher {
       processConfig(myConfig, args);
       setupLogger();
 
-      config.testDir = getProperty("temp_test_directory");
+      config.testDir = Properties.temp_test_directory
 
       if (config.help) return ui.report("help"); // Exit if --help
 
@@ -177,7 +182,6 @@ export class SolidityLauncher {
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir)
       save(targets, config.contracts_directory, tempContractsDir);
-
       save(skipped, config.contracts_directory, tempContractsDir);
 
       config.contracts_directory = tempContractsDir;
@@ -196,140 +200,13 @@ export class SolidityLauncher {
       await truffle.contracts.compile(config);
       await api.onCompileComplete(config);
 
-      const stringifier = new SolidityTruffleStringifier();
-      const suiteBuilder = new SoliditySuiteBuilder(
-        stringifier,
-        api,
-        truffle,
-        config
-      );
-
       const finalArchive = new Archive<TestCase>();
 
       for (const target of targets) {
-        await createMigrationsDir()
-        await generateInitialMigration()
-        await generateDeployContracts([target], excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
-
-        await createDirectoryStructure();
-        await createTempDirectoryStructure();
-
-        getLogger().info(`Testing target: ${target.relativePath}`);
-
-        const contractName = target.instrumented.contractName;
-        const cfg = target.instrumented.cfg;
-        const fnMap = target.instrumented.fnMap;
-
-        drawGraph(
-          cfg,
-          path.join(getProperty("cfg_directory"), `${contractName}.svg`)
-        );
-
-        const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
-
-        const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
-
-        const sampler = new SolidityRandomSampler(currentSubject);
-        const algorithm = createAlgorithmFromConfig(sampler, runner);
-
-        await suiteBuilder.clearDirectory(getProperty("temp_test_directory"));
-
-        // allocate budget manager
-
-        const iterationBudget = new IterationBudget(
-          getProperty("iteration_budget")
-        );
-        const evaluationBudget = new EvaluationBudget();
-        const searchBudget = new SearchTimeBudget(getProperty("search_time"));
-        const totalTimeBudget = new TotalTimeBudget(getProperty("total_time"));
-        const budgetManager = new BudgetManager();
-        budgetManager.addBudget(iterationBudget);
-        budgetManager.addBudget(evaluationBudget);
-        budgetManager.addBudget(searchBudget);
-        budgetManager.addBudget(totalTimeBudget);
-
-        // This searches for a covering population
-        const archive = await algorithm.search(currentSubject, budgetManager);
-
-        const collector = new StatisticsCollector(totalTimeBudget);
-        collector.recordVariable(RuntimeVariable.VERSION, 1);
-        collector.recordVariable(
-          RuntimeVariable.CONFIGURATION,
-          getProperty("configuration")
-        );
-        collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
-        collector.recordVariable(
-          RuntimeVariable.PROBE_ENABLED,
-          getProperty("probe_objective")
-        );
-        collector.recordVariable(
-          RuntimeVariable.ALGORITHM,
-          getProperty("algorithm")
-        );
-        collector.recordVariable(
-          RuntimeVariable.TOTAL_OBJECTIVES,
-          currentSubject.getObjectives().length
-        );
-
-        collector.recordVariable(
-          RuntimeVariable.COVERED_OBJECTIVES,
-          archive.getObjectives().length
-        );
-
-        collector.recordVariable(RuntimeVariable.SEED, getProperty("seed"));
-        collector.recordVariable(
-          RuntimeVariable.SEARCH_TIME,
-          searchBudget.getCurrentBudget()
-        );
-
-        collector.recordVariable(
-          RuntimeVariable.TOTAL_TIME,
-          totalTimeBudget.getCurrentBudget()
-        );
-
-        collector.recordVariable(
-          RuntimeVariable.ITERATIONS,
-          iterationBudget.getCurrentBudget()
-        );
-
-        collector.recordVariable(
-          RuntimeVariable.EVALUATIONS,
-          evaluationBudget.getCurrentBudget()
-        );
-
-        this.collectCoverageData(collector, archive, "branch");
-        this.collectCoverageData(collector, archive, "statement");
-        this.collectCoverageData(collector, archive, "function");
-        this.collectCoverageData(collector, archive, "probe");
-
-        const numOfExceptions = archive
-          .getObjectives()
-          .filter(
-            (objective) => objective instanceof ExceptionObjectiveFunction
-          ).length;
-        collector.recordVariable(
-          RuntimeVariable.COVERED_EXCEPTIONS,
-          numOfExceptions
-        );
-
-        collector.recordVariable(
-          RuntimeVariable.COVERAGE,
-          (archive.getObjectives().length - numOfExceptions) /
-            currentSubject.getObjectives().length
-        );
-
-        const statisticFile = path.resolve(getProperty("statistics_directory"));
-
-        const writer = new SummaryWriter();
-        writer.write(collector, statisticFile + "/statistics.csv");
-
+        const archive = await testTarget(target, excluded, api, truffle, config)
         for (const key of archive.getObjectives()) {
           finalArchive.update(key, archive.getEncoding(key));
         }
-
-        await deleteTempDirectories();
-
-        await removeMigrationsDir()
       }
 
       await createMigrationsDir()
@@ -339,13 +216,21 @@ export class SolidityLauncher {
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
+      const stringifier = new SolidityTruffleStringifier();
+      const suiteBuilder = new SoliditySuiteBuilder(
+          stringifier,
+          api,
+          truffle,
+          config
+      );
+
       await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
 
       await deleteTempDirectories();
       await removeMigrationsDir()
 
       config.test_files = await getTestFilePaths({
-        testDir: path.resolve(getProperty("final_suite_directory")),
+        testDir: path.resolve(Properties.final_suite_directory),
       });
 
       // Run tests
@@ -373,21 +258,155 @@ export class SolidityLauncher {
     //if (error !== undefined) throw error;
     //if (failures > 0) throw new Error(ui.generate("tests-fail", [failures]));
   }
+}
 
-  collectCoverageData(
+async function testTarget(target: any, excluded: TargetFile[], api, truffle, config) {
+  await createMigrationsDir()
+  await generateInitialMigration()
+  await generateDeployContracts([target], excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
+
+  await createDirectoryStructure();
+  await createTempDirectoryStructure();
+
+  getLogger().info(`Testing target: ${target.relativePath}`);
+
+  const contractName = target.instrumented.contractName;
+  const cfg = target.instrumented.cfg;
+  const fnMap = target.instrumented.fnMap;
+
+  drawGraph(
+      cfg,
+      path.join(Properties.cfg_directory, `${contractName}.svg`)
+  );
+
+  const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
+
+  const stringifier = new SolidityTruffleStringifier();
+  const suiteBuilder = new SoliditySuiteBuilder(
+      stringifier,
+      api,
+      truffle,
+      config
+  );
+
+  const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
+
+  const sampler = new SolidityRandomSampler(currentSubject);
+  const algorithm = createAlgorithmFromConfig(sampler, runner);
+
+  await suiteBuilder.clearDirectory(Properties.temp_test_directory);
+
+  // allocate budget manager
+
+  const iterationBudget = new IterationBudget(
+      Properties.iteration_budget
+  );
+  const evaluationBudget = new EvaluationBudget();
+  const searchBudget = new SearchTimeBudget(Properties.search_time);
+  const totalTimeBudget = new TotalTimeBudget(Properties.total_time);
+  const budgetManager = new BudgetManager();
+  budgetManager.addBudget(iterationBudget);
+  budgetManager.addBudget(evaluationBudget);
+  budgetManager.addBudget(searchBudget);
+  budgetManager.addBudget(totalTimeBudget);
+
+  // This searches for a covering population
+  const archive = await algorithm.search(currentSubject, budgetManager);
+
+  const collector = new StatisticsCollector(totalTimeBudget);
+  collector.recordVariable(RuntimeVariable.VERSION, 1);
+  collector.recordVariable(
+      RuntimeVariable.CONFIGURATION,
+      Properties.configuration
+  );
+  collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
+  collector.recordVariable(
+      RuntimeVariable.PROBE_ENABLED,
+      Properties.probe_objective
+  );
+  collector.recordVariable(
+      RuntimeVariable.ALGORITHM,
+      Properties.algorithm
+  );
+  collector.recordVariable(
+      RuntimeVariable.TOTAL_OBJECTIVES,
+      currentSubject.getObjectives().length
+  );
+
+  collector.recordVariable(
+      RuntimeVariable.COVERED_OBJECTIVES,
+      archive.getObjectives().length
+  );
+
+  collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
+  collector.recordVariable(
+      RuntimeVariable.SEARCH_TIME,
+      searchBudget.getCurrentBudget()
+  );
+
+  collector.recordVariable(
+      RuntimeVariable.TOTAL_TIME,
+      totalTimeBudget.getCurrentBudget()
+  );
+
+  collector.recordVariable(
+      RuntimeVariable.ITERATIONS,
+      iterationBudget.getCurrentBudget()
+  );
+
+  collector.recordVariable(
+      RuntimeVariable.EVALUATIONS,
+      evaluationBudget.getCurrentBudget()
+  );
+
+  collectCoverageData(collector, archive, "branch");
+  collectCoverageData(collector, archive, "statement");
+  collectCoverageData(collector, archive, "function");
+  collectCoverageData(collector, archive, "probe");
+
+  const numOfExceptions = archive
+      .getObjectives()
+      .filter(
+          (objective) => objective instanceof ExceptionObjectiveFunction
+      ).length;
+  collector.recordVariable(
+      RuntimeVariable.COVERED_EXCEPTIONS,
+      numOfExceptions
+  );
+
+  collector.recordVariable(
+      RuntimeVariable.COVERAGE,
+      (archive.getObjectives().length - numOfExceptions) /
+      currentSubject.getObjectives().length
+  );
+
+  const statisticFile = path.resolve(Properties.statistics_directory);
+
+  const writer = new SummaryWriter();
+  writer.write(collector, statisticFile + "/statistics.csv");
+
+  await deleteTempDirectories();
+
+  await removeMigrationsDir()
+
+  return archive
+}
+
+
+function collectCoverageData(
     collector: StatisticsCollector<any>,
     archive: Archive<any>,
     objectiveType: string
-  ): void {
-    const total = new Set();
-    const covered = new Set();
+): void {
+  const total = new Set();
+  const covered = new Set();
 
-    for (const key of archive.getObjectives()) {
-      const test = archive.getEncoding(key);
-      const result: ExecutionResult = test.getExecutionResult();
-      const contractName = key.getSubject().name.concat(".sol");
+  for (const key of archive.getObjectives()) {
+    const test = archive.getEncoding(key);
+    const result: ExecutionResult = test.getExecutionResult();
+    const contractName = key.getSubject().name.concat(".sol");
 
-      result
+    result
         .getTraces()
         .filter((element) => element.type.includes(objectiveType))
         .filter((element) => {
@@ -396,86 +415,85 @@ export class SolidityLauncher {
         })
         .forEach((current) => {
           total.add(
-            current.type + "_" + current.line + "_" + current.locationIdx
+              current.type + "_" + current.line + "_" + current.locationIdx
           );
 
           if (current.hits > 0)
             covered.add(
-              current.type + "_" + current.line + "_" + current.locationIdx
+                current.type + "_" + current.line + "_" + current.locationIdx
             );
         });
+  }
+
+  switch (objectiveType) {
+    case "branch":
+    {
+      collector.recordVariable(
+          RuntimeVariable.COVERED_BRANCHES,
+          covered.size
+      );
+      collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, total.size);
+
+      if (total.size > 0.0) {
+        collector.recordVariable(
+            RuntimeVariable.BRANCH_COVERAGE,
+            covered.size / total.size
+        );
+      } else {
+        collector.recordVariable(RuntimeVariable.BRANCH_COVERAGE, 0);
+      }
     }
+      break;
+    case "statement":
+    {
+      collector.recordVariable(RuntimeVariable.COVERED_LINES, covered.size);
+      collector.recordVariable(RuntimeVariable.TOTAL_LINES, total.size);
 
-    switch (objectiveType) {
-      case "branch":
-        {
-          collector.recordVariable(
-            RuntimeVariable.COVERED_BRANCHES,
-            covered.size
-          );
-          collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, total.size);
-
-          if (total.size > 0.0) {
-            collector.recordVariable(
-              RuntimeVariable.BRANCH_COVERAGE,
-              covered.size / total.size
-            );
-          } else {
-            collector.recordVariable(RuntimeVariable.BRANCH_COVERAGE, 0);
-          }
-        }
-        break;
-      case "statement":
-        {
-          collector.recordVariable(RuntimeVariable.COVERED_LINES, covered.size);
-          collector.recordVariable(RuntimeVariable.TOTAL_LINES, total.size);
-
-          if (total.size > 0.0) {
-            collector.recordVariable(
-              RuntimeVariable.LINE_COVERAGE,
-              covered.size / total.size
-            );
-          } else {
-            collector.recordVariable(RuntimeVariable.LINE_COVERAGE, 0);
-          }
-        }
-        break;
-      case "function":
-        {
-          collector.recordVariable(
-            RuntimeVariable.COVERED_FUNCTIONS,
-            covered.size
-          );
-          collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, total.size);
-
-          if (total.size > 0.0) {
-            collector.recordVariable(
-              RuntimeVariable.FUNCTION_COVERAGE,
-              covered.size / total.size
-            );
-          } else {
-            collector.recordVariable(RuntimeVariable.FUNCTION_COVERAGE, 0);
-          }
-        }
-        break;
-      case "probe":
-        {
-          collector.recordVariable(
-            RuntimeVariable.COVERED_PROBES,
-            covered.size
-          );
-          collector.recordVariable(RuntimeVariable.TOTAL_PROBES, total.size);
-
-          if (total.size > 0.0) {
-            collector.recordVariable(
-              RuntimeVariable.PROBE_COVERAGE,
-              covered.size / total.size
-            );
-          } else {
-            collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, 0);
-          }
-        }
-        break;
+      if (total.size > 0.0) {
+        collector.recordVariable(
+            RuntimeVariable.LINE_COVERAGE,
+            covered.size / total.size
+        );
+      } else {
+        collector.recordVariable(RuntimeVariable.LINE_COVERAGE, 0);
+      }
     }
+      break;
+    case "function":
+    {
+      collector.recordVariable(
+          RuntimeVariable.COVERED_FUNCTIONS,
+          covered.size
+      );
+      collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, total.size);
+
+      if (total.size > 0.0) {
+        collector.recordVariable(
+            RuntimeVariable.FUNCTION_COVERAGE,
+            covered.size / total.size
+        );
+      } else {
+        collector.recordVariable(RuntimeVariable.FUNCTION_COVERAGE, 0);
+      }
+    }
+      break;
+    case "probe":
+    {
+      collector.recordVariable(
+          RuntimeVariable.COVERED_PROBES,
+          covered.size
+      );
+      collector.recordVariable(RuntimeVariable.TOTAL_PROBES, total.size);
+
+      if (total.size > 0.0) {
+        collector.recordVariable(
+            RuntimeVariable.PROBE_COVERAGE,
+            covered.size / total.size
+        );
+      } else {
+        collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, 0);
+      }
+    }
+      break;
   }
 }

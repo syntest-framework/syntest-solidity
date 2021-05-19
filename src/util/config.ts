@@ -3,7 +3,7 @@
  * keys required by the plugin utils
  * @return {Object} truffle-config.js
  */
-function normalizeConfig(config) {
+export function normalizeConfig(config) {
     config.workingDir = config.working_directory;
     config.contractsDir = config.contracts_directory;
     config.testDir = config.test_directory;

@@ -1,15 +1,14 @@
 import {
+  Properties,
   TestCaseDecoder,
   SuiteBuilder,
   TestCase,
   Archive,
   ExceptionObjectiveFunction,
-  Properties,
 } from "syntest-framework";
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
 import {getTestFilePaths} from "../util/fileSystem";
-
 
 /**
  * @author Dimitri Stallenberg
