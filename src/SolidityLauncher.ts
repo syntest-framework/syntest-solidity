@@ -16,7 +16,7 @@ import {
   ExceptionObjectiveFunction,
   ExecutionResult,
   getLogger,
-  getProperty,
+  Properties,
   guessCWD,
   IterationBudget,
   loadConfig,
@@ -80,7 +80,7 @@ export class SolidityLauncher {
       processConfig(myConfig, args);
       setupLogger();
 
-      config.testDir = getProperty("temp_test_directory");
+      config.testDir = Properties.temp_test_directory
 
       ui = new PluginUI(config.logger.log);
 
@@ -178,7 +178,7 @@ export class SolidityLauncher {
 
         drawGraph(
           cfg,
-          path.join(getProperty("cfg_directory"), `${contractName}.svg`)
+          path.join(Properties.cfg_directory, `${contractName}.svg`)
         );
 
         const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
@@ -188,16 +188,16 @@ export class SolidityLauncher {
         const sampler = new SolidityRandomSampler(currentSubject);
         const algorithm = createAlgorithmFromConfig(sampler, runner);
 
-        await suiteBuilder.clearDirectory(getProperty("temp_test_directory"));
+        await suiteBuilder.clearDirectory(Properties.temp_test_directory);
 
         // allocate budget manager
 
         const iterationBudget = new IterationBudget(
-          getProperty("iteration_budget")
+          Properties.iteration_budget
         );
         const evaluationBudget = new EvaluationBudget();
-        const searchBudget = new SearchTimeBudget(getProperty("search_time"));
-        const totalTimeBudget = new TotalTimeBudget(getProperty("total_time"));
+        const searchBudget = new SearchTimeBudget(Properties.search_time);
+        const totalTimeBudget = new TotalTimeBudget(Properties.total_time);
         const budgetManager = new BudgetManager();
         budgetManager.addBudget(iterationBudget);
         budgetManager.addBudget(evaluationBudget);
@@ -211,16 +211,16 @@ export class SolidityLauncher {
         collector.recordVariable(RuntimeVariable.VERSION, 1);
         collector.recordVariable(
           RuntimeVariable.CONFIGURATION,
-          getProperty("configuration")
+          Properties.configuration
         );
         collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
         collector.recordVariable(
           RuntimeVariable.PROBE_ENABLED,
-          getProperty("probe_objective")
+          Properties.probe_objective
         );
         collector.recordVariable(
           RuntimeVariable.ALGORITHM,
-          getProperty("algorithm")
+          Properties.algorithm
         );
         collector.recordVariable(
           RuntimeVariable.TOTAL_OBJECTIVES,
@@ -232,7 +232,7 @@ export class SolidityLauncher {
           archive.getObjectives().length
         );
 
-        collector.recordVariable(RuntimeVariable.SEED, getProperty("seed"));
+        collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
         collector.recordVariable(
           RuntimeVariable.SEARCH_TIME,
           searchBudget.getCurrentBudget()
@@ -274,7 +274,7 @@ export class SolidityLauncher {
             currentSubject.getObjectives().length
         );
 
-        const statisticFile = path.resolve(getProperty("statistics_directory"));
+        const statisticFile = path.resolve(Properties.statistics_directory);
 
         const writer = new SummaryWriter();
         writer.write(collector, statisticFile + "/statistics.csv");
@@ -301,7 +301,7 @@ export class SolidityLauncher {
       await removeMigrationsDir()
 
       config.test_files = await truffleUtils.getTestFilePaths({
-        testDir: path.resolve(getProperty("final_suite_directory")),
+        testDir: path.resolve(Properties.final_suite_directory),
       });
 
       // Run tests

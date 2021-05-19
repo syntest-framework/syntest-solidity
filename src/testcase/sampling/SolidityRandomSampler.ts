@@ -1,7 +1,7 @@
 import {
   BoolStatement,
   ConstructorCall,
-  getProperty,
+  Properties,
   NumericStatement,
   ObjectFunctionCall,
   ActionStatement,
@@ -98,7 +98,7 @@ export class SolidityRandomSampler extends SoliditySampler {
 
   sampleArgument(depth: number, type: string, bits: number): Statement {
     // check depth to decide whether to pick a variable
-    if (depth >= getProperty("max_depth")) {
+    if (depth >= Properties.max_depth) {
       // TODO or take an already available variable
       if (type.includes("int")) {
         return this.sampleNumericGene(depth, type, bits);
@@ -110,7 +110,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     if (
       this._subject.getPossibleActions().filter((a) => a.type === type)
         .length &&
-      prng.nextBoolean(getProperty("sample_func_as_arg"))
+      prng.nextBoolean(Properties.sample_func_as_arg)
     ) {
       // Pick function
       // TODO or take an already available functionCall
@@ -145,13 +145,13 @@ export class SolidityRandomSampler extends SoliditySampler {
     if (type.includes("ufixed")) {
       return NumericStatement.getRandom(
         "ufixed",
-        getProperty("numeric_decimals"),
+        Properties.numeric_decimals,
         false
       );
     } else {
       return NumericStatement.getRandom(
         "fixed",
-        getProperty("numeric_decimals"),
+        Properties.numeric_decimals,
         true
       );
     }

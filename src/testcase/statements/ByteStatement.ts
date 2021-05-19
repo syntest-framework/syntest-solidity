@@ -1,5 +1,5 @@
 import {
-  getProperty,
+  Properties,
   PrimitiveStatement,
   prng,
   TestCaseSampler,
@@ -22,7 +22,7 @@ export class ByteStatement extends PrimitiveStatement<number[]> {
   }
 
   mutate(sampler: TestCaseSampler, depth: number): ByteStatement {
-    if (prng.nextBoolean(getProperty("delta_mutation_probability"))) {
+    if (prng.nextBoolean(Properties.delta_mutation_probability)) {
       const index = prng.nextInt(0, this.value.length - 1);
 
       const change = prng.nextGaussian(0, 3);
