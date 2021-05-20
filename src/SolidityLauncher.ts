@@ -105,15 +105,15 @@ export class SolidityLauncher {
     let api, error, failures;
 
     // Filesystem & Compiler Re-configuration
-    const tempContractsDir = path.join('.syntest_coverage')
-    const tempArtifactsDir = path.join('.syntest_artifacts')
+    const tempContractsDir = path.join(process.cwd(), '.syntest_coverage')
+    const tempArtifactsDir = path.join(process.cwd(), '.syntest_artifacts')
 
     try {
       const ui = new CLI(true)
 
       config = normalizeConfig(config);
 
-      await guessCWD(null);
+      await guessCWD(config.workingDir);
 
       const additionalOptions = {}; // TODO
       setupOptions(this._program, additionalOptions);
@@ -124,7 +124,7 @@ export class SolidityLauncher {
       processConfig(myConfig, args);
       setupLogger();
 
-      config.testDir = Properties.temp_test_directory
+      config.testDir = path.join(process.cwd(), Properties.temp_test_directory)
 
       if (config.help) return ui.report("help"); // Exit if --help
 

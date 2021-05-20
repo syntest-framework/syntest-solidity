@@ -41,7 +41,7 @@ export class SolidityRunner extends TestCaseRunner {
       testCase.root.constructorName
     );
 
-    this.config.testDir = path.resolve(Properties.temp_test_directory);
+    this.config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
     this.config.test_files = await getTestFilePaths(this.config);
 
     // Reset instrumentation data (no hits)
