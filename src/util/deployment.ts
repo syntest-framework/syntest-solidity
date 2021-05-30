@@ -46,8 +46,6 @@ contract Migrations {
 }
 
 export async function generateInitialMigration () {
-    await createMigrationsContract()
-
     const file = 'migrations/1_initial_migration.js'
     const text = `const Migrations = artifacts.require("Migrations");
 

@@ -40,13 +40,19 @@ export class SolidityRunner extends TestCaseRunner {
       testCase,
       testCase.root.constructorName
     );
+    // config.testDir = path.join(process.cwd(), Properties.temp_test_directory)
 
-    this.config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
+    // this.config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
     this.config.test_files = await getTestFilePaths(this.config);
 
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
 
+
+    // console.log(this.config)
+    // if (this.config) {
+    //   process.exit(0)
+    // }
     // Run tests
     const old = console.log
     // eslint-disable-next-line @typescript-eslint/no-empty-function

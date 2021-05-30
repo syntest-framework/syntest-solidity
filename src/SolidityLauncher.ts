@@ -39,6 +39,7 @@ import TruffleConfig = require("@truffle/config");
 import API = require("../src/api");
 
 import {
+  createMigrationsContract,
   createMigrationsDir,
   generateDeployContracts,
   generateInitialMigration,
@@ -105,6 +106,10 @@ export class SolidityLauncher {
     let api, error, failures;
 
     // Filesystem & Compiler Re-configuration
+    config = normalizeConfig(config);
+
+    // const tempContractsDir = path.join(config.workingDir, '.coverage_contracts')
+    // const tempArtifactsDir = path.join(config.workingDir, '.coverage_artifacts')
     const tempContractsDir = path.join(process.cwd(), '.syntest_coverage')
     const tempArtifactsDir = path.join(process.cwd(), '.syntest_artifacts')
 
@@ -154,6 +159,8 @@ export class SolidityLauncher {
 
         // Shut server down
         await api.finish()
+        getLogger().info(`Version: `);
+        process.exit(0)
       }
 
       ui.report("network", [
@@ -165,11 +172,18 @@ export class SolidityLauncher {
       // Run post-launch server hook;
       await api.onServerReady(config);
 
+      await createMigrationsContract()
+
       const obj = await loadTargetFiles()
       const included = obj['included']
       const excluded = obj['excluded']
 
       if (!included.length) {
+        // Finish
+        await tearDownTempFolders(tempContractsDir, tempArtifactsDir)
+
+        // Shut server down
+        await api.finish()
         getLogger().error(`No targets where selected! Try changing the 'include' parameter`);
         process.exit(1)
       }
@@ -181,8 +195,8 @@ export class SolidityLauncher {
       ui.reportSkipped(config, skipped);
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir)
-      save(targets, config.contracts_directory, tempContractsDir);
-      save(skipped, config.contracts_directory, tempContractsDir);
+      await save(targets, config.contracts_directory, tempContractsDir);
+      await save(skipped, config.contracts_directory, tempContractsDir);
 
       config.contracts_directory = tempContractsDir;
       config.build_directory = tempArtifactsDir;

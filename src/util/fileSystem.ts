@@ -34,12 +34,12 @@ export async function tearDownTempFolders(tempContractsDir: string, tempArtifact
  * @param  {[type]} originalDir absolute path to original contracts directory
  * @param  {[type]} tempDir     absolute path to temp contracts directory
  */
-export function save(targets, originalDir, tempDir) {
+export async function save(targets, originalDir, tempDir) {
     let _path;
     for (const target of targets) {
         _path = path.normalize(target.canonicalPath).replace(originalDir, tempDir);
 
-        outputFileSync(_path, target.source);
+        await outputFileSync(_path, target.source);
     }
 }
 
