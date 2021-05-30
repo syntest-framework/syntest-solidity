@@ -48,6 +48,9 @@ export class SolidityRunner extends TestCaseRunner {
     this.api.resetInstrumentationData();
 
     // Run tests
+    const old = console.log
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    console.log = function() {}
     try {
       await this.truffle.test.run(this.config);
     } catch (e) {
@@ -55,7 +58,7 @@ export class SolidityRunner extends TestCaseRunner {
       getLogger().error(e);
       console.trace(e)
     }
-
+    console.log = old
     // Retrieve execution information from the Mocha runner
     const mochaRunner: Runner = this.truffle.test.mochaRunner;
     const stats = mochaRunner.stats;

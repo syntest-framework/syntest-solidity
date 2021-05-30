@@ -78,20 +78,19 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         await this.writeTestCase(testPath, testCase, "", true);
       }
     }
-    console.log('x0' + process.cwd())
 
     this.config.test_files = await getTestFilePaths(this.config);
 
-    console.log(this.config.test_files)
     // Run tests
-    console.log('x1' + process.cwd())
-
+    const old = console.log
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    console.log = function() {}
     try {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
     }
-    console.log('x2' + process.cwd())
+    console.log = old
 
     // Create final tests files with additional assertions
     await this.clearDirectory(Properties.temp_test_directory);
