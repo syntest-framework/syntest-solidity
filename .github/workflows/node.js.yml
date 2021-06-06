@@ -2,7 +2,7 @@ name: SynTest CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, setup-github-npm-repositories]
   pull_request:
     branches: [main]
 
