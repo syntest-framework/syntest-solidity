@@ -9,7 +9,7 @@ import {
   Statement,
   StringStatement,
   TestCase,
-} from "syntest-framework";
+} from "@syntest-framework/syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/AddressStatement";
 import BigNumber from "bignumber.js";

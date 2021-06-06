@@ -5,7 +5,7 @@ const preprocess = require("solidity-coverage/lib/preprocessor");
 const Instrumented = require("solidity-coverage/lib/instrumenter");
 const parse = require("./parse");
 
-const { finalizeCFG } = require("syntest-framework");
+const { finalizeCFG } = require("@syntest-framework/syntest-framework");
 
 /**
  * @author Annibale Panichella

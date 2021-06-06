@@ -3,7 +3,7 @@ import {
   PrimitiveStatement,
   prng,
   TestCaseSampler,
-} from "syntest-framework";
+} from "@syntest-framework/syntest-framework";
 
 /**
  * Special statement specific to solidity contracts

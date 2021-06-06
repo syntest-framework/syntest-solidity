@@ -28,7 +28,7 @@ import {
   SummaryWriter,
   TestCase,
   TotalTimeBudget,
-} from "syntest-framework";
+} from "@syntest-framework/syntest-framework";
 
 import * as path from "path";
 import TruffleConfig = require("@truffle/config");

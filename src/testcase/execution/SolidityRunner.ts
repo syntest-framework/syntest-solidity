@@ -5,7 +5,7 @@ import {
   SuiteBuilder,
   TestCase,
   TestCaseRunner,
-} from "syntest-framework";
+} from "@syntest-framework/syntest-framework";
 import * as path from "path";
 import {
   SolidityExecutionResult,

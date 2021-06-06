@@ -4,7 +4,7 @@ import {
   BranchDistance,
   ProbeObjectiveFunction,
   Node,
-} from "syntest-framework";
+} from "@syntest-framework/syntest-framework";
 
 export class RequireObjectiveFunction<
   T extends Encoding

@@ -5,7 +5,7 @@ import {
   TestCase,
   Archive,
   ExceptionObjectiveFunction,
-} from "syntest-framework";
+} from "@syntest-framework/syntest-framework";
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
 

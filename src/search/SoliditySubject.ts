@@ -6,7 +6,7 @@ import {
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
   ObjectiveFunction,
-} from "syntest-framework";
+} from "@syntest-framework/syntest-framework";
 import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 
 export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {

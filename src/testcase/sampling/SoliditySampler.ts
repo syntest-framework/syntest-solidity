@@ -3,7 +3,7 @@ import {
   ObjectFunctionCall,
   TestCaseSampler,
   Statement,
-} from "syntest-framework";
+} from "@syntest-framework/syntest-framework";
 
 /**
  * SolidityRandomSampler class

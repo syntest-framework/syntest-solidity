@@ -1,4 +1,4 @@
-// import {getLogger} from "syntest-framework";
+// import {getLogger} from "@syntest-framework/syntest-framework";
 
 const PluginUI = require("./truffle.ui");
 const globalModules = require("global-modules");
@@ -6,7 +6,7 @@ const TruffleProvider = require("@truffle/provider");
 const recursive = require("recursive-readdir");
 const globby = require("globby");
 const path = require("path");
-const { getLogger } = require("syntest-framework");
+const { getLogger } = require("@syntest-framework/syntest-framework");
 
 // =============================
 // Truffle Specific Plugin Utils
