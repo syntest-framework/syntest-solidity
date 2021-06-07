@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { SolidityLauncher } from "./SolidityLauncher";
 import TruffleConfig = require("@truffle/config");
 

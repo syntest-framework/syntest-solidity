@@ -1,22 +1,23 @@
 FROM node:15.12
+ARG REGISTRY_TOKEN
 
 # Install truffle
 RUN npm install -g truffle
 
+WORKDIR /app/syntest-solidity
+COPY . .
 
-WORKDIR /app/syntest-framework
-RUN git clone
-#COPY ./syntest-framework .
+RUN npm config set registry https://npm.pkg.github.com/
+RUN npm config set //npm.pkg.github.com/:_authToken ${REGISTRY_TOKEN}
 RUN npm install
 RUN npm run build
+RUN npm install -g .
 
-#WORKDIR /app/syntest-solidity
-#COPY ./syntest-solidity .
-#RUN npm install
-#RUN npm run build
+WORKDIR /app/benchmark
+COPY docker/templates/.syntest.js .
+COPY docker/templates/truffle-config.js .
+RUN mkdir contracts
 
-WORKDIR /app/syntest-solidity-benchmark
-COPY ./syntest-solidity-benchmark .
-RUN npm install
-
-ENTRYPOINT [ "truffle", "run", "syntest-solidity" ]
+COPY docker/run.sh /scripts/run.sh
+RUN ["chmod", "+x", "/scripts/run.sh"]
+ENTRYPOINT ["/scripts/run.sh"]
