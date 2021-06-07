@@ -75,7 +75,7 @@ jobs:
           registry-url: https://npm.pkg.github.com
       - uses: jgierer12/npm-auth-gpr@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.NPM_REGISTRY_TOKEN }}
       - run: npm install
       - run: npm publish
 #  docker:
