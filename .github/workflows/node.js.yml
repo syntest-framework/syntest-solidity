@@ -95,9 +95,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: |
-            docker.pkg.github.com/${{ github.repository }}/octo-image:${{ github.sha }}
-            docker.pkg.github.com/${{ github.repository }}/octo-image:${{ github.ref }}
+          tags: syntest-framework/syntest-solidity:latest
           build-args: |
             REGISTRY_TOKEN=${{ secrets.SYNTEST_CI }}
       - name: Image digest
