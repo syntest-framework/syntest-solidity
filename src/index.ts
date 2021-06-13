@@ -9,6 +9,6 @@ export * from "./testbuilding/SolidityTruffleStringifier";
 
 export * from "./testcase/statements/AddressStatement";
 
-export * from "./graph/SolidityCFGFactory"
+export * from "./graph/SolidityCFGFactory";
 
 export * from "./SolidityLauncher";

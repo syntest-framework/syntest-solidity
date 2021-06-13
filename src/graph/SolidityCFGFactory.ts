@@ -1,598 +1,1011 @@
-import {CFG, Node, Operation, Edge, CFGFactory} from 'syntest-framework'
+import { CFG, Node, Operation, Edge, CFGFactory } from "syntest-framework";
 
 // TODO break and continue statements
 
 interface ReturnValue {
-    childNodes: Node[]
-    breakNodes: Node[]
+  childNodes: Node[];
+  breakNodes: Node[];
 }
 
 /**
  * @author Dimitri Stallenberg
  */
 export class SolidityCFGFactory implements CFGFactory {
+  private count = 0;
 
-    private count = 0;
+  convertAST(AST: any, compress = true, placeholder = false): CFG {
+    this.count = 0;
 
-    convertAST(AST: any, compress = true): CFG {
-        this.count = 0;
+    const cfg: CFG = {
+      edges: [],
+      nodes: [],
+    };
 
-        const cfg: CFG = {
-            edges: [], nodes: []
-        }
+    this.visitChild(cfg, AST, []);
 
-        this.visitChild(cfg, AST, [])
-
-        if (compress) {
-            this.compress(cfg)
-        }
-
-        return cfg
+    if (!placeholder) {
+      this.removePlaceholder(cfg);
     }
 
-    compress(cfg: CFG) {
-        const roots = cfg.nodes.filter((n) => n.root)
+    if (compress) {
+      this.compress(cfg);
+    }
 
-        // create  node map for easy lookup
-        const nodeMap = new Map<string, Node>()
-        for (const node of cfg.nodes) {
-            nodeMap[node.id] = node
-        }
+    return cfg;
+  }
 
-        // create outgoing edge map for easy lookup
-        const outEdgeMap = new Map<string, string[]>()
-        for (const edge of cfg.edges) {
-            if (!outEdgeMap[edge.from]) {
-                outEdgeMap[edge.from] = []
+  removePlaceholder(cfg: CFG): void {
+    const removableEdges = [];
+    const removableNodes = [];
+    cfg.nodes
+      // Find all placeholder nodes
+      .filter((n) => n.placeholder)
+      .forEach((placeholderNode) => {
+        cfg.edges
+          // Find all placeholder nodes that are not end nodes
+          .filter((edge) => edge.from === placeholderNode.id)
+          .forEach((outgoingEdge) => {
+            const targetNode = outgoingEdge.to;
+            cfg.edges
+              // Find all incoming edges from the current placeholder node
+              .filter((edge) => edge.to === placeholderNode.id)
+              // Connect the incoming and outgoing nodes together
+              .forEach((incomingEdge) => {
+                incomingEdge.to = targetNode;
+              });
+
+            // Only delete the edge from the placeholder node
+            // There could be other nodes pointing to the target node
+            removableEdges.push(outgoingEdge);
+            if (!removableNodes.includes(placeholderNode))
+              removableNodes.push(placeholderNode);
+          });
+      });
+
+    // Delete unneeded placeholder elements
+    removableEdges.forEach((edge) => {
+      cfg.edges.splice(cfg.edges.indexOf(edge), 1);
+    });
+    removableNodes.forEach((node) => {
+      cfg.nodes.splice(cfg.nodes.indexOf(node), 1);
+    });
+  }
+
+  // contractEdges(cfg: CFG): void {
+  //   cfg.nodes
+  //     // Find all placeholder nodes
+  //     .filter((n) => !(n.branch || n.probe))
+  //     .forEach((placeholderNode) => {
+  //       cfg.edges
+  //         // Find all placeholder nodes that are not end nodes
+  //         .filter((edge) => edge.from === placeholderNode.id)
+  //         .forEach((outgoingEdge) => {
+  //           const targetNode = outgoingEdge.to
+  //           cfg.edges
+  //             // Find all incoming edges from the current placeholder node
+  //             .filter((edge) => edge.to === placeholderNode.id)
+  //             // Connect the incoming and outgoing nodes together
+  //             .forEach((incomingEdge) => {
+  //               incomingEdge.to = targetNode
+  //             })
+  //
+  //           // Only delete the edge from the placeholder node
+  //           // There could be other nodes pointing to the target node
+  //           removableEdges.push(outgoingEdge)
+  //           if (!removableNodes.includes(placeholderNode))
+  //             removableNodes.push(placeholderNode)
+  //         });
+  //     })
+  // }
+
+  compress(cfg: CFG): void {
+    const roots = cfg.nodes.filter((n) => n.root);
+
+    // create  node map for easy lookup
+    const nodeMap = new Map<string, Node>();
+    for (const node of cfg.nodes) {
+      nodeMap[node.id] = node;
+    }
+
+    // create outgoing edge map for easy lookup
+    const outEdgeMap = new Map<string, string[]>();
+    for (const edge of cfg.edges) {
+      if (!outEdgeMap[edge.from]) {
+        outEdgeMap[edge.from] = [];
+      }
+      outEdgeMap[edge.from].push(edge.to);
+    }
+
+    const discoveredMap = new Map<string, boolean>();
+
+    const removedNodes = [];
+    // const removedEdges = []
+
+    let possibleCompression = [];
+    for (const root of roots) {
+      const stack: Node[] = [root];
+      while (stack.length != 0) {
+        const currentNode = stack.pop();
+        const outGoingEdges = outEdgeMap[currentNode.id] || [];
+
+        if (outGoingEdges.length === 1) {
+          // exactly one next node so compression might be possible
+          possibleCompression.push(currentNode);
+        } else if (outGoingEdges.length !== 1) {
+          // zero or more than one outgoing edges so the compression ends here
+          const description = [];
+
+          const incomingEdges: Edge[][] = [];
+
+          for (let i = 0; i < possibleCompression.length - 1; i++) {
+            const node = possibleCompression[i];
+            if (node.root) {
+              // do not remove root nodes
+              continue;
             }
-            outEdgeMap[edge.from].push(edge.to)
-        }
 
-        const discoveredMap = new Map<string, boolean>()
+            removedNodes.push(node);
+            description.push(node.line);
 
-        const removedNodes = []
-        // const removedEdges = []
+            incomingEdges.push(cfg.edges.filter((e) => e.to === node.id));
+          }
 
-        let possibleCompression = []
-        for (const root of roots) {
-            const stack: Node[] = [root]
-            while (stack.length != 0) {
-                const currentNode = stack.pop()
-                const outGoingEdges = outEdgeMap[currentNode.id] || []
+          if (possibleCompression.length > 0) {
+            let nodeId = currentNode.id;
+            if (outGoingEdges.length === 0) {
+              // no next nodes so we can also remove the last one
+              const lastNode =
+                possibleCompression[possibleCompression.length - 1];
+              // unless it is a root node
+              if (!lastNode.root) {
+                removedNodes.push(lastNode);
+                description.push(lastNode.line);
 
-                if (outGoingEdges.length === 1) {
-                    // exactly one next node so compression might be possible
-                    possibleCompression.push(currentNode)
-                } else if (outGoingEdges.length !== 1) {
-                    // zero or more than one outgoing edges so the compression ends here
-                    const description = []
+                incomingEdges.push(
+                  cfg.edges.filter((e) => e.to === lastNode.id)
+                );
+              }
 
-                    const incomingEdges: Edge[][] = []
-
-                    for (let i = 0; i < possibleCompression.length - 1; i++) {
-                        const node = possibleCompression[i]
-                        if (node.root) {
-                            // do not remove root nodes
-                            continue
-                        }
-
-                        removedNodes.push(node)
-                        description.push(node.line)
-
-                        incomingEdges.push(cfg.edges.filter((e) => e.to === node.id))
-                    }
-
-                    if (possibleCompression.length > 0) {
-                        let nodeId = currentNode.id
-                        if (outGoingEdges.length === 0) {
-                            // no next nodes so we can also remove the last one
-                            const lastNode = possibleCompression[possibleCompression.length - 1]
-                            // unless it is a root node
-                            if (!lastNode.root) {
-                                removedNodes.push(lastNode)
-                                description.push(lastNode.line)
-
-                                incomingEdges.push(cfg.edges.filter((e) => e.to === lastNode.id))
-                            }
-
-                            // change the current node to be the compressed version of all previous nodes
-                            currentNode.description = description.join(', ')
-                        } else {
-                            // change the current node to be the compressed version of all previous nodes
-                            possibleCompression[possibleCompression.length - 1].description = description.join(', ')
-                            nodeId = possibleCompression[possibleCompression.length - 1].id
-                        }
-
-                        // change the edges pointing to any of the removed nodes
-                        for (const edges of incomingEdges) {
-                            for (const edge of edges) {
-                                edge.to = nodeId
-                            }
-                        }
-                    }
-
-
-
-                    // reset compression
-                    possibleCompression = []
-                }
-
-                if (!discoveredMap[currentNode.id]) {
-                    discoveredMap[currentNode.id] = true
-                    for (const to of outGoingEdges) {
-                        stack.push(nodeMap[to])
-                    }
-                }
+              // change the current node to be the compressed version of all previous nodes
+              currentNode.description = description.join(", ");
+            } else {
+              // change the current node to be the compressed version of all previous nodes
+              possibleCompression[
+                possibleCompression.length - 1
+              ].description = description.join(", ");
+              nodeId = possibleCompression[possibleCompression.length - 1].id;
             }
 
-            // reset compressions before going to the next root
-            possibleCompression = []
-        }
-
-
-        cfg.nodes = cfg.nodes.filter((n) => !removedNodes.includes(n))
-        // remove edges of which the to/from has been removed
-        cfg.edges = cfg.edges.filter((e) => !removedNodes.find((n) => n.id === e.to || n.id === e.from))
-
-        // TODO also remove unreachable code
-    }
-
-    /**
-     * This method creates edges to connect the given parents to the given children
-     * @param cfg the cfg to add the edges to
-     * @param parents the parent nodes
-     * @param children the child nodes
-     * @private
-     */
-    private connectParents(cfg: CFG, parents: Node[], children: Node[]) {
-        for (const parent of parents) {
-            for (const child of children) {
-                cfg.edges.push({
-                    from: parent.id,
-                    to: child.id
-                })
+            // change the edges pointing to any of the removed nodes
+            for (const edges of incomingEdges) {
+              for (const edge of edges) {
+                edge.to = nodeId;
+              }
             }
+          }
+
+          // reset compression
+          possibleCompression = [];
         }
+
+        if (!discoveredMap[currentNode.id]) {
+          discoveredMap[currentNode.id] = true;
+          for (const to of outGoingEdges) {
+            stack.push(nodeMap[to]);
+          }
+        }
+      }
+
+      // reset compressions before going to the next root
+      possibleCompression = [];
     }
 
-    /**
-     * This method creates a new node in the cfg
-     * @param cfg the cfg to add the node to
-     * @param line the line number of the node
-     * @param branch whether this nodes is a branching node (i.e. multiple outgoing edges)
-     * @param condition if it is a branch node this is the condition to branch on
-     * @private
-     */
-    private createNode(cfg: CFG, line: number, branch: boolean, condition?: Operation): Node {
-        const node: Node = {
-            id: `${this.count++}`,
-            line: line,
-            root: false,
-            branch: branch,
-            condition: condition
-        }
+    cfg.nodes = cfg.nodes.filter((n) => !removedNodes.includes(n));
+    // remove edges of which the to/from has been removed
+    cfg.edges = cfg.edges.filter(
+      (e) => !removedNodes.find((n) => n.id === e.to || n.id === e.from)
+    );
 
-        cfg.nodes.push(node)
+    // TODO also remove unreachable code
+  }
 
-        return node
+  /**
+   * This method creates edges to connect the given parents to the given children
+   * @param cfg the cfg to add the edges to
+   * @param parents the parent nodes
+   * @param children the child nodes
+   * @private
+   */
+  private connectParents(cfg: CFG, parents: Node[], children: Node[]) {
+    for (const parent of parents) {
+      for (const child of children) {
+        cfg.edges.push({
+          from: parent.id,
+          to: child.id,
+        });
+      }
+    }
+  }
+
+  /**
+   * This method creates a new node in the cfg
+   * @param cfg the cfg to add the node to
+   * @param lines
+   * @param statements
+   * @param branch whether this nodes is a branching node (i.e. multiple outgoing edges)
+   * @param probe
+   * @param condition if it is a branch node this is the condition to branch on
+   * @param placeholder
+   * @private
+   */
+  private createNode(
+    cfg: CFG,
+    lines: number[],
+    statements: string[],
+    branch = false,
+    probe = false,
+    condition?: Operation,
+    placeholder?: boolean
+  ): Node {
+    const node: Node = {
+      id: `${this.count++}`,
+      root: false,
+      branch: branch,
+      probe: probe,
+      condition: condition,
+      lines: lines,
+      statements: statements,
+      placeholder: placeholder,
+    };
+
+    cfg.nodes.push(node);
+
+    return node;
+  }
+
+  /**
+   * This method visit a child node in the AST using the visitor design pattern.
+   *
+   * @param cfg the Control Flow Graph we are generating
+   * @param child the child AST node
+   * @param parents the parents of the child
+   * @param contractName
+   * @private
+   */
+  private visitChild(
+    cfg: CFG,
+    child: any,
+    parents: Node[],
+    contractName?: string
+  ): ReturnValue {
+    const skipable: string[] = [
+      "PragmaDirective",
+      "StateVariableDeclaration",
+      "ImportDirective", // TODO maybe we should also connect the other contract?
+      "EventDefinition", // TODO ternary/conditionals
+      "EmitStatement", // TODO ternary/conditionals
+      "ModifierDefinition", // TODO ternary/conditionals
+      "StructDefinition", // TODO ternary/conditionals
+      "UsingForDeclaration", // TODO ternary/conditionals
+      "InlineAssemblyStatement", // TODO ternary/conditionals
+      "Identifier",
+      "UnaryOperation",
+      "BinaryOperation",
+      "TupleExpression",
+      "StringLiteral",
+      "BooleanLiteral",
+      "NumberLiteral",
+      "IndexAccess",
+      "MemberAccess",
+    ];
+
+    if (skipable.includes(child.type)) {
+      return {
+        childNodes: parents,
+        breakNodes: [],
+      };
     }
 
-    /**
-     * This method visit a child node in the AST using the visitor design pattern.
-     *
-     * @param cfg the Control Flow Graph we are generating
-     * @param child the child AST node
-     * @param parents the parents of the child
-     * @private
-     */
-    private visitChild(cfg: CFG, child: any, parents: Node[], contractName?: string): ReturnValue {
-         const skipable: string[] = [
-             'PragmaDirective',
-             'StateVariableDeclaration',
-             'ImportDirective', // TODO maybe we should also connect the other contract?
-             'EventDefinition', // TODO ternary/conditionals
-             'EmitStatement', // TODO ternary/conditionals
-             'ModifierDefinition', // TODO ternary/conditionals
-             'StructDefinition', // TODO ternary/conditionals
-             'UsingForDeclaration', // TODO ternary/conditionals
-             'InlineAssemblyStatement', // TODO ternary/conditionals
-             'BinaryOperation',
-             'Identifier',
-             'BooleanLiteral',
-             'NumberLiteral'
-         ]
+    switch (child.type) {
+      case "SourceUnit":
+        return this.SourceUnit(cfg, child);
+      case "ContractDefinition":
+        return this.ContractDefinition(cfg, child);
+      case "FunctionDefinition":
+        return this.FunctionDefinition(cfg, child, contractName);
+      case "Block":
+        return this.Block(cfg, child, parents);
 
-        if (skipable.includes(child.type)) {
-            return {
-                childNodes: parents,
-                breakNodes: []
-            }
-        }
+      case "IfStatement":
+        return this.IfStatement(cfg, child, parents);
+      case "Conditional":
+        return this.Conditional(cfg, child, parents);
 
-        switch (child.type) {
-            case 'SourceUnit': return this.SourceUnit(cfg, child);
-            case 'ContractDefinition': return this.ContractDefinition(cfg, child)
-            case 'FunctionDefinition': return this.FunctionDefinition(cfg, child, contractName)
-            case 'Block': return this.Block(cfg, child, parents)
+      case "ForStatement":
+        return this.ForStatement(cfg, child, parents);
+      case "WhileStatement":
+        return this.WhileStatement(cfg, child, parents);
+      case "DoWhileStatement":
+        return this.DoWhileStatement(cfg, child, parents);
 
-            case 'IfStatement': return this.IfStatement(cfg, child, parents)
-            case 'Conditional': return this.Conditional(cfg, child, parents)
+      case "VariableDeclarationStatement":
+        return this.VariableDeclarationStatement(cfg, child, parents);
+      case "ExpressionStatement":
+        return this.ExpressionStatement(cfg, child, parents);
+      case "FunctionCall":
+        return this.FunctionCall(cfg, child, parents);
+      case "ReturnStatement":
+        return this.ReturnStatement(cfg, child, parents);
+      case "BreakStatement":
+        return this.BreakStatement(cfg, child, parents);
 
-            case 'ForStatement': return this.ForStatement(cfg, child, parents)
-            case 'WhileStatement': return this.WhileStatement(cfg, child, parents)
-            case 'DoWhileStatement': return this.DoWhileStatement(cfg, child, parents)
+      default:
+        console.log(child);
+        throw new Error(`AST type: ${child.type} is not supported currently!`);
+    }
+  }
 
-            case 'VariableDeclarationStatement': return this.VariableDeclarationStatement(cfg, child, parents)
-            case 'ExpressionStatement': return this.ExpressionStatement(cfg, child, parents)
-            case 'ReturnStatement': return this.ReturnStatement(cfg, child, parents)
-            case 'BreakStatement': return this.BreakStatement(cfg, child, parents)
-
-        }
-
-        console.log(child)
-        throw new Error(`AST type: ${child.type} is not supported currently!`)
+  private SourceUnit(cfg: CFG, AST: any): ReturnValue {
+    for (const child of AST.children) {
+      // TODO: Add child nodes to results
+      this.visitChild(cfg, child, []);
     }
 
-    private SourceUnit(cfg: CFG, AST: any): ReturnValue {
-        for (const child of AST.children) {
-            this.visitChild(cfg, child, [])
-        }
+    return {
+      childNodes: [],
+      breakNodes: [],
+    };
+  }
 
-        return {
-            childNodes: [],
-            breakNodes: []
-        }
+  private ContractDefinition(cfg: CFG, AST: any): ReturnValue {
+    for (const child of AST.subNodes) {
+      // TODO: Add child nodes to results
+      this.visitChild(cfg, child, [], AST.name);
     }
 
-    private ContractDefinition(cfg: CFG, AST: any): ReturnValue {
-        for (const child of AST.subNodes) {
-            this.visitChild(cfg, child, [], AST.name)
-        }
+    return {
+      childNodes: [],
+      breakNodes: [],
+    };
+  }
 
-        return {
-            childNodes: [],
-            breakNodes: []
-        }
+  private FunctionDefinition(
+    cfg: CFG,
+    AST: any,
+    contractName: string
+  ): ReturnValue {
+    const node: Node = {
+      id: `${this.count++}`,
+      root: true,
+      functionName: AST.name,
+      contractName: contractName,
+      isConstructor: AST.isConstructor,
+      branch: false,
+      probe: false,
+      lines: [AST.loc.start.line],
+      statements: []
+    };
+    cfg.nodes.push(node);
+
+    // TODO parameters
+    // TODO return parameters
+
+    // Check if body is block
+    if (AST.body) {
+      // TODO: Add child nodes to results
+      this.visitChild(cfg, AST.body, [node]);
     }
 
-    private FunctionDefinition(cfg: CFG, AST: any, contractName?: string): ReturnValue {
-        const node: Node = {
-            id: `${this.count++}`,
-            line: AST.loc.start.line,
-            branch: false,
-            root: true,
-            functionName: AST.name,
-            contractName: contractName,
-            isConstructor: AST.isConstructor
-        }
+    return {
+      childNodes: [],
+      breakNodes: [],
+    };
+  }
 
-        cfg.nodes.push(node)
+  private Block(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+    let nodes = parents;
 
-        // This is a root so no parent nodes needed
-        // this.connectParents(cfg, parents, [node])
-
-        // TODO parameters
-        // TODO return parameters
-
-        // check if body is block (idk if abstract function definitions are allowed for example)
-        if (AST.body) {
-            this.visitChild(cfg, AST.body, [node])
-        }
-
-        return {
-            childNodes: [node],
-            breakNodes: []
-        }
+    const totalBreakNodes = [];
+    for (const child of AST.statements) {
+      const { childNodes, breakNodes } = this.visitChild(cfg, child, nodes);
+      nodes = childNodes;
+      totalBreakNodes.push(...breakNodes);
     }
 
-    private Block(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-        let nodes = parents
+    return {
+      childNodes: nodes,
+      breakNodes: totalBreakNodes,
+    };
+  }
 
-        const totalBreakNodes = []
-        for (const child of AST.statements) {
-            const {childNodes, breakNodes} = this.visitChild(cfg, child, nodes)
-            nodes = childNodes
-            totalBreakNodes.push(...breakNodes)
-        }
+  private IfStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+    const node: Node = this.createNode(cfg, [AST.loc.start.line], [], true, false, {
+      type: AST.condition.type,
+      operator: AST.condition.operator,
+    });
+    this.connectParents(cfg, parents, [node]);
 
-        return {
-            childNodes: nodes,
-            breakNodes: totalBreakNodes
-        } // TODO
+    // Store all break points
+    const totalBreakNodes = [];
 
+    // Visit true flow
+    let count = cfg.edges.length;
+    const { childNodes, breakNodes } = this.visitChild(cfg, AST.trueBody, [
+      node,
+    ]);
+    const trueNodes = childNodes;
+    totalBreakNodes.push(...breakNodes);
+
+    // Check if a child node was created
+    if (cfg.edges[count]) {
+      // Add edge type to first added edge
+      cfg.edges[count].branchType = true;
+    } else {
+      // Add empty placeholder node
+      // TODO: Create special method for creating placeholder nodes
+      const emptyChildNode = this.createNode(
+        cfg,
+        [AST.trueBody.loc.start.line],
+        [],
+        false,
+        false,
+        undefined,
+        true
+      );
+      trueNodes.push(emptyChildNode);
+
+      cfg.edges.push({
+        from: node.id,
+        to: emptyChildNode.id,
+        branchType: true,
+      });
     }
 
-    private IfStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-        const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
-                type: AST.condition.type,
-                operator: AST.condition.operator
-            })
+    // Visit false flow
+    if (AST.falseBody) {
+      count = cfg.edges.length;
+      const { childNodes, breakNodes } = this.visitChild(cfg, AST.falseBody, [
+        node,
+      ]);
+      const falseNodes = childNodes;
+      totalBreakNodes.push(...breakNodes);
 
-        this.connectParents(cfg, parents, [node])
-
-        const totalBreakNodes = []
-        let count = cfg.edges.length
-        const {childNodes, breakNodes} = this.visitChild(cfg, AST.trueBody, [node])
-        const trueNodes = childNodes
-        totalBreakNodes.push(...breakNodes)
-        // change first added edge
-        if (!cfg.edges[count]) {
-            // apparently there is no childnode/edge being created so we add one
-            const emptyChildNode = this.createNode(cfg, AST.trueBody.loc.start.line, false)
-            this.connectParents(cfg, [node], [emptyChildNode])
-            trueNodes.push(emptyChildNode)
-        }
-        cfg.edges[count].branchType = true
-
-        if (AST.falseBody) {
-            count = cfg.edges.length
-            const {childNodes, breakNodes} = this.visitChild(cfg, AST.falseBody, [node])
-            const falseNodes = childNodes
-            totalBreakNodes.push(...breakNodes)
-            if (!cfg.edges[count]) {
-                // apparently there is no childnode/edge being created so we add one
-                const emptyChildNode = this.createNode(cfg, AST.falseBody.loc.start.line, false)
-                this.connectParents(cfg, [node], [emptyChildNode])
-                trueNodes.push(emptyChildNode)
-            }
-            cfg.edges[count].branchType = false
-            return {
-                childNodes: [...trueNodes, ...falseNodes],
-                breakNodes: totalBreakNodes
-            }
-        } else {
-            const falseNode: Node = this.createNode(cfg, AST.loc.end.line, false)
-
-            cfg.edges.push({
-                from: node.id,
-                to: falseNode.id,
-                branchType: false
-            })
-
-            return{
-                childNodes: [...trueNodes, falseNode],
-                breakNodes: totalBreakNodes
-            }
-        }
-    }
-
-    private Conditional(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-        const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
-            type: AST.condition.type,
-            operator: AST.condition.operator
-        })
-
-        this.connectParents(cfg, parents, [node])
-
-        const totalBreakNodes = []
-        let count = cfg.edges.length
-        const {childNodes, breakNodes} = this.visitChild(cfg, AST.trueExpression, [node])
-        const trueNodes = childNodes
-        totalBreakNodes.push(...breakNodes)
-        // change first added edge
-        if (!cfg.edges[count]) {
-            // apparently there is no childnode/edge being created so we add one
-            const emptyChildNode = this.createNode(cfg, AST.trueExpression.loc.start.line, false)
-            this.connectParents(cfg, [node], [emptyChildNode])
-            trueNodes.push(emptyChildNode)
-        }
-        cfg.edges[count].branchType = true
-
-        if (AST.falseBody) {
-            count = cfg.edges.length
-            const {childNodes, breakNodes} = this.visitChild(cfg, AST.falseExpression, [node])
-            const falseNodes = childNodes
-            totalBreakNodes.push(...breakNodes)
-            if (!cfg.edges[count]) {
-                // apparently there is no childnode/edge being created so we add one
-                const emptyChildNode = this.createNode(cfg, AST.falseExpression.loc.start.line, false)
-                this.connectParents(cfg, [node], [emptyChildNode])
-                falseNodes.push(emptyChildNode)
-            }
-            cfg.edges[count].branchType = false
-            return {
-                childNodes: [...trueNodes, ...falseNodes],
-                breakNodes: totalBreakNodes
-            }
-        } else {
-            const falseNode: Node = this.createNode(cfg, AST.loc.end.line, false)
-
-            cfg.edges.push({
-                from: node.id,
-                to: falseNode.id,
-                branchType: false
-            })
-
-            return{
-                childNodes: [...trueNodes, falseNode],
-                breakNodes: totalBreakNodes
-            }
-        }
-    }
-
-    private ForStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-        const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
-            type: AST.conditionExpression.type,
-            operator: AST.conditionExpression.operator
-        })
-        // TODO For each problably not supported
-
-        // TODO init expression
-        // TODO condition expression
-        // TODO loopExpression
-
-        this.connectParents(cfg, parents, [node])
-
-        const count = cfg.edges.length
-        const {childNodes, breakNodes} = this.visitChild(cfg, AST.body, [node])
-        const trueNodes = childNodes
-        cfg.edges[count].branchType = true
-        const falseNode: Node = this.createNode(cfg, AST.loc.end.line,  false)
+      // Check if a child node was created
+      if (cfg.edges[count]) {
+        // Add edge type to first added edge
+        cfg.edges[count].branchType = false;
+      } else {
+        // Add empty placeholder node
+        // TODO: Create special method for creating placeholder nodes
+        const emptyChildNode = this.createNode(
+          cfg,
+          [AST.falseBody.loc.start.line],
+          [],
+          false,
+          false,
+          undefined,
+          true
+        );
+        falseNodes.push(emptyChildNode);
 
         cfg.edges.push({
-            from: node.id,
-            to: falseNode.id,
-            branchType: false
-        })
+          from: node.id,
+          to: emptyChildNode.id,
+          branchType: false,
+        });
+      }
 
-        for (const breakNode of breakNodes) {
-            cfg.edges.push({
-                from: breakNode.id,
-                to: falseNode.id
-            })
-        }
+      return {
+        childNodes: [...trueNodes, ...falseNodes],
+        breakNodes: totalBreakNodes,
+      };
+    } else {
+      // Add empty placeholder node
+      const falseNode: Node = this.createNode(
+        cfg,
+        [AST.loc.end.line],
+        [],
+        false,
+        false,
+        undefined,
+        true
+      );
 
-        this.connectParents(cfg, trueNodes, [node])
+      cfg.edges.push({
+        from: node.id,
+        to: falseNode.id,
+        branchType: false,
+      });
 
-        return {
-            childNodes: [falseNode],
-            breakNodes: []
-        }
+      return {
+        childNodes: [...trueNodes, falseNode],
+        breakNodes: totalBreakNodes,
+      };
+    }
+  }
+
+  private Conditional(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+    const node: Node = this.createNode(cfg, [AST.loc.start.line], [], true, false, {
+      type: AST.condition.type,
+      operator: AST.condition.operator,
+    });
+    this.connectParents(cfg, parents, [node]);
+
+    // Store all break points
+    const totalBreakNodes = [];
+
+    // Visit true flow
+    let count = cfg.edges.length;
+    const { childNodes, breakNodes } = this.visitChild(
+      cfg,
+      AST.trueExpression,
+      [node]
+    );
+    const trueNodes = childNodes;
+    totalBreakNodes.push(...breakNodes);
+
+    // Check if a child node was created
+    if (cfg.edges[count]) {
+      // Add edge type to first added edge
+      cfg.edges[count].branchType = true;
+    } else {
+      // Add empty placeholder node
+      // TODO: Create special method for creating placeholder nodes
+      const emptyChildNode = this.createNode(
+        cfg,
+        [AST.trueExpression.loc.start.line],
+        [],
+        false,
+        false,
+        undefined,
+        true
+      );
+      trueNodes.push(emptyChildNode);
+
+      cfg.edges.push({
+        from: node.id,
+        to: emptyChildNode.id,
+        branchType: true,
+      });
     }
 
-    private WhileStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-        const node: Node = this.createNode(cfg, AST.loc.start.line, true, {
-            type: AST.condition.type,
-            operator: AST.condition.operator
-        })
+    // Visit false flow
+    if (AST.falseBody) {
+      count = cfg.edges.length;
+      const { childNodes, breakNodes } = this.visitChild(
+        cfg,
+        AST.falseExpression,
+        [node]
+      );
+      const falseNodes = childNodes;
+      totalBreakNodes.push(...breakNodes);
 
-        this.connectParents(cfg, parents, [node])
-
-        const count = cfg.edges.length
-        const {childNodes, breakNodes} = this.visitChild(cfg, AST.body, [node])
-        const trueNodes = childNodes
-
-        cfg.edges[count].branchType = true
-        const falseNode: Node = this.createNode(cfg, AST.loc.end.line, false)
+      // Check if a child node was created
+      if (cfg.edges[count]) {
+        // Add edge type to first added edge
+        cfg.edges[count].branchType = false;
+      } else {
+        // Add empty placeholder node
+        // TODO: Create special method for creating placeholder nodes
+        const emptyChildNode = this.createNode(
+          cfg,
+          [AST.falseExpression.loc.start.line],
+          [],
+          false,
+          false,
+          undefined,
+          true
+        );
+        falseNodes.push(emptyChildNode);
 
         cfg.edges.push({
-            from: node.id,
-            to: falseNode.id,
-            branchType: false
-        })
+          from: node.id,
+          to: emptyChildNode.id,
+          branchType: false,
+        });
+      }
 
-        for (const breakNode of breakNodes) {
-            cfg.edges.push({
-                from: breakNode.id,
-                to: falseNode.id
-            })
-        }
+      return {
+        childNodes: [...trueNodes, ...falseNodes],
+        breakNodes: totalBreakNodes,
+      };
+    } else {
+      // Add empty placeholder node
+      // TODO: Create special method for creating placeholder nodes
+      const falseNode = this.createNode(
+        cfg,
+        [AST.loc.end.line],
+        [],
+        false,
+        false,
+        undefined,
+        true
+      );
 
-        this.connectParents(cfg, trueNodes, [node])
+      cfg.edges.push({
+        from: node.id,
+        to: falseNode.id,
+        branchType: false,
+      });
 
-        return {
-            childNodes: [falseNode],
-            breakNodes: []
-        }
+      return {
+        childNodes: [...trueNodes, falseNode],
+        breakNodes: totalBreakNodes,
+      };
+    }
+  }
+
+  private ForStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+    const node: Node = this.createNode(cfg, [AST.loc.start.line], [], true, false, {
+      type: AST.conditionExpression.type,
+      operator: AST.conditionExpression.operator,
+    });
+    this.connectParents(cfg, parents, [node]);
+    // TODO For each probably not supported
+
+    // TODO init expression
+    // TODO condition expression
+    // TODO loopExpression
+
+    const count = cfg.edges.length;
+    const { childNodes, breakNodes } = this.visitChild(cfg, AST.body, [node]);
+    const trueNodes = childNodes;
+
+    // Check if a child node was created
+    if (cfg.edges[count]) {
+      // Add edge type to first added edge
+      cfg.edges[count].branchType = true;
+    } else {
+      // Add empty placeholder node
+      // TODO: Create special method for creating placeholder nodes
+      const emptyChildNode = this.createNode(
+        cfg,
+        [AST.loc.start.line],
+        [],
+        false,
+        false,
+        undefined,
+        true
+      );
+      trueNodes.push(emptyChildNode);
+
+      cfg.edges.push({
+        from: node.id,
+        to: emptyChildNode.id,
+        branchType: true,
+      });
     }
 
-    private DoWhileStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-        // entry node
-        const entryNode: Node = this.createNode(cfg, AST.loc.start.line, true, {
-            type: AST.condition.type,
-            operator: AST.condition.operator
-        })
+    // Add empty placeholder node for the false flow
+    // TODO: Create special method for creating placeholder nodes
+    const falseNode = this.createNode(
+      cfg,
+      [AST.loc.end.line],
+      [],
+      false,
+      false,
+      undefined,
+      true
+    );
+    cfg.edges.push({
+      from: node.id,
+      to: falseNode.id,
+      branchType: false,
+    });
 
-        this.connectParents(cfg, parents, [entryNode])
+    // Connect break points
+    for (const breakNode of breakNodes) {
+      cfg.edges.push({
+        from: breakNode.id,
+        to: falseNode.id,
+      });
+    }
 
-        // 'do' block
-        const {childNodes, breakNodes} = this.visitChild(cfg, AST.body, [entryNode])
-        const trueNodes = childNodes
+    // Connect loop
+    this.connectParents(cfg, trueNodes, [node]);
 
-        // while check
-        const whileNode: Node = this.createNode(cfg, AST.loc.start.line, true, {
-            type: AST.condition.type,
-            operator: AST.condition.operator
-        })
+    return {
+      childNodes: [falseNode],
+      breakNodes: [],
+    };
+  }
 
-        this.connectParents(cfg, trueNodes, [whileNode])
+  private WhileStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+    const node: Node = this.createNode(cfg, [AST.loc.start.line], [], true, false, {
+      type: AST.condition.type,
+      operator: AST.condition.operator,
+    });
+    this.connectParents(cfg, parents, [node]);
 
-        // connect back to the entry node and mark as true branch
-        const count = cfg.edges.length
-        this.connectParents(cfg, [whileNode], [entryNode])
-        cfg.edges[count].branchType = true
+    const count = cfg.edges.length;
+    const { childNodes, breakNodes } = this.visitChild(cfg, AST.body, [node]);
+    const trueNodes = childNodes;
 
-        const falseNode: Node = this.createNode(cfg, AST.loc.end.line, false)
+    // Check if a child node was created
+    if (cfg.edges[count]) {
+      // Add edge type to first added edge
+      cfg.edges[count].branchType = true;
+    } else {
+      // Add empty placeholder node
+      // TODO: Create special method for creating placeholder nodes
+      const emptyChildNode = this.createNode(
+        cfg,
+        [AST.loc.start.line],
+        [],
+        false,
+        false,
+        undefined,
+        true
+      );
+      trueNodes.push(emptyChildNode);
 
+      cfg.edges.push({
+        from: node.id,
+        to: emptyChildNode.id,
+        branchType: true,
+      });
+    }
+
+    // Add empty placeholder node for the false flow
+    // TODO: Create special method for creating placeholder nodes
+    const falseNode = this.createNode(
+      cfg,
+      [AST.loc.end.line],
+      [],
+      false,
+      false,
+      undefined,
+      true
+    );
+    cfg.edges.push({
+      from: node.id,
+      to: falseNode.id,
+      branchType: false,
+    });
+
+    // Connect break points
+    for (const breakNode of breakNodes) {
+      cfg.edges.push({
+        from: breakNode.id,
+        to: falseNode.id,
+      });
+    }
+
+    // Connect loop
+    this.connectParents(cfg, trueNodes, [node]);
+
+    return {
+      childNodes: [falseNode],
+      breakNodes: [],
+    };
+  }
+
+  // TODO: figure this out
+  private DoWhileStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+    // entry node
+    const entryNode: Node = this.createNode(
+      cfg,
+      [AST.loc.start.line],
+      [],
+      true,
+      false,
+      {
+        type: AST.condition.type,
+        operator: AST.condition.operator,
+      }
+    );
+    this.connectParents(cfg, parents, [entryNode]);
+
+    // TODO: We can check if a node is generated. This eliminates the need for entryNode
+    // 'do' block
+    const { childNodes, breakNodes } = this.visitChild(cfg, AST.body, [
+      entryNode,
+    ]);
+    const trueNodes = childNodes;
+
+    // while check
+    const whileNode: Node = this.createNode(
+      cfg,
+      [AST.loc.start.line],
+      [],
+      true,
+      false,
+      {
+        type: AST.condition.type,
+        operator: AST.condition.operator,
+      }
+    );
+    this.connectParents(cfg, trueNodes, [whileNode]);
+
+    // Connect back to the entry node and mark as true branch
+    cfg.edges.push({
+      from: whileNode.id,
+      to: entryNode.id,
+      branchType: true,
+    });
+
+    // Add empty placeholder node for the false flow
+    const falseNode: Node = this.createNode(cfg, [AST.loc.end.line], []);
+    cfg.edges.push({
+      from: whileNode.id,
+      to: falseNode.id,
+      branchType: false,
+    });
+
+    // Connect break points
+    for (const breakNode of breakNodes) {
+      cfg.edges.push({
+        from: breakNode.id,
+        to: falseNode.id,
+      });
+    }
+
+    return {
+      childNodes: [falseNode],
+      breakNodes: [],
+    };
+  }
+
+  private VariableDeclarationStatement(
+    cfg: CFG,
+    AST: any,
+    parents: Node[]
+  ): ReturnValue {
+    const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+    this.connectParents(cfg, parents, [node]);
+
+    return {
+      childNodes: [node],
+      breakNodes: [],
+    };
+  }
+
+  private ExpressionStatement(
+    cfg: CFG,
+    AST: any,
+    parents: Node[]
+  ): ReturnValue {
+    if (AST.expression.type === "FunctionCall") {
+      const { childNodes, breakNodes } = this.visitChild(
+        cfg,
+        AST.expression,
+        parents
+      );
+
+      return {
+        childNodes: childNodes,
+        breakNodes: breakNodes,
+      };
+    } else {
+      const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+      this.connectParents(cfg, parents, [node]);
+
+      const { childNodes, breakNodes } = this.visitChild(cfg, AST.expression, [
+        node,
+      ]);
+
+      return {
+        childNodes: childNodes,
+        breakNodes: breakNodes,
+      };
+    }
+  }
+
+  private FunctionCall(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+    // In any given chain of call expressions, only the last one will fail this check.
+    // This makes sure we don't instrument a chain of expressions multiple times.
+    if (AST.expression.type !== "FunctionCall") {
+      if (AST.expression.name === "require") {
+        const node: Node = this.createNode(
+          cfg,
+          [AST.loc.start.line],
+          [],
+          false,
+          true,
+          {
+            type: AST.arguments[0].type,
+            operator: AST.arguments[0].operator,
+          }
+        );
+        this.connectParents(cfg, parents, [node]);
+
+        const trueNode: Node = this.createNode(
+          cfg,
+          [AST.loc.end.line],
+          [],
+          false,
+          false,
+          undefined,
+          true
+        );
         cfg.edges.push({
-            from: whileNode.id,
-            to: falseNode.id,
-            branchType: false
-        })
+          from: node.id,
+          to: trueNode.id,
+          branchType: true,
+        });
 
-        // check for breaks
-        for (const breakNode of breakNodes) {
-            cfg.edges.push({
-                from: breakNode.id,
-                to: falseNode.id
-            })
-        }
+        const falseNode: Node = this.createNode(cfg, [AST.loc.end.line], []);
+        cfg.edges.push({
+          from: node.id,
+          to: falseNode.id,
+          branchType: false,
+        });
 
-        return {
-            childNodes: [falseNode],
-            breakNodes: []
-        }
-    }
-
-    private VariableDeclarationStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-        const node: Node = this.createNode(cfg, AST.loc.start.line, false)
-
-        this.connectParents(cfg, parents, [node])
+        const { childNodes, breakNodes } = this.visitChild(
+          cfg,
+          AST.expression,
+          [trueNode]
+        );
 
         return {
-            childNodes: [node],
-            breakNodes: []
-        }
-    }
+          childNodes: childNodes,
+          breakNodes: breakNodes,
+        };
+      } else {
+        const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+        this.connectParents(cfg, parents, [node]);
 
-    private ExpressionStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-        const node: Node = this.createNode(cfg, AST.loc.start.line, false)
-
-        this.connectParents(cfg, parents, [node])
-
-        return {
-            childNodes: [node],
-            breakNodes: []
-        }
-    }
-
-    /**
-     * This is a terminating node
-     * @param cfg
-     * @param AST
-     * @param parents
-     * @constructor
-     * @private
-     */
-    private ReturnStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-        const node: Node = this.createNode(cfg, AST.loc.start.line, false)
-
-        this.connectParents(cfg, parents, [node])
-
-        this.visitChild(cfg, AST.expression, [node])
+        const { childNodes, breakNodes } = this.visitChild(
+          cfg,
+          AST.expression,
+          [node]
+        );
 
         return {
-            childNodes: [],
-            breakNodes: []
-        }
+          childNodes: childNodes,
+          breakNodes: breakNodes,
+        };
+      }
+    } else {
+      const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+      this.connectParents(cfg, parents, [node]);
+
+      const { childNodes, breakNodes } = this.visitChild(cfg, AST.expression, [
+        node,
+      ]);
+
+      return {
+        childNodes: childNodes,
+        breakNodes: breakNodes,
+      };
     }
+  }
 
-    /**
-     * This is a break statement
-     * @param cfg
-     * @param AST
-     * @param parents
-     * @constructor
-     * @private
-     */
-    private BreakStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-        const node: Node = this.createNode(cfg, AST.loc.start.line, false)
+  /**
+   * This is a terminating node
+   * @param cfg
+   * @param AST
+   * @param parents
+   * @constructor
+   * @private
+   */
+  private ReturnStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+    const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+    this.connectParents(cfg, parents, [node]);
 
-        this.connectParents(cfg, parents, [node])
+    this.visitChild(cfg, AST.expression, [node]);
 
-        return {
-            childNodes: [],
-            breakNodes: [node]
-        }
-    }
+    return {
+      childNodes: [],
+      breakNodes: [],
+    };
+  }
+
+  /**
+   * This is a break statement
+   * @param cfg
+   * @param AST
+   * @param parents
+   * @constructor
+   * @private
+   */
+  private BreakStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
+    const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+    this.connectParents(cfg, parents, [node]);
+
+    return {
+      childNodes: [],
+      breakNodes: [node],
+    };
+  }
 }

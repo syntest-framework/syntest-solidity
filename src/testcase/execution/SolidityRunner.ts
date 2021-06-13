@@ -7,7 +7,12 @@ import {
   TestCaseRunner,
 } from "syntest-framework";
 import * as path from "path";
-import { SolidityExecutionResult } from "../../search/SolidityExecutionResult";
+import {
+  SolidityExecutionResult,
+  SolidityExecutionStatus,
+} from "../../search/SolidityExecutionResult";
+import { Runner } from "mocha";
+import { SoliditySubject } from "../../search/SoliditySubject";
 
 const truffleUtils = require("../../../plugins/resources/truffle.utils");
 
@@ -23,7 +28,10 @@ export class SolidityRunner extends TestCaseRunner {
     this.config = config;
   }
 
-  async execute(testCase: TestCase): Promise<ExecutionResult> {
+  async execute(
+    subject: SoliditySubject<TestCase>,
+    testCase: TestCase
+  ): Promise<ExecutionResult> {
     const testPath = path.join(
       getProperty("temp_test_directory"),
       "tempTest.js"
@@ -40,33 +48,73 @@ export class SolidityRunner extends TestCaseRunner {
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
 
-    let failures;
     // Run tests
-
     try {
-      failures = await this.truffle.test.run(this.config);
+      await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
+      getLogger().error(e);
     }
 
-    if (failures) {
-      // TODO maybe not stop? could be a bug that has been found
+    // Retrieve execution information from the Mocha runner
+    const mochaRunner: Runner = this.truffle.test.mochaRunner;
+    const stats = mochaRunner.stats;
+
+    // If one of the executions failed, log it
+    if (stats.failures > 0) {
       getLogger().error("Test case has failed!");
-      //process.exit(1)
     }
 
-    const datapoints = this.api.getInstrumentationData();
+    // Retrieve execution traces
+    const instrumentationData = this.api.getInstrumentationData();
 
+    const traces = [];
+    for (const key of Object.keys(instrumentationData)) {
+      if (instrumentationData[key].contractPath.includes(subject.name + ".sol"))
+        traces.push(instrumentationData[key]);
+    }
+
+    // Retrieve execution information
+    let executionResult: SolidityExecutionResult;
+    if (
+      mochaRunner.suite.suites.length > 0 &&
+      mochaRunner.suite.suites[0].tests.length > 0
+    ) {
+      const test = mochaRunner.suite.suites[0].tests[0];
+
+      let status: SolidityExecutionStatus;
+      let exception: string = null;
+      if (test.isPassed()) {
+        status = SolidityExecutionStatus.PASSED;
+      } else if (test.timedOut) {
+        status = SolidityExecutionStatus.TIMED_OUT;
+      } else {
+        status = SolidityExecutionStatus.FAILED;
+        exception = test.err.message;
+      }
+
+      const duration = test.duration;
+
+      executionResult = new SolidityExecutionResult(
+        status,
+        traces,
+        duration,
+        exception
+      );
+    } else {
+      executionResult = new SolidityExecutionResult(
+        SolidityExecutionStatus.FAILED,
+        traces,
+        stats.duration
+      );
+    }
+
+    // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
+
     // Remove test file
-    await this.suiteBuilder.deleteTestCase(testPath);
+    await this.suiteBuilder.deleteTestCase(this.config.test_files[0]);
 
-    const finalpoints = [];
-
-    for (const key of Object.keys(datapoints)) {
-      finalpoints.push(datapoints[key]);
-    }
-
-    return new SolidityExecutionResult(finalpoints);
+    return executionResult;
   }
 }

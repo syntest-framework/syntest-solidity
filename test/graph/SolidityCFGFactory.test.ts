@@ -1,14 +1,13 @@
-import {SolidityCFGFactory} from "../../src";
-import {drawGraph} from 'syntest-framework'
+import { SolidityCFGFactory } from "../../src";
+import { drawGraph } from "syntest-framework";
 import * as chai from "chai";
-const SolidityParser = require('@solidity-parser/parser');
+const SolidityParser = require("@solidity-parser/parser");
 
 describe("SolidityCFGFactory", () => {
+  it("generates right cfg from ast", () => {
+    const factory = new SolidityCFGFactory();
 
-    it("generates right cfg from ast", () => {
-        const factory = new SolidityCFGFactory()
-
-        const source = `// SPDX-License-Identifier: MIT
+    const source = `// SPDX-License-Identifier: MIT
 pragma solidity >=0.4.25 <0.7.0;
 
 contract MetaCoin {
@@ -39,15 +38,14 @@ contract MetaCoin {
 }
 
 
-        `
+        `;
 
+    const ast = SolidityParser.parse(source, { loc: true, range: true });
 
-        const ast = SolidityParser.parse(source, { loc: true, range: true });
+    const cfg = factory.convertAST(ast);
+    console.log(cfg);
 
-        const cfg = factory.convertAST(ast)
-        console.log(cfg)
-
-        drawGraph(cfg, './temp/graph.svg')
-        // expect(statement != null);
-    });
+    drawGraph(cfg, "./temp/graph.svg");
+    // expect(statement != null);
+  });
 });

@@ -5,8 +5,9 @@ import {
   Encoding,
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
-    ObjectiveFunction
+  ObjectiveFunction,
 } from "syntest-framework";
+import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 
 export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   private _functionCalls: FunctionDescription[] | null = null;
@@ -16,72 +17,115 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   }
 
   protected _extractObjectives(): void {
+    // Branch objectives
     this._cfg.nodes
-      // only add branch nodes as objectives
+      // Find all branch nodes
       .filter((node) => node.branch)
-      .forEach((node) => {
-        // add both the true and false branch
-        this._objectives.set(
-          new BranchObjectiveFunction(
-            this,
-            node.id,
-            node.line,
-            true
-          ),
-            []
-        );
-
-        this._objectives.set(
-            new BranchObjectiveFunction(
-                this,
-                node.id,
-                node.line,
-                false
-            ),
-            []
-        );
+      .forEach((branchNode) => {
+        this._cfg.edges
+          // Find all edges from the branch node
+          .filter((edge) => edge.from === branchNode.id)
+          .forEach((edge) => {
+            this._cfg.nodes
+              // Find nodes with incoming edge from branch node
+              .filter((node) => node.id === edge.to)
+              .forEach((childNode) => {
+                // Add objective function
+                this._objectives.set(
+                  new BranchObjectiveFunction(
+                    this,
+                    childNode.id,
+                    branchNode.lines[0],
+                    edge.branchType
+                  ),
+                  []
+                );
+              });
+          });
       });
 
-    for (const obj of this._objectives.keys()){
-      const childrenObj = this.findChildren(obj);
-      childrenObj.forEach((child) => this._objectives.get(obj).push(child));
+    // Probe objectives
+    this._cfg.nodes
+      // Find all probe nodes
+      .filter((node) => node.probe)
+      .forEach((probeNode) => {
+        this._cfg.edges
+          // Find all edges from the probe node
+          .filter((edge) => edge.from === probeNode.id)
+          .forEach((edge) => {
+            this._cfg.nodes
+              // Find nodes with incoming edge from probe node
+              .filter((node) => node.id === edge.to)
+              .forEach((childNode) => {
+                // Add objective
+                this._objectives.set(
+                  new RequireObjectiveFunction(
+                    this,
+                    childNode.id,
+                    probeNode.lines[0],
+                    edge.branchType
+                  ),
+                  []
+                );
+              });
+          });
+      });
+
+    // Add children for branches and probe objectives
+    for (const objective of this._objectives.keys()) {
+      if (
+        objective instanceof RequireObjectiveFunction &&
+        objective.type === false
+      )
+        continue;
+
+      const childrenObj = this.findChildren(objective);
+      this._objectives.get(objective).push(...childrenObj);
     }
 
-    // TODO: Add require statement
-
+    // Function objectives
     this._cfg.nodes
+      // Find all root function nodes
       .filter((node) => node.root)
       .forEach((node) => {
-        const functionObjective = new FunctionObjectiveFunction(this, node.id, node.line);
-        const childrenObj = this.findChildren(functionObjective);
-
-        this._objectives.set(
-            functionObjective,
-            childrenObj
+        // Add objective
+        const functionObjective = new FunctionObjectiveFunction(
+          this,
+          node.id,
+          node.lines[0]
         );
+        const childrenObj = this.findChildren(functionObjective);
+        this._objectives.set(functionObjective, childrenObj);
       });
   }
 
   findChildren(obj: ObjectiveFunction<T>): ObjectiveFunction<T>[] {
     let childrenObj = [];
 
-    let edges2Visit = this._cfg.edges.filter((edge) => edge.from === obj.getIdentifier());
+    let edges2Visit = this._cfg.edges.filter(
+      (edge) => edge.from === obj.getIdentifier()
+    );
     const visitedEdges = [];
 
     while (edges2Visit.length > 0) {
       const edge = edges2Visit.pop();
 
-      if (visitedEdges.includes(edge)) // this condition is made to avoid infinite loops
+      if (visitedEdges.includes(edge))
+        // this condition is made to avoid infinite loops
         continue;
 
       visitedEdges.push(edge);
 
-      const found = this.getObjectives().filter((child) => child.getIdentifier() === edge.to);
+      const found = this.getObjectives().filter(
+        (child) => child.getIdentifier() === edge.to
+      );
       if (found.length == 0) {
-        const additionalEdges = this._cfg.edges.filter((nextEdge) => nextEdge.from === edge.to);
+        const additionalEdges = this._cfg.edges.filter(
+          (nextEdge) => nextEdge.from === edge.to
+        );
         edges2Visit = edges2Visit.concat(additionalEdges);
       } else {
-        childrenObj =  childrenObj.concat(found);
+        childrenObj = childrenObj.concat(found);
       }
     }
 
@@ -112,7 +156,8 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
       return (
         (type === undefined || f.type === type) &&
         (returnType === undefined || f.returnType === returnType) &&
-        (f.visibility === "public" || f.visibility === "external")
+        (f.visibility === "public" || f.visibility === "external") &&
+        f.name !== "" // fallback function has no name
       );
     });
   }

@@ -1,7 +1,7 @@
 const Registrar = require("solidity-coverage/lib/registrar");
 
 /**
- *
+ * This class overrides the Soldity-Coverage library to add line numbers for identification.
  */
 class SyntestRegistrar extends Registrar {
   constructor() {
@@ -122,14 +122,27 @@ class SyntestRegistrar extends Registrar {
    */
   requireBranch(contract, expression) {
     this.addNewBranch(contract, expression);
+    // Add fictional if condition
+    // add: if (copied condition) {} /*pre*/ require(condition); /*post*/
+
+    const value = contract.instrumented;
+    const start = expression.arguments[0].range[0];
+    const end = expression.arguments[0].range[1];
+    const condition = value.substring(start, end + 1);
+
     this._createInjectionPoint(contract, expression.range[0], {
       type: "injectRequirePre",
       branchId: contract.branchId,
+      // TODO: What is the locationIdx used for
+      locationIdx: 0,
       line: expression.loc.start.line,
+      condition: condition,
     });
     this._createInjectionPoint(contract, expression.range[1] + 2, {
       type: "injectRequirePost",
       branchId: contract.branchId,
+      // TODO: What is the locationIdx used for
+      locationIdx: 1,
       line: expression.loc.start.line,
     });
   }
@@ -147,7 +160,7 @@ class SyntestRegistrar extends Registrar {
         type: "injectBranch",
         branchId: contract.branchId,
         locationIdx: 0,
-        line: expression.trueBody.loc.start.line,
+        line: expression.loc.start.line,
       });
     }
 
@@ -158,14 +171,14 @@ class SyntestRegistrar extends Registrar {
         type: "injectBranch",
         branchId: contract.branchId,
         locationIdx: 1,
-        line: expression.falseBody.loc.start.line,
+        line: expression.loc.start.line,
       });
     } else {
       this._createInjectionPoint(contract, expression.trueBody.range[1] + 1, {
         type: "injectEmptyBranch",
         branchId: contract.branchId,
         locationIdx: 1,
-        line: expression.trueBody.loc.start.line,
+        line: expression.loc.start.line,
       });
     }
   }
@@ -183,7 +196,7 @@ class SyntestRegistrar extends Registrar {
         type: "injectBranch",
         branchId: contract.branchId,
         locationIdx: 0,
-        line: expression.body.loc.start.line,
+        line: expression.loc.start.line,
       });
     }
 
@@ -192,7 +205,7 @@ class SyntestRegistrar extends Registrar {
       type: "injectBranch",
       branchId: contract.branchId,
       locationIdx: 1,
-      line: expression.body.loc.end.line,
+      line: expression.loc.start.line,
     });
   }
 }

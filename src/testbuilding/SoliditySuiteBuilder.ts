@@ -4,6 +4,7 @@ import {
   SuiteBuilder,
   TestCase,
   Archive,
+  ExceptionObjectiveFunction,
 } from "syntest-framework";
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
@@ -119,8 +120,6 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         await rmdirSync(
           path.join(getProperty("temp_log_directory"), testCase.id)
         );
-
-        assertions.set(testCase, additionalAssertions);
       }
 
       const testPath = path.join(
