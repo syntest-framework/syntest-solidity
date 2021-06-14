@@ -6,6 +6,7 @@ import {
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
   ObjectiveFunction,
+  getProperty
 } from "syntest-framework";
 import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 
@@ -44,32 +45,34 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
           });
       });
 
-    // Probe objectives
-    this._cfg.nodes
-      // Find all probe nodes
-      .filter((node) => node.probe)
-      .forEach((probeNode) => {
-        this._cfg.edges
-          // Find all edges from the probe node
-          .filter((edge) => edge.from === probeNode.id)
-          .forEach((edge) => {
-            this._cfg.nodes
-              // Find nodes with incoming edge from probe node
-              .filter((node) => node.id === edge.to)
-              .forEach((childNode) => {
-                // Add objective
-                this._objectives.set(
-                  new RequireObjectiveFunction(
-                    this,
-                    childNode.id,
-                    probeNode.lines[0],
-                    edge.branchType
-                  ),
-                  []
-                );
-              });
-          });
-      });
+    if (getProperty("probe_objective")) {
+      // Probe objectives
+      this._cfg.nodes
+        // Find all probe nodes
+        .filter((node) => node.probe)
+        .forEach((probeNode) => {
+          this._cfg.edges
+            // Find all edges from the probe node
+            .filter((edge) => edge.from === probeNode.id)
+            .forEach((edge) => {
+              this._cfg.nodes
+                // Find nodes with incoming edge from probe node
+                .filter((node) => node.id === edge.to)
+                .forEach((childNode) => {
+                  // Add objective
+                  this._objectives.set(
+                    new RequireObjectiveFunction(
+                      this,
+                      childNode.id,
+                      probeNode.lines[0],
+                      edge.branchType
+                    ),
+                    []
+                  );
+                });
+            });
+        });
+    }
 
     // Add children for branches and probe objectives
     for (const objective of this._objectives.keys()) {
