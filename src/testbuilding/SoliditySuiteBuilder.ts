@@ -8,7 +8,7 @@ import {
 } from "syntest-framework";
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
-import {getTestFilePaths} from "../util/fileSystem";
+import { getTestFilePaths } from "../util/fileSystem";
 
 /**
  * @author Dimitri Stallenberg
@@ -82,15 +82,15 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     this.config.test_files = await getTestFilePaths(this.config);
 
     // Run tests
-    const old = console.log
+    const old = console.log;
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    console.log = function() {}
+    console.log = function () {};
     try {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
     }
-    console.log = old
+    console.log = old;
 
     // Create final tests files with additional assertions
     await this.clearDirectory(Properties.temp_test_directory);
@@ -121,9 +121,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
           path.join(Properties.temp_log_directory, testCase.id),
           /.*/g
         );
-        await rmdirSync(
-          path.join(Properties.temp_log_directory, testCase.id)
-        );
+        await rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
       }
 
       const testPath = path.join(

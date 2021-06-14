@@ -1,31 +1,37 @@
-import {existsSync, mkdirSync, rmdirSync} from "fs";
-import * as path from 'path'
+import { existsSync, mkdirSync, rmdirSync } from "fs";
+import * as path from "path";
 import { getLogger } from "syntest-framework";
-const {outputFileSync} = require("fs-extra");
+const { outputFileSync } = require("fs-extra");
 const globby = require("globby");
 const recursive = require("recursive-readdir");
 
-export async function setupTempFolders (tempContractsDir: string, tempArtifactsDir: string) {
-    if (existsSync(tempContractsDir)) {
-        await rmdirSync(tempContractsDir, { recursive: true });
-    }
+export async function setupTempFolders(
+  tempContractsDir: string,
+  tempArtifactsDir: string
+) {
+  if (existsSync(tempContractsDir)) {
+    await rmdirSync(tempContractsDir, { recursive: true });
+  }
 
-    if (existsSync(tempArtifactsDir)) {
-        await rmdirSync(tempArtifactsDir, { recursive: true });
-    }
+  if (existsSync(tempArtifactsDir)) {
+    await rmdirSync(tempArtifactsDir, { recursive: true });
+  }
 
-    await mkdirSync(tempContractsDir, {
-        recursive: true,
-    });
+  await mkdirSync(tempContractsDir, {
+    recursive: true,
+  });
 
-    await mkdirSync(tempArtifactsDir, {
-        recursive: true,
-    });
+  await mkdirSync(tempArtifactsDir, {
+    recursive: true,
+  });
 }
 
-export async function tearDownTempFolders(tempContractsDir: string, tempArtifactsDir: string) {
-    await rmdirSync(tempContractsDir, { recursive: true });
-    await rmdirSync(tempArtifactsDir, { recursive: true });
+export async function tearDownTempFolders(
+  tempContractsDir: string,
+  tempArtifactsDir: string
+) {
+  await rmdirSync(tempContractsDir, { recursive: true });
+  await rmdirSync(tempArtifactsDir, { recursive: true });
 }
 
 /**
@@ -35,12 +41,12 @@ export async function tearDownTempFolders(tempContractsDir: string, tempArtifact
  * @param  {[type]} tempDir     absolute path to temp contracts directory
  */
 export async function save(targets, originalDir, tempDir) {
-    let _path;
-    for (const target of targets) {
-        _path = path.normalize(target.canonicalPath).replace(originalDir, tempDir);
+  let _path;
+  for (const target of targets) {
+    _path = path.normalize(target.canonicalPath).replace(originalDir, tempDir);
 
-        await outputFileSync(_path, target.source);
-    }
+    await outputFileSync(_path, target.source);
+  }
 }
 
 /**
@@ -49,21 +55,20 @@ export async function save(targets, originalDir, tempDir) {
  * @return {String[]}         list of files to pass to mocha
  */
 export async function getTestFilePaths(config) {
-    let target;
+  let target;
 
-    // Handle --file <path|glob> cli option (subset of tests)
-    typeof config.file === "string"
-        ? (target = globby.sync([config.file]))
-        : (target = await recursive(config.testDir));
+  // Handle --file <path|glob> cli option (subset of tests)
+  typeof config.file === "string"
+    ? (target = globby.sync([config.file]))
+    : (target = await recursive(config.testDir));
 
-    // Filter native solidity tests and warn that they're skipped
-    const solregex = /.*\.(sol)$/;
-    const hasSols = target.filter((f) => f.match(solregex) != null);
+  // Filter native solidity tests and warn that they're skipped
+  const solregex = /.*\.(sol)$/;
+  const hasSols = target.filter((f) => f.match(solregex) != null);
 
-    if (hasSols.length > 0) getLogger().info("sol-tests " + [hasSols.length]);
+  if (hasSols.length > 0) getLogger().info("sol-tests " + [hasSols.length]);
 
-    // Return list of test files
-    const testregex = /.*\.(js|ts|es|es6|jsx)$/;
-    return target.filter((f) => f.match(testregex) != null);
+  // Return list of test files
+  const testregex = /.*\.(js|ts|es|es6|jsx)$/;
+  return target.filter((f) => f.match(testregex) != null);
 }
-

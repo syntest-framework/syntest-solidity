@@ -1,4 +1,4 @@
-import {SolidityLauncher} from "./SolidityLauncher";
+import { SolidityLauncher } from "./SolidityLauncher";
 
 /**
  * Truffle Plugin: `truffle run coverage [options]`
