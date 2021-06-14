@@ -133,7 +133,6 @@ class SyntestRegistrar extends Registrar {
     this._createInjectionPoint(contract, expression.range[0], {
       type: "injectRequirePre",
       branchId: contract.branchId,
-      // TODO: What is the locationIdx used for
       locationIdx: 0,
       line: expression.loc.start.line,
       condition: condition,
@@ -141,7 +140,6 @@ class SyntestRegistrar extends Registrar {
     this._createInjectionPoint(contract, expression.range[1] + 2, {
       type: "injectRequirePost",
       branchId: contract.branchId,
-      // TODO: What is the locationIdx used for
       locationIdx: 1,
       line: expression.loc.start.line,
     });
@@ -160,6 +158,7 @@ class SyntestRegistrar extends Registrar {
         type: "injectBranch",
         branchId: contract.branchId,
         locationIdx: 0,
+        branchType: true,
         line: expression.loc.start.line,
       });
     }
@@ -171,6 +170,7 @@ class SyntestRegistrar extends Registrar {
         type: "injectBranch",
         branchId: contract.branchId,
         locationIdx: 1,
+        branchType: false,
         line: expression.loc.start.line,
       });
     } else {
@@ -178,6 +178,7 @@ class SyntestRegistrar extends Registrar {
         type: "injectEmptyBranch",
         branchId: contract.branchId,
         locationIdx: 1,
+        branchType: false,
         line: expression.loc.start.line,
       });
     }
@@ -196,6 +197,7 @@ class SyntestRegistrar extends Registrar {
         type: "injectBranch",
         branchId: contract.branchId,
         locationIdx: 0,
+        branchType: true,
         line: expression.loc.start.line,
       });
     }
@@ -205,6 +207,7 @@ class SyntestRegistrar extends Registrar {
       type: "injectBranch",
       branchId: contract.branchId,
       locationIdx: 1,
+      branchType: false,
       line: expression.loc.start.line,
     });
   }
