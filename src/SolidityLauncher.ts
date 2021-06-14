@@ -3,6 +3,8 @@ import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleString
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
+import { SolidityCFGFactory } from "./graph/SolidityCFGFactory";
+const SolidityParser = require("@solidity-parser/parser");
 
 import {
   Archive,
@@ -218,6 +220,7 @@ export class SolidityLauncher {
 
       for (const target of targets) {
         const archive = await testTarget(target, excluded, api, truffle, config)
+
         for (const key of archive.getObjectives()) {
           finalArchive.update(key, archive.getEncoding(key));
         }
@@ -260,7 +263,7 @@ export class SolidityLauncher {
       await api.onIstanbulComplete(config);
     } catch (e) {
       error = e;
-      console.trace(e)
+      console.trace(e);
     }
 
     // Finish
@@ -284,8 +287,14 @@ async function testTarget(target: any, excluded: TargetFile[], api, truffle, con
 
   getLogger().info(`Testing target: ${target.relativePath}`);
 
+  const ast = SolidityParser.parse(target.actualSource, {
+    loc: true,
+    range: true,
+  });
+
   const contractName = target.instrumented.contractName;
-  const cfg = target.instrumented.cfg;
+  const cfgFactory = new SolidityCFGFactory();
+  const cfg = cfgFactory.convertAST(ast, false, false);
   const fnMap = target.instrumented.fnMap;
 
   drawGraph(
@@ -311,7 +320,6 @@ async function testTarget(target: any, excluded: TargetFile[], api, truffle, con
   await suiteBuilder.clearDirectory(Properties.temp_test_directory);
 
   // allocate budget manager
-
   const iterationBudget = new IterationBudget(
       Properties.iteration_budget
   );

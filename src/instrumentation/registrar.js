@@ -1,7 +1,7 @@
 const Registrar = require("solidity-coverage/lib/registrar");
 
 /**
- *
+ * This class overrides the Soldity-Coverage library to add line numbers for identification.
  */
 class SyntestRegistrar extends Registrar {
   constructor() {
@@ -141,7 +141,7 @@ class SyntestRegistrar extends Registrar {
       type: "injectRequirePost",
       branchId: contract.branchId,
       locationIdx: 1,
-      line: expression.loc.end.line,
+      line: expression.loc.start.line,
     });
   }
 
@@ -158,7 +158,8 @@ class SyntestRegistrar extends Registrar {
         type: "injectBranch",
         branchId: contract.branchId,
         locationIdx: 0,
-        line: expression.trueBody.loc.start.line,
+        branchType: true,
+        line: expression.loc.start.line,
       });
     }
 
@@ -169,14 +170,16 @@ class SyntestRegistrar extends Registrar {
         type: "injectBranch",
         branchId: contract.branchId,
         locationIdx: 1,
-        line: expression.falseBody.loc.start.line,
+        branchType: false,
+        line: expression.loc.start.line,
       });
     } else {
       this._createInjectionPoint(contract, expression.trueBody.range[1] + 1, {
         type: "injectEmptyBranch",
         branchId: contract.branchId,
         locationIdx: 1,
-        line: expression.trueBody.loc.start.line,
+        branchType: false,
+        line: expression.loc.start.line,
       });
     }
   }
@@ -194,7 +197,8 @@ class SyntestRegistrar extends Registrar {
         type: "injectBranch",
         branchId: contract.branchId,
         locationIdx: 0,
-        line: expression.body.loc.start.line,
+        branchType: true,
+        line: expression.loc.start.line,
       });
     }
 
@@ -203,7 +207,8 @@ class SyntestRegistrar extends Registrar {
       type: "injectBranch",
       branchId: contract.branchId,
       locationIdx: 1,
-      line: expression.body.loc.end.line,
+      branchType: false,
+      line: expression.loc.start.line,
     });
   }
 }
