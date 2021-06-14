@@ -13,10 +13,9 @@ export class RequireObjectiveFunction<
     subject: SearchSubject<T>,
     id: string,
     line: number,
-    locationIdx: number,
     type: boolean
   ) {
-    super(subject, id, line, locationIdx, type);
+    super(subject, id, line, type);
   }
 
   calculateDistance(encoding: T): number {
@@ -63,7 +62,13 @@ export class RequireObjectiveFunction<
 
     // find the corresponding branch node inside the cfg
     const branchNode = this._subject.cfg.nodes.find((n: Node) => {
-      return n.locationIdx === this._locationIdx && n.line === this._line;
+      return n.probe && n.lines.includes(this._line);
+    });
+    const childEdge = this._subject.cfg.edges.find((edge) => {
+      return edge.from === branchNode.id && edge.branchType === this._type;
+    });
+    const childNode = this._subject.cfg.nodes.find((node) => {
+      return node.id === childEdge.to;
     });
 
     // find the closest covered branch to the objective branch
@@ -74,7 +79,7 @@ export class RequireObjectiveFunction<
         .getTraces()
         .filter(
           (trace) =>
-            trace.line === n.line &&
+            n.lines.includes(trace.line) &&
             (trace.type === "branch" ||
               trace.type === "probePre" ||
               trace.type === "probePost" ||
@@ -82,7 +87,7 @@ export class RequireObjectiveFunction<
             trace.hits > 0
         );
       for (const trace of traces) {
-        const pathDistance = this._subject.getPath(n.id, branchNode.id);
+        const pathDistance = this._subject.getPath(n.id, childNode.id);
         if (approachLevel > pathDistance) {
           approachLevel = pathDistance;
           closestHitNode = trace;

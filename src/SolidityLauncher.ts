@@ -3,6 +3,8 @@ import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleString
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
+import { SolidityCFGFactory } from "./graph/SolidityCFGFactory";
+const SolidityParser = require("@solidity-parser/parser");
 
 import {
   Archive,
@@ -161,6 +163,7 @@ export class SolidityLauncher {
       );
 
       const finalArchive = new Archive<TestCase>();
+      const cfgFactory = new SolidityCFGFactory();
 
       for (const target of targets) {
         await createMigrationsDir()
@@ -172,8 +175,13 @@ export class SolidityLauncher {
 
         getLogger().info(`Testing target: ${target.relativePath}`);
 
+        const ast = SolidityParser.parse(target.actualSource, {
+          loc: true,
+          range: true,
+        });
+
         const contractName = target.instrumented.contractName;
-        const cfg = target.instrumented.cfg;
+        const cfg = cfgFactory.convertAST(ast, false, false);
         const fnMap = target.instrumented.fnMap;
 
         drawGraph(
@@ -317,7 +325,7 @@ export class SolidityLauncher {
       await api.onIstanbulComplete(config);
     } catch (e) {
       error = e;
-      console.trace(e)
+      console.trace(e);
     }
 
     // Finish

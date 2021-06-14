@@ -7,9 +7,9 @@ const detect = require("detect-port");
 const _ = require("lodash/lang");
 
 const ConfigValidator = require("solidity-coverage/lib/validator");
-const Instrumenter = require("./instrumentation/instrumenter");
+const Instrumenter = require("./instrumentation/instrumenter"); // Local version
 const Coverage = require("solidity-coverage/lib/coverage");
-const DataCollector = require("./instrumentation/collector");
+const DataCollector = require("./instrumentation/collector"); // Local version
 const { UI, AppUI } = require("solidity-coverage/lib/ui");
 
 /**
@@ -78,19 +78,11 @@ class API {
    */
   instrument(targets = []) {
     let currentFile; // Keep track of filename in case we crash...
-    let started = false;
     let outputs = [];
 
     try {
       for (let target of targets) {
         currentFile = target.relativePath || target.canonicalPath;
-
-        if (!started) {
-          started = true;
-          this.ui.report("instr-start");
-        }
-
-        this.ui.report("instr-item", [currentFile]);
 
         const instrumented = this.instrumenter.instrument(
           target.source,
@@ -102,12 +94,12 @@ class API {
         outputs.push({
           canonicalPath: target.canonicalPath,
           relativePath: target.relativePath,
+          actualSource: target.source,
           source: instrumented.contract,
           instrumented: instrumented,
         });
       }
     } catch (err) {
-      err.message = this.ui.generate("instr-fail", [currentFile]) + err.message;
       throw err;
     }
 
