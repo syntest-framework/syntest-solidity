@@ -383,7 +383,7 @@ export class SolidityCFGFactory implements CFGFactory {
       branch: false,
       probe: false,
       lines: [AST.loc.start.line],
-      statements: []
+      statements: [],
     };
     cfg.nodes.push(node);
 
@@ -419,10 +419,17 @@ export class SolidityCFGFactory implements CFGFactory {
   }
 
   private IfStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-    const node: Node = this.createNode(cfg, [AST.loc.start.line], [], true, false, {
-      type: AST.condition.type,
-      operator: AST.condition.operator,
-    });
+    const node: Node = this.createNode(
+      cfg,
+      [AST.loc.start.line],
+      [],
+      true,
+      false,
+      {
+        type: AST.condition.type,
+        operator: AST.condition.operator,
+      }
+    );
     this.connectParents(cfg, parents, [node]);
 
     // Store all break points
@@ -525,10 +532,17 @@ export class SolidityCFGFactory implements CFGFactory {
   }
 
   private Conditional(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-    const node: Node = this.createNode(cfg, [AST.loc.start.line], [], true, false, {
-      type: AST.condition.type,
-      operator: AST.condition.operator,
-    });
+    const node: Node = this.createNode(
+      cfg,
+      [AST.loc.start.line],
+      [],
+      true,
+      false,
+      {
+        type: AST.condition.type,
+        operator: AST.condition.operator,
+      }
+    );
     this.connectParents(cfg, parents, [node]);
 
     // Store all break points
@@ -636,10 +650,17 @@ export class SolidityCFGFactory implements CFGFactory {
   }
 
   private ForStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-    const node: Node = this.createNode(cfg, [AST.loc.start.line], [], true, false, {
-      type: AST.conditionExpression.type,
-      operator: AST.conditionExpression.operator,
-    });
+    const node: Node = this.createNode(
+      cfg,
+      [AST.loc.start.line],
+      [],
+      true,
+      false,
+      {
+        type: AST.conditionExpression.type,
+        operator: AST.conditionExpression.operator,
+      }
+    );
     this.connectParents(cfg, parents, [node]);
     // TODO For each probably not supported
 
@@ -711,10 +732,17 @@ export class SolidityCFGFactory implements CFGFactory {
   }
 
   private WhileStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-    const node: Node = this.createNode(cfg, [AST.loc.start.line], [], true, false, {
-      type: AST.condition.type,
-      operator: AST.condition.operator,
-    });
+    const node: Node = this.createNode(
+      cfg,
+      [AST.loc.start.line],
+      [],
+      true,
+      false,
+      {
+        type: AST.condition.type,
+        operator: AST.condition.operator,
+      }
+    );
     this.connectParents(cfg, parents, [node]);
 
     const count = cfg.edges.length;

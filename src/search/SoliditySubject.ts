@@ -6,7 +6,7 @@ import {
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
   ObjectiveFunction,
-  getProperty
+  getProperty,
 } from "syntest-framework";
 import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 

@@ -295,7 +295,7 @@ export class SolidityLauncher {
       await api.onIstanbulComplete(config);
     } catch (e) {
       error = e;
-      console.log(error)
+      console.log(error);
     }
 
     // Finish
