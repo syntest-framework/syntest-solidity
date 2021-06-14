@@ -66,29 +66,26 @@ export class RequireObjectiveFunction<
     });
     const childEdge = this._subject.cfg.edges.find((edge) => {
       return edge.from === branchNode.id && edge.branchType === this._type;
-    })
+    });
     const childNode = this._subject.cfg.nodes.find((node) => {
       return node.id === childEdge.to;
-    })
+    });
 
     // find the closest covered branch to the objective branch
     let closestHitNode = null;
     let approachLevel = Number.MAX_VALUE;
     for (const n of this._subject.cfg.nodes) {
-      const traces = executionResult
-        .getTraces()
-        .filter(
-          (trace) =>
-            n.lines.includes(trace.line) &&
-            (trace.type === "branch" ||
-              // TODO: Should the pre be in here?
-              trace.type === "probePre" ||
-              trace.type === "probePost" ||
-              trace.type === "function") &&
-            trace.hits > 0
-        );
+      const traces = executionResult.getTraces().filter(
+        (trace) =>
+          n.lines.includes(trace.line) &&
+          (trace.type === "branch" ||
+            trace.type === "probePre" ||
+            trace.type === "probePost" ||
+            trace.type === "function") &&
+          trace.hits > 0
+      );
       for (const trace of traces) {
-        const pathDistance = this._subject.getPath(n.id, branchNode.id);
+        const pathDistance = this._subject.getPath(n.id, childNode.id);
         if (approachLevel > pathDistance) {
           approachLevel = pathDistance;
           closestHitNode = trace;
