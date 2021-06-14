@@ -6,7 +6,7 @@ import {
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
   ObjectiveFunction,
-  getProperty,
+  Properties,
 } from "syntest-framework";
 import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 
@@ -45,7 +45,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
           });
       });
 
-    if (getProperty("probe_objective")) {
+    if (Properties.probe_objective) {
       // Probe objectives
       this._cfg.nodes
         // Find all probe nodes

@@ -11,13 +11,14 @@ import {
   BudgetManager,
   createAlgorithmFromConfig,
   createDirectoryStructure,
+  createTempDirectoryStructure,
   deleteTempDirectories,
   drawGraph,
   EvaluationBudget,
   ExceptionObjectiveFunction,
   ExecutionResult,
   getLogger,
-  getProperty,
+  Properties,
   guessCWD,
   IterationBudget,
   loadConfig,
@@ -30,6 +31,7 @@ import {
   SummaryWriter,
   TestCase,
   TotalTimeBudget,
+  loadTargetFiles,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -39,6 +41,14 @@ import API = require("../src/api");
 import utils = require("../plugins/resources/plugin.utils");
 import truffleUtils = require("../plugins/resources/truffle.utils");
 import PluginUI = require("../plugins/resources/truffle.ui");
+import {
+  createMigrationsDir,
+  generateDeployContracts,
+  generateInitialMigration,
+  removeMigrationsDir
+} from "./util/deployment";
+import {rmdirSync} from "fs";
+import {setupTempFolders, tearDownTempFolders} from "./util/fileSystem";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -53,6 +63,11 @@ export class SolidityLauncher {
    */
   public async run(config: TruffleConfig) {
     let api, error, failures, ui;
+
+    // Filesystem & Compiler Re-configuration
+    const tempContractsDir = path.join('.syntest_coverage')
+    const tempArtifactsDir = path.join('.syntest_artifacts')
+
     try {
       config = truffleUtils.normalizeConfig(config);
 
@@ -67,7 +82,7 @@ export class SolidityLauncher {
       processConfig(myConfig, args);
       setupLogger();
 
-      config.testDir = getProperty("temp_test_directory");
+      config.testDir = Properties.temp_test_directory
 
       ui = new PluginUI(config.logger.log);
 
@@ -104,22 +119,22 @@ export class SolidityLauncher {
       // Run post-launch server hook;
       await api.onServerReady(config);
 
+      const obj = await loadTargetFiles()
+      const included = obj['included']
+      const excluded = obj['excluded']
+
+      if (!included.length) {
+        getLogger().error(`No targets where selected! Try changing the 'include' parameter`);
+        process.exit(1)
+      }
+
       // Instrument
-      const skipFiles = api.skipFiles || [];
-      skipFiles.push("Migrations.sol");
-
-      let { targets, skipped } = utils.assembleFiles(config, skipFiles);
-
-      targets = api.instrument(targets);
+      const targets = api.instrument(included);
+      const skipped = excluded
 
       utils.reportSkipped(config, skipped);
 
-      // Filesystem & Compiler Re-configuration
-      const { tempArtifactsDir, tempContractsDir } = utils.getTempLocations(
-        config
-      );
-
-      utils.setupTempFolders(config, tempContractsDir, tempArtifactsDir);
+      await setupTempFolders(tempContractsDir, tempArtifactsDir)
       utils.save(targets, config.contracts_directory, tempContractsDir);
       utils.save(skipped, config.contracts_directory, tempContractsDir);
 
@@ -139,8 +154,6 @@ export class SolidityLauncher {
       await truffle.contracts.compile(config);
       await api.onCompileComplete(config);
 
-      await createDirectoryStructure();
-
       const stringifier = new SolidityTruffleStringifier();
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
@@ -153,10 +166,14 @@ export class SolidityLauncher {
       const cfgFactory = new SolidityCFGFactory();
 
       for (const target of targets) {
-        getLogger().debug(`Testing target: ${target.relativePath}`);
-        if (getProperty("exclude").includes(target.relativePath)) {
-          continue;
-        }
+        await createMigrationsDir()
+        await generateInitialMigration()
+        await generateDeployContracts([target], excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
+
+        await createDirectoryStructure();
+        await createTempDirectoryStructure();
+
+        getLogger().info(`Testing target: ${target.relativePath}`);
 
         const ast = SolidityParser.parse(target.actualSource, {
           loc: true,
@@ -169,7 +186,7 @@ export class SolidityLauncher {
 
         drawGraph(
           cfg,
-          path.join(getProperty("cfg_directory"), `${contractName}.svg`)
+          path.join(Properties.cfg_directory, `${contractName}.svg`)
         );
 
         const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
@@ -179,16 +196,16 @@ export class SolidityLauncher {
         const sampler = new SolidityRandomSampler(currentSubject);
         const algorithm = createAlgorithmFromConfig(sampler, runner);
 
-        await suiteBuilder.clearDirectory(getProperty("temp_test_directory"));
+        await suiteBuilder.clearDirectory(Properties.temp_test_directory);
 
         // allocate budget manager
 
         const iterationBudget = new IterationBudget(
-          getProperty("iteration_budget")
+          Properties.iteration_budget
         );
         const evaluationBudget = new EvaluationBudget();
-        const searchBudget = new SearchTimeBudget(getProperty("search_time"));
-        const totalTimeBudget = new TotalTimeBudget(getProperty("total_time"));
+        const searchBudget = new SearchTimeBudget(Properties.search_time);
+        const totalTimeBudget = new TotalTimeBudget(Properties.total_time);
         const budgetManager = new BudgetManager();
         budgetManager.addBudget(iterationBudget);
         budgetManager.addBudget(evaluationBudget);
@@ -202,16 +219,16 @@ export class SolidityLauncher {
         collector.recordVariable(RuntimeVariable.VERSION, 1);
         collector.recordVariable(
           RuntimeVariable.CONFIGURATION,
-          getProperty("configuration")
+          Properties.configuration
         );
         collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
         collector.recordVariable(
           RuntimeVariable.PROBE_ENABLED,
-          getProperty("probe_objective")
+          Properties.probe_objective
         );
         collector.recordVariable(
           RuntimeVariable.ALGORITHM,
-          getProperty("algorithm")
+          Properties.algorithm
         );
         collector.recordVariable(
           RuntimeVariable.TOTAL_OBJECTIVES,
@@ -223,7 +240,7 @@ export class SolidityLauncher {
           archive.getObjectives().length
         );
 
-        collector.recordVariable(RuntimeVariable.SEED, getProperty("seed"));
+        collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
         collector.recordVariable(
           RuntimeVariable.SEARCH_TIME,
           searchBudget.getCurrentBudget()
@@ -265,7 +282,7 @@ export class SolidityLauncher {
             currentSubject.getObjectives().length
         );
 
-        const statisticFile = path.resolve(getProperty("statistics_directory"));
+        const statisticFile = path.resolve(Properties.statistics_directory);
 
         const writer = new SummaryWriter();
         writer.write(collector, statisticFile + "/statistics.csv");
@@ -273,15 +290,28 @@ export class SolidityLauncher {
         for (const key of archive.getObjectives()) {
           finalArchive.update(key, archive.getEncoding(key));
         }
+
+        await deleteTempDirectories();
+
+        await removeMigrationsDir()
       }
+
+      await createMigrationsDir()
+      await generateInitialMigration()
+      await generateDeployContracts(targets, excluded.map((e) => path.basename(e.relativePath).split('.')[0]))
+
+      await createDirectoryStructure();
+      await createTempDirectoryStructure();
 
       await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
 
       await deleteTempDirectories();
+      await removeMigrationsDir()
 
       config.test_files = await truffleUtils.getTestFilePaths({
-        testDir: path.resolve(getProperty("final_suite_directory")),
+        testDir: path.resolve(Properties.final_suite_directory),
       });
+
       // Run tests
       try {
         failures = await truffle.test.run(config);
@@ -295,11 +325,14 @@ export class SolidityLauncher {
       await api.onIstanbulComplete(config);
     } catch (e) {
       error = e;
-      console.log(error);
+      console.trace(e);
     }
 
     // Finish
-    await utils.finish(config, api);
+    await tearDownTempFolders(tempContractsDir, tempArtifactsDir)
+
+    // Shut server down
+    await api.finish()
 
     //if (error !== undefined) throw error;
     //if (failures > 0) throw new Error(ui.generate("tests-fail", [failures]));
