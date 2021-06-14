@@ -3,6 +3,8 @@ import { drawGraph } from "syntest-framework";
 import * as chai from "chai";
 const SolidityParser = require("@solidity-parser/parser");
 
+const expect = chai.expect;
+
 describe("SolidityCFGFactory", () => {
   it("generates right cfg from ast", () => {
     const factory = new SolidityCFGFactory();
@@ -43,9 +45,11 @@ contract MetaCoin {
     const ast = SolidityParser.parse(source, { loc: true, range: true });
 
     const cfg = factory.convertAST(ast);
+    expect(cfg.edges.length === 12);
+    expect(cfg.nodes.length === 11);
     console.log(cfg);
 
-    drawGraph(cfg, "./temp/graph.svg");
+    // drawGraph(cfg, "./temp/graph.svg");
     // expect(statement != null);
   });
 });
