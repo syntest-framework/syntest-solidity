@@ -120,6 +120,7 @@ parse.ExpressionStatement = function (contract, content) {
 
 parse.ForStatement = function (contract, expression) {
   register.statement(contract, expression);
+  register.forStatement(contract, expression);
   parse[expression.body.type] &&
     parse[expression.body.type](contract, expression.body);
 };
@@ -258,6 +259,7 @@ parse.VariableDeclarationStatement = function (contract, expression) {
 
 parse.WhileStatement = function (contract, expression) {
   register.statement(contract, expression);
+  register.forStatement(contract, expression);
   parse[expression.body.type] &&
     parse[expression.body.type](contract, expression.body);
 };
