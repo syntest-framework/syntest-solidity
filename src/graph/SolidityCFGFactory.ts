@@ -1,4 +1,11 @@
-import { CFG, Node, Operation, Edge, CFGFactory, Properties } from "syntest-framework";
+import {
+  CFG,
+  Node,
+  Operation,
+  Edge,
+  CFGFactory,
+  Properties,
+} from "syntest-framework";
 
 // TODO break and continue statements
 
@@ -316,7 +323,7 @@ export class SolidityCFGFactory implements CFGFactory {
       case "FunctionDefinition":
         return this.FunctionDefinition(cfg, child, contractName);
       case "ModifierInvocation":
-        return this.ModifierInvocation(cfg, child, parents)
+        return this.ModifierInvocation(cfg, child, parents);
       case "Block":
         return this.Block(cfg, child, parents);
 
@@ -373,10 +380,7 @@ export class SolidityCFGFactory implements CFGFactory {
     };
   }
 
-  private ModifierDefinition(
-    cfg: CFG,
-    AST: any
-  ): ReturnValue {
+  private ModifierDefinition(cfg: CFG, AST: any): ReturnValue {
     this.modifierMap.set(AST.name, AST.body);
 
     return {
@@ -411,12 +415,16 @@ export class SolidityCFGFactory implements CFGFactory {
     const totalBreakNodes = [];
     if (AST.modifiers && Properties.modifier_extraction) {
       AST.modifiers.forEach((modifier) => {
-        const { childNodes, breakNodes } = this.visitChild(cfg, modifier, parents);
+        const { childNodes, breakNodes } = this.visitChild(
+          cfg,
+          modifier,
+          parents
+        );
         if (childNodes.length > 0) {
           parents = childNodes;
         }
-        totalBreakNodes.push(...breakNodes)
-      })
+        totalBreakNodes.push(...breakNodes);
+      });
     }
 
     // Check if body is block
@@ -431,13 +439,13 @@ export class SolidityCFGFactory implements CFGFactory {
     };
   }
 
-  private ModifierInvocation(
-    cfg: CFG,
-    AST: any,
-    parents: Node[]
-  ): ReturnValue {
+  private ModifierInvocation(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
     if (this.modifierMap.has(AST.name)) {
-      const { childNodes, breakNodes } = this.visitChild(cfg, this.modifierMap.get(AST.name), parents);
+      const { childNodes, breakNodes } = this.visitChild(
+        cfg,
+        this.modifierMap.get(AST.name),
+        parents
+      );
       return {
         childNodes: childNodes,
         breakNodes: breakNodes,
