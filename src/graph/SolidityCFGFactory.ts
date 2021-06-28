@@ -1,4 +1,4 @@
-import { CFG, Node, Operation, Edge, CFGFactory } from "syntest-framework";
+import { CFG, Node, Operation, Edge, CFGFactory, Properties } from "syntest-framework";
 
 // TODO break and continue statements
 
@@ -923,7 +923,7 @@ export class SolidityCFGFactory implements CFGFactory {
     // In any given chain of call expressions, only the last one will fail this check.
     // This makes sure we don't instrument a chain of expressions multiple times.
     if (AST.expression.type !== "FunctionCall") {
-      if (AST.expression.name === "require") {
+      if (AST.expression.name === "require" && Properties.probe_objective) {
         const node: Node = this.createNode(
           cfg,
           [AST.loc.start.line],
