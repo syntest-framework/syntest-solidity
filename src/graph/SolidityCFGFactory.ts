@@ -12,6 +12,7 @@ interface ReturnValue {
  */
 export class SolidityCFGFactory implements CFGFactory {
   private count = 0;
+  private modifierMap = new Map();
 
   convertAST(AST: any, compress = true, placeholder = false): CFG {
     this.count = 0;
@@ -284,7 +285,6 @@ export class SolidityCFGFactory implements CFGFactory {
       "ImportDirective", // TODO maybe we should also connect the other contract?
       "EventDefinition", // TODO ternary/conditionals
       "EmitStatement", // TODO ternary/conditionals
-      "ModifierDefinition", // TODO ternary/conditionals
       "StructDefinition", // TODO ternary/conditionals
       "UsingForDeclaration", // TODO ternary/conditionals
       "InlineAssemblyStatement", // TODO ternary/conditionals
@@ -311,8 +311,12 @@ export class SolidityCFGFactory implements CFGFactory {
         return this.SourceUnit(cfg, child);
       case "ContractDefinition":
         return this.ContractDefinition(cfg, child);
+      case "ModifierDefinition":
+        return this.ModifierDefinition(cfg, child);
       case "FunctionDefinition":
         return this.FunctionDefinition(cfg, child, contractName);
+      case "ModifierInvocation":
+        return this.ModifierInvocation(cfg, child, parents)
       case "Block":
         return this.Block(cfg, child, parents);
 
@@ -369,6 +373,18 @@ export class SolidityCFGFactory implements CFGFactory {
     };
   }
 
+  private ModifierDefinition(
+    cfg: CFG,
+    AST: any
+  ): ReturnValue {
+    this.modifierMap.set(AST.name, AST.body);
+
+    return {
+      childNodes: [],
+      breakNodes: [],
+    };
+  }
+
   private FunctionDefinition(
     cfg: CFG,
     AST: any,
@@ -390,16 +406,48 @@ export class SolidityCFGFactory implements CFGFactory {
     // TODO parameters
     // TODO return parameters
 
+    let parents = [node];
+
+    const totalBreakNodes = [];
+    if (AST.modifiers && Properties.modifier_extraction) {
+      AST.modifiers.forEach((modifier) => {
+        const { childNodes, breakNodes } = this.visitChild(cfg, modifier, parents);
+        if (childNodes.length > 0) {
+          parents = childNodes;
+        }
+        totalBreakNodes.push(...breakNodes)
+      })
+    }
+
     // Check if body is block
     if (AST.body) {
       // TODO: Add child nodes to results
-      this.visitChild(cfg, AST.body, [node]);
+      this.visitChild(cfg, AST.body, parents);
     }
 
     return {
       childNodes: [],
       breakNodes: [],
     };
+  }
+
+  private ModifierInvocation(
+    cfg: CFG,
+    AST: any,
+    parents: Node[]
+  ): ReturnValue {
+    if (this.modifierMap.has(AST.name)) {
+      const { childNodes, breakNodes } = this.visitChild(cfg, this.modifierMap.get(AST.name), parents);
+      return {
+        childNodes: childNodes,
+        breakNodes: breakNodes,
+      };
+    } else {
+      return {
+        childNodes: [],
+        breakNodes: [],
+      };
+    }
   }
 
   private Block(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
