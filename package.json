@@ -16,7 +16,7 @@
     "Mitchell Olsthoorn",
     "Dimitri Stallenberg"
   ],
-  "main": "plugins/truffle.plugin.js",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "syntest-solidity": "dist/bin.js"

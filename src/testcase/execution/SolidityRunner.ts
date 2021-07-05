@@ -1,7 +1,7 @@
 import {
   ExecutionResult,
   getLogger,
-  getProperty,
+  Properties,
   SuiteBuilder,
   TestCase,
   TestCaseRunner,
@@ -13,8 +13,7 @@ import {
 } from "../../search/SolidityExecutionResult";
 import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
-
-const truffleUtils = require("../../../plugins/resources/truffle.utils");
+import { getTestFilePaths } from "../../util/fileSystem";
 
 export class SolidityRunner extends TestCaseRunner {
   protected api: any;
@@ -32,30 +31,36 @@ export class SolidityRunner extends TestCaseRunner {
     subject: SoliditySubject<TestCase>,
     testCase: TestCase
   ): Promise<ExecutionResult> {
-    const testPath = path.join(
-      getProperty("temp_test_directory"),
-      "tempTest.js"
-    );
+    const testPath = path.join(Properties.temp_test_directory, "tempTest.js");
     await this.suiteBuilder.writeTestCase(
       testPath,
       testCase,
       testCase.root.constructorName
     );
+    // config.testDir = path.join(process.cwd(), Properties.temp_test_directory)
 
-    this.config.testDir = path.resolve(getProperty("temp_test_directory"));
-    this.config.test_files = await truffleUtils.getTestFilePaths(this.config);
+    // this.config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
+    this.config.test_files = await getTestFilePaths(this.config);
 
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
 
+    // console.log(this.config)
+    // if (this.config) {
+    //   process.exit(0)
+    // }
     // Run tests
+    const old = console.log;
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    console.log = function () {};
     try {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
       getLogger().error(e);
+      console.trace(e);
     }
-
+    console.log = old;
     // Retrieve execution information from the Mocha runner
     const mochaRunner: Runner = this.truffle.test.mochaRunner;
     const stats = mochaRunner.stats;

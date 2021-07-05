@@ -8,8 +8,10 @@ const DataCollector = require("solidity-coverage/lib/collector");
 class SyntestDataCollector extends DataCollector {
   constructor(instrumentationData = {}) {
     super(instrumentationData);
+    // TODO: why is this duplicated
     this.instrumentationData = instrumentationData;
 
+    // TODO: why is this duplicate
     this.validOpcodes = {
       PUSH1: true,
     };

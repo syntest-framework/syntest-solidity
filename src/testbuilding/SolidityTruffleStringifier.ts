@@ -1,6 +1,6 @@
 import {
   ConstructorCall,
-  getProperty,
+  Properties,
   ObjectFunctionCall,
   PrimitiveStatement,
   Statement,
@@ -129,7 +129,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
       if (addLogs) {
         testString += `\t\tawait fs.mkdirSync('${path.join(
-          getProperty("temp_log_directory"),
+          Properties.temp_log_directory,
           ind.id
         )}', { recursive: true })\n`;
       }
@@ -182,7 +182,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
  */
         } else if (addLogs && gene instanceof ObjectFunctionCall) {
           testString += `\t\tawait fs.writeFileSync('${path.join(
-            getProperty("temp_log_directory"),
+            Properties.temp_log_directory,
             ind.id,
             gene.varName
           )}', '' + ${gene.varName})\n`;
