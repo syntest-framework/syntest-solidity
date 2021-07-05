@@ -5,7 +5,7 @@ import {
   Edge,
   CFGFactory,
   Properties,
-} from "syntest-framework";
+} from "@syntest-framework/syntest-framework";
 
 // TODO break and continue statements
 

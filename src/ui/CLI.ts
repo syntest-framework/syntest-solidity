@@ -1,4 +1,4 @@
-import { getLogger } from "syntest-framework";
+import { getLogger } from "@syntest-framework/syntest-framework";
 import UI from "./UI";
 const chalk = require("chalk");
 

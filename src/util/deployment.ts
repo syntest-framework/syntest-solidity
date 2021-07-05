@@ -1,6 +1,6 @@
 import { mkdirSync, rmdirSync, writeFileSync, existsSync } from "fs";
 import * as path from "path";
-import { TargetFile } from "syntest-framework";
+import { TargetFile } from "@syntest-framework/syntest-framework";
 
 export async function removeMigrationsDir() {
   await rmdirSync(`migrations`, { recursive: true });

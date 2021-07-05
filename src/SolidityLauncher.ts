@@ -11,14 +11,12 @@ import {
   BudgetManager,
   createAlgorithmFromConfig,
   createDirectoryStructure,
-  createTempDirectoryStructure,
   deleteTempDirectories,
   drawGraph,
   EvaluationBudget,
   ExceptionObjectiveFunction,
   ExecutionResult,
   getLogger,
-  Properties,
   guessCWD,
   IterationBudget,
   loadConfig,
@@ -31,8 +29,10 @@ import {
   SummaryWriter,
   TestCase,
   TotalTimeBudget,
-  loadTargetFiles,
-  TargetFile
+  Properties,
+    loadTargetFiles,
+    createTempDirectoryStructure,
+    TargetFile
 } from "@syntest-framework/syntest-framework";
 
 
