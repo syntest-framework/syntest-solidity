@@ -39,6 +39,36 @@ $ cd syntest-solidity; npm run build
 $ npm install -g truffle
 ```
 
+### Building the docker image
+
+```
+docker build -t syntest-solidity:V1.0.0 . --no-cache --build-arg REGISTRY_TOKEN={your_access_token}
+```
+
+```
+docker run -it syntest-solidity:V1.0.0 MetaCoin.sol "$(cat ./contracts/MetaCoin.sol)"
+```
+
+## Local development
+To be able to make quick changes to the syntest-framework and then test it in the syntest-solidity project change the following line:
+```
+  "dependencies": {
+    ...
+    "@syntest-framework/syntest-framework": "^0.0.4",
+    ...
+  }
+```
+to:
+```
+  "dependencies": {
+    ...
+    "@syntest-framework/syntest-framework": "file:../syntest-framework",
+    ...
+  }
+```
+> This assumes that both projects are in the same super-directory
+
+
 ## Usage
 
 ```bash

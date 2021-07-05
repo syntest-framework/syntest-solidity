@@ -7,7 +7,7 @@ RUN npm install -g truffle
 WORKDIR /app/syntest-solidity
 COPY . .
 
-RUN npm config set registry https://npm.pkg.github.com/
+RUN npm config set @syntest-framework:registry https://npm.pkg.github.com/
 RUN npm config set //npm.pkg.github.com/:_authToken ${REGISTRY_TOKEN}
 RUN npm install
 RUN npm run build
