@@ -1,18 +1,21 @@
 import {
-  ActionDescription,
-  CFG,
-  SearchSubject,
-  Encoding,
   BranchObjectiveFunction,
+  CFG,
+  Encoding,
+  FunctionDescription,
   FunctionObjectiveFunction,
   ObjectiveFunction,
+  Parameter,
+  RootNode,
+  SearchSubject,
+  Visibility,
 } from "syntest-framework";
-import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
+import {RequireObjectiveFunction} from "../criterion/RequireObjectiveFunction";
 
 export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   private _functionCalls: FunctionDescription[] | null = null;
 
-  constructor(name: string, cfg: CFG, functionMap: any) {
+  constructor(name: string, cfg: CFG, functionMap: FunctionDescription[]) {
     super(name, cfg, functionMap);
   }
 
@@ -20,7 +23,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     // Branch objectives
     this._cfg.nodes
       // Find all branch nodes
-      .filter((node) => node.branch)
+      .filter((node) => node.type === 'branch')
       .forEach((branchNode) => {
         this._cfg.edges
           // Find all edges from the branch node
@@ -86,7 +89,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     // Function objectives
     this._cfg.nodes
       // Find all root function nodes
-      .filter((node) => node.root)
+      .filter((node) => node.type === 'root')
       .forEach((node) => {
         // Add objective
         const functionObjective = new FunctionObjectiveFunction(
@@ -156,107 +159,125 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
       return (
         (type === undefined || f.type === type) &&
         (returnType === undefined || f.returnType === returnType) &&
-        (f.visibility === "public" || f.visibility === "external") &&
+        (f.visibility === Visibility._public || f.visibility === Visibility.external) &&
         f.name !== "" // fallback function has no name
       );
     });
   }
 
   parseActions(): void {
-    const possibleTargets: FunctionDescription[] = [];
+    // const possibleTargets: FunctionDescription[] = [];
+    //
+    // const fnMap = this.functionMap;
+    // for (const key of Object.keys(fnMap)) {
+    //   const fn = fnMap[key];
+    //
+    //   const args = fn.functionDefinition
+    //     .slice(
+    //       fn.functionDefinition.indexOf("(") + 1,
+    //       fn.functionDefinition.indexOf(")")
+    //     )
+    //     .split(",");
+    //   const returnValue = fn.functionDefinition
+    //     .slice(
+    //       fn.functionDefinition.lastIndexOf("(") + 1,
+    //       fn.functionDefinition.lastIndexOf(")")
+    //     )
+    //     .split(" ");
+    //
+    //   let type = "function";
+    //   let name = fn.name;
+    //
+    //   if (fn.name === "constructor") {
+    //     type = "constructor";
+    //     name = this.name;
+    //   }
+    //
+    //   const returnType = returnValue[0];
+    //   const argumentDescriptions = args.map((a: any) => {
+    //     const split = a.trim().split(" ");
+    //     const typeName = split[0];
+    //
+    //     const arg: SolidityParameter = {
+    //       name: ,
+    //       type: typeName,
+    //       bits: 0,
+    //       decimals: 0,
+    //     };
+    //
+    //     if (typeName.includes("int")) {
+    //       const type = typeName.includes("uint") ? "uint" : "int";
+    //       const bits = typeName.replace(type, "");
+    //       arg.type = type;
+    //       if (bits && bits.length) {
+    //         arg.bits = parseInt(bits);
+    //       } else {
+    //         arg.bits = 256;
+    //       }
+    //     } else if (typeName.includes("fixed")) {
+    //       const type = typeName.includes("ufixed") ? "ufixed" : "fixed";
+    //       let params = typeName.replace(type, "");
+    //       params = params.split("x");
+    //       arg.type = type;
+    //       arg.bits = parseInt(params[0]) || 128;
+    //       arg.decimals = parseInt(params[1]) || 18;
+    //     }
+    //
+    //     return arg;
+    //   });
+    //
+    //   let visibility = "public";
+    //   if (fn.functionDefinition.includes(" private ")) visibility = "private";
+    //   else if (fn.functionDefinition.includes(" internal "))
+    //     visibility = "internal";
+    //   else if (fn.functionDefinition.includes(" external "))
+    //     visibility = "external";
+    //
+    //   possibleTargets.push({
+    //     name: name,
+    //     type: type,
+    //     visibility: visibility,
+    //     returnType: returnType,
+    //     args: argumentDescriptions,
+    //   });
+    // }
 
-    const fnMap = this.functionMap;
-    for (const key of Object.keys(fnMap)) {
-      const fn = fnMap[key];
-
-      const args = fn.functionDefinition
-        .slice(
-          fn.functionDefinition.indexOf("(") + 1,
-          fn.functionDefinition.indexOf(")")
-        )
-        .split(",");
-      const returnValue = fn.functionDefinition
-        .slice(
-          fn.functionDefinition.lastIndexOf("(") + 1,
-          fn.functionDefinition.lastIndexOf(")")
-        )
-        .split(" ");
-
-      let type = "function";
-      let name = fn.name;
-
-      if (fn.name === "constructor") {
-        type = "constructor";
-        name = this.name;
-      }
-
-      const returnType = returnValue[0];
-      const argumentDescriptions = args.map((a: any) => {
-        const split = a.trim().split(" ");
-        const typeName = split[0];
-
-        const arg: ArgumentDescription = {
-          type: typeName,
-          bits: 0,
-          decimals: 0,
-        };
-
-        if (typeName.includes("int")) {
-          const type = typeName.includes("uint") ? "uint" : "int";
-          const bits = typeName.replace(type, "");
-          arg.type = type;
-          if (bits && bits.length) {
-            arg.bits = parseInt(bits);
-          } else {
-            arg.bits = 256;
-          }
-        } else if (typeName.includes("fixed")) {
-          const type = typeName.includes("ufixed") ? "ufixed" : "fixed";
-          let params = typeName.replace(type, "");
-          params = params.split("x");
-          arg.type = type;
-          arg.bits = parseInt(params[0]) || 128;
-          arg.decimals = parseInt(params[1]) || 18;
+    this._functionCalls = this._functionMap.map((actionDescription) => {
+      (<FunctionDescription>actionDescription).parameters = (<FunctionDescription>actionDescription).parameters.map((param): SolidityParameter => {
+        const newParam = {
+          name: param.name,
+          type: param.type,
+          bits: null,
+          decimals: null,
         }
 
-        return arg;
-      });
+        if (param.type.includes("int")) {
+          const type = param.type.includes("uint") ? "uint" : "int";
+          const bits = param.type.replace(type, "");
+          newParam.type = type;
+          if (bits && bits.length) {
+            newParam.bits = parseInt(bits);
+          } else {
+            newParam.bits = 256;
+          }
+        } else if (param.type.includes("fixed")) {
+          const type = param.type.includes("ufixed") ? "ufixed" : "fixed";
+          let params = [param.type.replace(type, "")];
+          params = params[0].split("x");
+          newParam.type = type;
+          newParam.bits = parseInt(params[0]) || 128;
+          newParam.decimals = parseInt(params[1]) || 18;
+        }
 
-      let visibility = "public";
-      if (fn.functionDefinition.includes(" private ")) visibility = "private";
-      else if (fn.functionDefinition.includes(" internal "))
-        visibility = "internal";
-      else if (fn.functionDefinition.includes(" external "))
-        visibility = "external";
-
-      possibleTargets.push({
-        name: name,
-        type: type,
-        visibility: visibility,
-        returnType: returnType,
-        args: argumentDescriptions,
-      });
-    }
-
-    this._functionCalls = possibleTargets;
+        return newParam
+      })
+      return <FunctionDescription>actionDescription
+    });
   }
 }
 
-export interface FunctionDescription extends ActionDescription {
+export interface SolidityParameter extends Parameter {
   name: string;
-  type: string;
-  visibility: string;
-  returnType: string;
-  args: ArgumentDescription[];
-}
-
-export interface ConstructorDescription extends FunctionDescription {
-  name: string;
-  type: string;
-  args: ArgumentDescription[];
-}
-
-export interface ArgumentDescription {
   type: string;
   bits?: number;
   decimals?: number;

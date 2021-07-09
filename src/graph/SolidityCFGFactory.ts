@@ -1,10 +1,15 @@
 import {
   CFG,
   Node,
+  RootNode,
+  BranchNode,
+  PlaceholderNode,
+  Visibility,
   Operation,
   Edge,
   CFGFactory,
   Properties,
+  Parameter,
 } from "syntest-framework";
 
 // TODO break and continue statements
@@ -47,7 +52,7 @@ export class SolidityCFGFactory implements CFGFactory {
     const removableNodes = [];
     cfg.nodes
       // Find all placeholder nodes
-      .filter((n) => n.placeholder)
+      .filter((n) => n.type === 'placeholder')
       .forEach((placeholderNode) => {
         cfg.edges
           // Find all placeholder nodes that are not end nodes
@@ -107,7 +112,7 @@ export class SolidityCFGFactory implements CFGFactory {
   // }
 
   compress(cfg: CFG): void {
-    const roots = cfg.nodes.filter((n) => n.root);
+    const roots = cfg.nodes.filter((n) => n.type === 'root');
 
     // create  node map for easy lookup
     const nodeMap = new Map<string, Node>();
@@ -250,26 +255,106 @@ export class SolidityCFGFactory implements CFGFactory {
     cfg: CFG,
     lines: number[],
     statements: string[],
-    branch = false,
-    probe = false,
-    condition?: Operation,
-    placeholder?: boolean
+    probe = false
   ): Node {
     const node: Node = {
+      type: 'intermediary',
       id: `${this.count++}`,
-      root: false,
-      branch: branch,
-      probe: probe,
-      condition: condition,
       lines: lines,
       statements: statements,
-      placeholder: placeholder,
+      probe: probe
     };
 
     cfg.nodes.push(node);
 
     return node;
   }
+
+  private createPlaceholderNode(
+      cfg: CFG,
+      lines: number[],
+      statements: string[],
+  ): PlaceholderNode {
+    const node: PlaceholderNode = {
+      type: "placeholder",
+      id: `${this.count++}`,
+      lines: lines,
+      statements: statements,
+      probe: false
+    };
+
+    cfg.nodes.push(node);
+
+    return node;
+  }
+
+  private createBranchNode(
+      cfg: CFG,
+      lines: number[],
+      statements: string[],
+      condition: Operation,
+      probe = false
+  ): BranchNode {
+    const node: BranchNode = {
+      condition: condition,
+      id: `${this.count++}`,
+      lines: lines,
+      statements: statements,
+      type: "branch",
+      probe: probe
+    };
+
+    cfg.nodes.push(node);
+
+    return node;
+  }
+
+  private getVisibility(text: string): Visibility {
+    if (text === 'public') {
+      return Visibility._public
+    } else if (text === 'private') {
+      return Visibility._private
+    } else if (text === 'internal') {
+      return Visibility.internal
+    } else if (text === 'external') {
+      return Visibility.external
+    }
+
+    throw new Error('Invalid visibility string!')
+  }
+
+  private createRootNode(
+      cfg: CFG,
+      lines: number[],
+      statements: string[],
+      contractName: string,
+      functionName: string,
+      isConstructor: boolean,
+      parameters: Parameter[],
+      returnParameters: Parameter[],
+      visibility: string,
+      probe = false,
+  ): RootNode {
+    const node: RootNode = {
+      contractName: contractName,
+      functionName: functionName,
+      id: `${this.count++}`,
+      isConstructor: isConstructor,
+      lines: lines,
+      statements: statements,
+      type: "root",
+
+      parameters: parameters,
+      returnParameters: returnParameters,
+
+      visibility: this.getVisibility(visibility),
+      probe: probe,
+    };
+
+    cfg.nodes.push(node);
+
+    return node;
+}
 
   /**
    * This method visit a child node in the AST using the visitor design pattern.
@@ -394,23 +479,34 @@ export class SolidityCFGFactory implements CFGFactory {
     AST: any,
     contractName: string
   ): ReturnValue {
-    const node: Node = {
-      id: `${this.count++}`,
-      root: true,
-      functionName: AST.name,
-      contractName: contractName,
-      isConstructor: AST.isConstructor,
-      branch: false,
-      probe: false,
-      lines: [AST.loc.start.line],
-      statements: [],
-    };
+    const node: RootNode = this.createRootNode(
+        cfg,
+        [AST.loc.start.line],
+        [],
+        contractName,
+        AST.name || contractName,
+        AST.isConstructor,
+        AST.parameters.map((p): Parameter => {
+          return {
+            name: p.name,
+            type: p.typeName.name
+          }
+        }),
+        AST.returnParameters ? AST.returnParameters.map((p): Parameter => {
+          return {
+            name: p.name,
+            type: p.typeName.name
+          }
+        }) : [],
+        AST.visibility
+    )
+
     cfg.nodes.push(node);
 
     // TODO parameters
     // TODO return parameters
 
-    let parents = [node];
+    let parents: Node[] = [node];
 
     const totalBreakNodes = [];
     if (AST.modifiers && Properties.modifier_extraction) {
@@ -475,17 +571,16 @@ export class SolidityCFGFactory implements CFGFactory {
   }
 
   private IfStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-    const node: Node = this.createNode(
+    const node: BranchNode = this.createBranchNode(
       cfg,
       [AST.loc.start.line],
       [],
-      true,
-      false,
-      {
-        type: AST.condition.type,
-        operator: AST.condition.operator,
-      }
+        {
+          type: AST.condition.type,
+          operator: AST.condition.operator,
+        },
     );
+
     this.connectParents(cfg, parents, [node]);
 
     // Store all break points
@@ -505,15 +600,10 @@ export class SolidityCFGFactory implements CFGFactory {
       cfg.edges[count].branchType = true;
     } else {
       // Add empty placeholder node
-      // TODO: Create special method for creating placeholder nodes
-      const emptyChildNode = this.createNode(
+      const emptyChildNode = this.createPlaceholderNode(
         cfg,
         [AST.trueBody.loc.start.line],
-        [],
-        false,
-        false,
-        undefined,
-        true
+        []
       );
       trueNodes.push(emptyChildNode);
 
@@ -539,15 +629,10 @@ export class SolidityCFGFactory implements CFGFactory {
         cfg.edges[count].branchType = false;
       } else {
         // Add empty placeholder node
-        // TODO: Create special method for creating placeholder nodes
-        const emptyChildNode = this.createNode(
+        const emptyChildNode = this.createPlaceholderNode(
           cfg,
           [AST.falseBody.loc.start.line],
-          [],
-          false,
-          false,
-          undefined,
-          true
+          []
         );
         falseNodes.push(emptyChildNode);
 
@@ -564,14 +649,10 @@ export class SolidityCFGFactory implements CFGFactory {
       };
     } else {
       // Add empty placeholder node
-      const falseNode: Node = this.createNode(
+      const falseNode: Node = this.createPlaceholderNode(
         cfg,
         [AST.loc.end.line],
-        [],
-        false,
-        false,
-        undefined,
-        true
+        []
       );
 
       cfg.edges.push({
@@ -588,12 +669,10 @@ export class SolidityCFGFactory implements CFGFactory {
   }
 
   private Conditional(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-    const node: Node = this.createNode(
+    const node: Node = this.createBranchNode(
       cfg,
       [AST.loc.start.line],
       [],
-      true,
-      false,
       {
         type: AST.condition.type,
         operator: AST.condition.operator,
@@ -620,15 +699,10 @@ export class SolidityCFGFactory implements CFGFactory {
       cfg.edges[count].branchType = true;
     } else {
       // Add empty placeholder node
-      // TODO: Create special method for creating placeholder nodes
-      const emptyChildNode = this.createNode(
+      const emptyChildNode = this.createPlaceholderNode(
         cfg,
         [AST.trueExpression.loc.start.line],
-        [],
-        false,
-        false,
-        undefined,
-        true
+        []
       );
       trueNodes.push(emptyChildNode);
 
@@ -656,15 +730,10 @@ export class SolidityCFGFactory implements CFGFactory {
         cfg.edges[count].branchType = false;
       } else {
         // Add empty placeholder node
-        // TODO: Create special method for creating placeholder nodes
-        const emptyChildNode = this.createNode(
+        const emptyChildNode = this.createPlaceholderNode(
           cfg,
           [AST.falseExpression.loc.start.line],
-          [],
-          false,
-          false,
-          undefined,
-          true
+          []
         );
         falseNodes.push(emptyChildNode);
 
@@ -681,15 +750,10 @@ export class SolidityCFGFactory implements CFGFactory {
       };
     } else {
       // Add empty placeholder node
-      // TODO: Create special method for creating placeholder nodes
-      const falseNode = this.createNode(
+      const falseNode = this.createPlaceholderNode(
         cfg,
         [AST.loc.end.line],
-        [],
-        false,
-        false,
-        undefined,
-        true
+        []
       );
 
       cfg.edges.push({
@@ -706,12 +770,10 @@ export class SolidityCFGFactory implements CFGFactory {
   }
 
   private ForStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-    const node: Node = this.createNode(
+    const node: Node = this.createBranchNode(
       cfg,
       [AST.loc.start.line],
       [],
-      true,
-      false,
       {
         type: AST.conditionExpression.type,
         operator: AST.conditionExpression.operator,
@@ -734,15 +796,10 @@ export class SolidityCFGFactory implements CFGFactory {
       cfg.edges[count].branchType = true;
     } else {
       // Add empty placeholder node
-      // TODO: Create special method for creating placeholder nodes
-      const emptyChildNode = this.createNode(
+      const emptyChildNode = this.createPlaceholderNode(
         cfg,
         [AST.loc.start.line],
-        [],
-        false,
-        false,
-        undefined,
-        true
+        []
       );
       trueNodes.push(emptyChildNode);
 
@@ -754,15 +811,10 @@ export class SolidityCFGFactory implements CFGFactory {
     }
 
     // Add empty placeholder node for the false flow
-    // TODO: Create special method for creating placeholder nodes
-    const falseNode = this.createNode(
+    const falseNode = this.createPlaceholderNode(
       cfg,
       [AST.loc.end.line],
-      [],
-      false,
-      false,
-      undefined,
-      true
+      []
     );
     cfg.edges.push({
       from: node.id,
@@ -788,12 +840,10 @@ export class SolidityCFGFactory implements CFGFactory {
   }
 
   private WhileStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-    const node: Node = this.createNode(
+    const node: Node = this.createBranchNode(
       cfg,
       [AST.loc.start.line],
       [],
-      true,
-      false,
       {
         type: AST.condition.type,
         operator: AST.condition.operator,
@@ -811,15 +861,10 @@ export class SolidityCFGFactory implements CFGFactory {
       cfg.edges[count].branchType = true;
     } else {
       // Add empty placeholder node
-      // TODO: Create special method for creating placeholder nodes
-      const emptyChildNode = this.createNode(
+      const emptyChildNode = this.createPlaceholderNode(
         cfg,
         [AST.loc.start.line],
-        [],
-        false,
-        false,
-        undefined,
-        true
+        []
       );
       trueNodes.push(emptyChildNode);
 
@@ -831,15 +876,10 @@ export class SolidityCFGFactory implements CFGFactory {
     }
 
     // Add empty placeholder node for the false flow
-    // TODO: Create special method for creating placeholder nodes
-    const falseNode = this.createNode(
+    const falseNode = this.createPlaceholderNode(
       cfg,
       [AST.loc.end.line],
-      [],
-      false,
-      false,
-      undefined,
-      true
+      []
     );
     cfg.edges.push({
       from: node.id,
@@ -867,12 +907,10 @@ export class SolidityCFGFactory implements CFGFactory {
   // TODO: figure this out
   private DoWhileStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
     // entry node
-    const entryNode: Node = this.createNode(
+    const entryNode: Node = this.createBranchNode(
       cfg,
       [AST.loc.start.line],
       [],
-      true,
-      false,
       {
         type: AST.condition.type,
         operator: AST.condition.operator,
@@ -888,12 +926,10 @@ export class SolidityCFGFactory implements CFGFactory {
     const trueNodes = childNodes;
 
     // while check
-    const whileNode: Node = this.createNode(
+    const whileNode: Node = this.createBranchNode(
       cfg,
       [AST.loc.start.line],
       [],
-      true,
-      false,
       {
         type: AST.condition.type,
         operator: AST.condition.operator,
@@ -909,7 +945,10 @@ export class SolidityCFGFactory implements CFGFactory {
     });
 
     // Add empty placeholder node for the false flow
-    const falseNode: Node = this.createNode(cfg, [AST.loc.end.line], []);
+    const falseNode: Node = this.createPlaceholderNode(
+        cfg,
+        [AST.loc.end.line],
+        []);
     cfg.edges.push({
       from: whileNode.id,
       to: falseNode.id,
@@ -935,7 +974,10 @@ export class SolidityCFGFactory implements CFGFactory {
     AST: any,
     parents: Node[]
   ): ReturnValue {
-    const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+    const node: Node = this.createNode(
+        cfg,
+        [AST.loc.start.line],
+        []);
     this.connectParents(cfg, parents, [node]);
 
     return {
@@ -961,7 +1003,10 @@ export class SolidityCFGFactory implements CFGFactory {
         breakNodes: breakNodes,
       };
     } else {
-      const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+      const node: Node = this.createNode(
+          cfg,
+          [AST.loc.start.line],
+          []);
       this.connectParents(cfg, parents, [node]);
 
       const { childNodes, breakNodes } = this.visitChild(cfg, AST.expression, [
@@ -980,27 +1025,22 @@ export class SolidityCFGFactory implements CFGFactory {
     // This makes sure we don't instrument a chain of expressions multiple times.
     if (AST.expression.type !== "FunctionCall") {
       if (AST.expression.name === "require" && Properties.probe_objective) {
-        const node: Node = this.createNode(
+        const node: Node = this.createBranchNode(
           cfg,
           [AST.loc.start.line],
           [],
-          false,
-          true,
           {
             type: AST.arguments[0].type,
             operator: AST.arguments[0].operator,
-          }
+          },
+          true
         );
         this.connectParents(cfg, parents, [node]);
 
-        const trueNode: Node = this.createNode(
+        const trueNode: Node = this.createPlaceholderNode(
           cfg,
           [AST.loc.end.line],
-          [],
-          false,
-          false,
-          undefined,
-          true
+          []
         );
         cfg.edges.push({
           from: node.id,
@@ -1008,7 +1048,10 @@ export class SolidityCFGFactory implements CFGFactory {
           branchType: true,
         });
 
-        const falseNode: Node = this.createNode(cfg, [AST.loc.end.line], []);
+        const falseNode: Node = this.createNode(
+            cfg,
+            [AST.loc.end.line],
+            []);
         cfg.edges.push({
           from: node.id,
           to: falseNode.id,
@@ -1026,7 +1069,10 @@ export class SolidityCFGFactory implements CFGFactory {
           breakNodes: breakNodes,
         };
       } else {
-        const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+        const node: Node = this.createNode(
+            cfg,
+            [AST.loc.start.line],
+            []);
         this.connectParents(cfg, parents, [node]);
 
         const { childNodes, breakNodes } = this.visitChild(
@@ -1041,7 +1087,10 @@ export class SolidityCFGFactory implements CFGFactory {
         };
       }
     } else {
-      const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+      const node: Node = this.createNode(
+          cfg,
+          [AST.loc.start.line],
+          []);
       this.connectParents(cfg, parents, [node]);
 
       const { childNodes, breakNodes } = this.visitChild(cfg, AST.expression, [
@@ -1064,7 +1113,10 @@ export class SolidityCFGFactory implements CFGFactory {
    * @private
    */
   private ReturnStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-    const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+    const node: Node = this.createNode(
+        cfg,
+        [AST.loc.start.line],
+        []);
     this.connectParents(cfg, parents, [node]);
 
     this.visitChild(cfg, AST.expression, [node]);
@@ -1084,7 +1136,10 @@ export class SolidityCFGFactory implements CFGFactory {
    * @private
    */
   private BreakStatement(cfg: CFG, AST: any, parents: Node[]): ReturnValue {
-    const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
+    const node: Node = this.createNode(
+        cfg,
+        [AST.loc.start.line],
+        []);
     this.connectParents(cfg, parents, [node]);
 
     return {

@@ -9,12 +9,14 @@ import {
   Statement,
   StringStatement,
   TestCase,
+  FunctionDescription,
+  ConstructorDescription,
 } from "syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/AddressStatement";
 import BigNumber from "bignumber.js";
 import { ByteStatement } from "../statements/ByteStatement";
-import { SoliditySubject } from "../../search/SoliditySubject";
+import {SolidityParameter, SoliditySubject} from "../../search/SoliditySubject";
 
 /**
  * SolidityRandomSampler class
@@ -43,12 +45,12 @@ export class SolidityRandomSampler extends SoliditySampler {
   sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
     const actions = this._subject.getPossibleActions("function");
 
-    const action = prng.pickOne(actions);
+    const action = <FunctionDescription>prng.pickOne(actions);
 
     const args: Statement[] = [];
 
-    for (const arg of action.args) {
-      if (arg.type != "") args.push(this.sampleArgument(1, arg.type, arg.bits));
+    for (const param of action.parameters) {
+      if (param.type != "") args.push(this.sampleArgument(1, param.type, (<SolidityParameter>param).bits));
     }
 
     let uniqueID = prng.uniqueId();
@@ -67,14 +69,14 @@ export class SolidityRandomSampler extends SoliditySampler {
   sampleConstructor(depth: number): ConstructorCall {
     const constructors = this._subject.getPossibleActions("constructor");
     if (constructors.length > 0) {
-      const action = prng.pickOne(
+      const action = <ConstructorDescription>prng.pickOne(
         this._subject.getPossibleActions("constructor")
       );
 
       const args: Statement[] = [];
-      for (const arg of action.args) {
-        if (arg.type != "")
-          args.push(this.sampleArgument(1, arg.type, arg.bits));
+      for (const param of action.parameters) {
+        if (param.type != "")
+          args.push(this.sampleArgument(1, param.type, (<SolidityParameter>param).bits));
       }
 
       return new ConstructorCall(
@@ -200,15 +202,15 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleObjectFunctionCall(depth: number, type: string): ObjectFunctionCall {
-    const action = prng.pickOne(
+    const action = <FunctionDescription>prng.pickOne(
       this._subject.getPossibleActions("function", type)
     );
 
     const args: Statement[] = [];
 
-    for (const arg of action.args) {
-      if (arg.type != "")
-        args.push(this.sampleArgument(depth + 1, arg.type, arg.bits));
+    for (const param of action.parameters) {
+      if (param.type != "")
+        args.push(this.sampleArgument(depth + 1, param.type, (<SolidityParameter>param).bits));
     }
 
     const constructor = this.sampleConstructor(depth + 1);

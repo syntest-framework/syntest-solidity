@@ -45,10 +45,6 @@ export class SolidityRunner extends TestCaseRunner {
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
 
-    // console.log(this.config)
-    // if (this.config) {
-    //   process.exit(0)
-    // }
     // Run tests
     const old = console.log;
     // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -68,6 +64,7 @@ export class SolidityRunner extends TestCaseRunner {
     // If one of the executions failed, log it
     if (stats.failures > 0) {
       getLogger().error("Test case has failed!");
+      process.exit()
     }
 
     // Retrieve execution traces

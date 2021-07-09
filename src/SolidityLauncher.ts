@@ -58,6 +58,7 @@ import {
   tearDownTempFolders,
 } from "./util/fileSystem";
 import CLI from "./ui/CLI";
+import {getFunctionDescriptions} from "./graph/CFGUtils";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -314,12 +315,19 @@ async function testTarget(
 
   const contractName = target.instrumented.contractName;
   const cfgFactory = new SolidityCFGFactory();
+
   const cfg = cfgFactory.convertAST(ast, false, false);
-  const fnMap = target.instrumented.fnMap;
+  // TODO get contractname from arguments/properties
+  const functionDescriptions = getFunctionDescriptions(cfg, contractName)
+  // const fnMap = target.instrumented.fnMap;
+  // console.log(fnMap)
+
+  // console.log(functionDescriptions)
+  // process.exit()
 
   drawGraph(cfg, path.join(Properties.cfg_directory, `${contractName}.svg`));
 
-  const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
+  const currentSubject = new SoliditySubject(contractName, cfg, functionDescriptions);
 
   const stringifier = new SolidityTruffleStringifier();
   const suiteBuilder = new SoliditySuiteBuilder(
