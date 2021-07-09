@@ -62,7 +62,7 @@ module.exports = function(deployer) {
 }
 
 export async function generateDeployContracts(
-  contracts: TargetFile[],
+  targetFiles: TargetFile[],
   excluded: string[]
 ) {
   const file = "migrations/2_deploy_contracts.js";
@@ -72,57 +72,55 @@ export async function generateDeployContracts(
   const orderedContracts: string[] = [];
 
   // check and order for dependencies
-  for (const contract of contracts) {
-    const base = path.basename(contract.relativePath);
-    const fileName = base.split(".")[0];
-    // TODO this assumes that the contract has the same name as the file (not sure if thats a problem maybe we done need the contract name at all)
-
-    // check if it is already included
-    if (orderedContracts.includes(fileName)) {
-      break;
-    }
-
-    const imports = contract.source.match(/import ["].*["];/g);
-
-    if (imports && imports.length) {
-      for (const _import of imports) {
-        let stripped = _import.split('"')[1];
-
-        if (stripped.includes("/")) {
-          stripped = path.basename(stripped);
-        }
-
-        if (stripped.includes(".")) {
-          stripped = stripped.split(".")[0];
-        }
-
-        // TODO not sure if to include or exclude...
-        // if (excluded.includes(stripped)) {
-        //     continue
-        // }
-
-        // check if already in ordered
-        if (!orderedContracts.includes(stripped)) {
-          // if not in there add it to the deployment and import it
-          importsStatements.push(
-            `const ${stripped} = artifacts.require("${stripped}");`
-          );
-          deploymentStatements.push(`\tdeployer.deploy(${stripped});`);
-        }
-
-        // else add it before the current contract
-        orderedContracts.push(stripped);
-
-        // link to contract
-        deploymentStatements.push(`\tdeployer.link(${stripped}, ${fileName});`);
+  for (const targetFile of targetFiles) {
+    for (const contract of targetFile.contracts) {
+      // check if it is already included
+      if (orderedContracts.includes(contract)) {
+        break;
       }
-    }
 
-    orderedContracts.push(fileName);
-    importsStatements.push(
-      `const ${fileName} = artifacts.require("${fileName}");`
-    );
-    deploymentStatements.push(`\tdeployer.deploy(${fileName});`);
+      const imports = targetFile.source.match(/import ["].*["];/g);
+
+      if (imports && imports.length) {
+        for (const _import of imports) {
+          let stripped = _import.split('"')[1];
+
+          if (stripped.includes("/")) {
+            stripped = path.basename(stripped);
+          }
+
+          if (stripped.includes(".")) {
+            stripped = stripped.split(".")[0];
+          }
+
+          // TODO not sure if to include or exclude...
+          // if (excluded.includes(stripped)) {
+          //     continue
+          // }
+
+          // check if already in ordered
+          if (!orderedContracts.includes(stripped)) {
+            // if not in there add it to the deployment and import it
+            importsStatements.push(
+                `const ${stripped} = artifacts.require("${stripped}");`
+            );
+            deploymentStatements.push(`\tdeployer.deploy(${stripped});`);
+          }
+
+          // else add it before the current contract
+          orderedContracts.push(stripped);
+
+          // link to contract
+          deploymentStatements.push(`\tdeployer.link(${stripped}, ${contract});`);
+        }
+      }
+
+      orderedContracts.push(contract);
+      importsStatements.push(
+          `const ${contract} = artifacts.require("${contract}");`
+      );
+      deploymentStatements.push(`\tdeployer.deploy(${contract});`);
+    }
   }
 
   const text = [

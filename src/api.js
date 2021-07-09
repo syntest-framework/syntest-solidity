@@ -88,7 +88,6 @@ class API {
           target.source,
           target.canonicalPath
         );
-
         this.coverage.addContract(instrumented, target.canonicalPath);
 
         outputs.push({
@@ -97,6 +96,7 @@ class API {
           actualSource: target.source,
           source: instrumented.contract,
           instrumented: instrumented,
+          contracts: []
         });
       }
     } catch (err) {

@@ -223,7 +223,7 @@ export class SolidityLauncher {
       const finalArchive = new Archive<TestCase>();
 
       for (const target of targets) {
-        const archive = await testFile(
+        const {archive, contracts} = await testFile(
           target,
           excluded,
           api,
@@ -231,9 +231,9 @@ export class SolidityLauncher {
           config
         );
 
-        for (const key of archive.getObjectives()) {
-          finalArchive.update(key, archive.getEncoding(key));
-        }
+        finalArchive.merge(archive)
+
+        target.contracts = contracts
       }
 
       await createMigrationsDir();
@@ -254,10 +254,11 @@ export class SolidityLauncher {
         config
       );
 
-      await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
+      await suiteBuilder.createSuite(finalArchive);
 
       await deleteTempDirectories();
-      await removeMigrationsDir();
+      // await removeMigrationsDir();
+      // TODO instead of removing -> move final migration dir to syntest folder
 
       config.test_files = await getTestFilePaths({
         testDir: path.resolve(Properties.final_suite_directory),
@@ -297,17 +298,19 @@ async function testFile(
     truffle,
     config
 ) {
+  await createDirectoryStructure();
+
   const ast = SolidityParser.parse(target.actualSource, {
     loc: true,
     range: true,
   });
 
-  const contractName = target.instrumented.contractName;
   const cfgFactory = new SolidityCFGFactory();
 
   const cfg = cfgFactory.convertAST(ast, false, false);
   if (Properties.draw_cfg) {
-    drawGraph(cfg, path.join(Properties.cfg_directory, `${contractName}.svg`));
+    // TODO dot's in the the name of a file will give issues
+    drawGraph(cfg, path.join(Properties.cfg_directory, `${target.relativePath.split('.')[0]}.svg`));
   }
 
   // all contracts in the target file
@@ -354,12 +357,13 @@ async function testFile(
         contractName
     )
 
-    for (const key of archive.getObjectives()) {
-      finalArchive.update(key, archive.getEncoding(key));
-    }
+    finalArchive.merge(archive)
   }
 
-  return finalArchive
+  return {
+    archive: finalArchive,
+    contracts: contracts
+  }
 }
 
 async function testContract(
@@ -374,18 +378,21 @@ async function testContract(
   await createMigrationsDir();
   await generateInitialMigration();
   await generateDeployContracts(
-    [target],
+    [{
+      ...target,
+      contracts: [contractName]
+    }],
     excluded.map((e) => path.basename(e.relativePath).split(".")[0])
   );
 
-  await createDirectoryStructure();
   await createTempDirectoryStructure();
 
-  getLogger().info(`Testing target: ${target.relativePath}`);
+  getLogger().info(`Testing target: ${target.relativePath} -> ${contractName}`);
 
   const functionDescriptions = getFunctionDescriptions(cfg, contractName)
 
-  const currentSubject = new SoliditySubject(contractName, cfg, functionDescriptions);
+  // TODO nested targets wont work (i.e. deeper folders)
+  const currentSubject = new SoliditySubject(target.relativePath, contractName, cfg, functionDescriptions);
 
   const stringifier = new SolidityTruffleStringifier();
   const suiteBuilder = new SoliditySuiteBuilder(

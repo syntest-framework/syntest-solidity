@@ -6,7 +6,6 @@ import {
   FunctionObjectiveFunction,
   ObjectiveFunction,
   Parameter,
-  RootNode,
   SearchSubject,
   Visibility,
 } from "syntest-framework";
@@ -14,9 +13,15 @@ import {RequireObjectiveFunction} from "../criterion/RequireObjectiveFunction";
 
 export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   private _functionCalls: FunctionDescription[] | null = null;
+  private _contract: string;
 
-  constructor(name: string, cfg: CFG, functionMap: FunctionDescription[]) {
+  get contract(): string {
+    return this._contract;
+  }
+
+  constructor(contract: string, name: string, cfg: CFG, functionMap: FunctionDescription[]) {
     super(name, cfg, functionMap);
+    this._contract = contract
   }
 
   protected _extractObjectives(): void {

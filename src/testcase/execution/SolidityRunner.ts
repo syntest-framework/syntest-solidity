@@ -72,9 +72,11 @@ export class SolidityRunner extends TestCaseRunner {
 
     const traces = [];
     for (const key of Object.keys(instrumentationData)) {
-      if (instrumentationData[key].contractPath.includes(subject.name + ".sol"))
+      if (instrumentationData[key].contractPath.includes(subject.contract))
         traces.push(instrumentationData[key]);
     }
+
+    // console.log(traces)
 
     // Retrieve execution information
     let executionResult: SolidityExecutionResult;

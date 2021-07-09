@@ -508,8 +508,6 @@ export class SolidityCFGFactory implements CFGFactory {
         AST.visibility
     )
 
-    cfg.nodes.push(node);
-
     // TODO parameters
     // TODO return parameters
 

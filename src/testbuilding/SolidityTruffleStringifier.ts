@@ -36,7 +36,6 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
     return (
       string +
-      `\t` +
       `const ${statement.varName} = await ${
         (statement as ConstructorCall).constructorName
       }.new(${formattedArgs});`
