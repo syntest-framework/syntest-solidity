@@ -33,6 +33,7 @@ import {
   TotalTimeBudget,
   loadTargetFiles,
   TargetFile,
+  CFG,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -222,7 +223,7 @@ export class SolidityLauncher {
       const finalArchive = new Archive<TestCase>();
 
       for (const target of targets) {
-        const archive = await testTarget(
+        const archive = await testFile(
           target,
           excluded,
           api,
@@ -289,12 +290,86 @@ export class SolidityLauncher {
   }
 }
 
-async function testTarget(
+async function testFile(
+    target: any,
+    excluded: TargetFile[],
+    api,
+    truffle,
+    config
+) {
+  const ast = SolidityParser.parse(target.actualSource, {
+    loc: true,
+    range: true,
+  });
+
+  const contractName = target.instrumented.contractName;
+  const cfgFactory = new SolidityCFGFactory();
+
+  const cfg = cfgFactory.convertAST(ast, false, false);
+  if (Properties.draw_cfg) {
+    drawGraph(cfg, path.join(Properties.cfg_directory, `${contractName}.svg`));
+  }
+
+  // all contracts in the target file
+  let contracts = cfgFactory.contracts
+
+  // filter excluded contracts
+  // let includes = Properties.include;
+  // let excludes = Properties.exclude;
+  //
+  // if (typeof includes === "string") {
+  //   includes = [includes];
+  // }
+  //
+  // if (typeof excludes === "string") {
+  //   excludes = [excludes];
+  // }
+  //
+  // includes.find()
+
+  // includes = includes.map((include) => {
+  //   if (include.includes('->')) {
+  //     return include.split('->')[1]
+  //   }
+  //
+  //   return include
+  // })
+  //
+  // // only exclude files if all contracts are excluded
+  // excludes = excludes
+  //     .filter((exclude) => {
+  //       return !exclude.includes('->')
+  //     })
+
+  const finalArchive = new Archive<TestCase>();
+
+  for (const contractName of contracts) {
+    const archive = await testContract(
+        target,
+        excluded,
+        api,
+        truffle,
+        config,
+        cfg,
+        contractName
+    )
+
+    for (const key of archive.getObjectives()) {
+      finalArchive.update(key, archive.getEncoding(key));
+    }
+  }
+
+  return finalArchive
+}
+
+async function testContract(
   target: any,
   excluded: TargetFile[],
   api,
   truffle,
-  config
+  config,
+  cfg: CFG,
+  contractName: string
 ) {
   await createMigrationsDir();
   await generateInitialMigration();
@@ -308,24 +383,7 @@ async function testTarget(
 
   getLogger().info(`Testing target: ${target.relativePath}`);
 
-  const ast = SolidityParser.parse(target.actualSource, {
-    loc: true,
-    range: true,
-  });
-
-  const contractName = target.instrumented.contractName;
-  const cfgFactory = new SolidityCFGFactory();
-
-  const cfg = cfgFactory.convertAST(ast, false, false);
-  // TODO get contractname from arguments/properties
   const functionDescriptions = getFunctionDescriptions(cfg, contractName)
-  // const fnMap = target.instrumented.fnMap;
-  // console.log(fnMap)
-
-  // console.log(functionDescriptions)
-  // process.exit()
-
-  drawGraph(cfg, path.join(Properties.cfg_directory, `${contractName}.svg`));
 
   const currentSubject = new SoliditySubject(contractName, cfg, functionDescriptions);
 

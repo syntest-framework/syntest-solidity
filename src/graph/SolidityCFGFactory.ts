@@ -23,11 +23,16 @@ interface ReturnValue {
  * @author Dimitri Stallenberg
  */
 export class SolidityCFGFactory implements CFGFactory {
+  get contracts(): string[] {
+    return this._contracts;
+  }
   private count = 0;
   private modifierMap = new Map();
+  private _contracts: string[] = []
 
   convertAST(AST: any, compress = true, placeholder = false): CFG {
     this.count = 0;
+    this._contracts = []
 
     const cfg: CFG = {
       edges: [],
@@ -454,6 +459,8 @@ export class SolidityCFGFactory implements CFGFactory {
   }
 
   private ContractDefinition(cfg: CFG, AST: any): ReturnValue {
+    this._contracts.push(AST.name)
+
     for (const child of AST.subNodes) {
       // TODO: Add child nodes to results
       this.visitChild(cfg, child, [], AST.name);
