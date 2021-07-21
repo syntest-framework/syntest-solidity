@@ -35,7 +35,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     const args = (statement as ConstructorCall).args;
     for (const arg of args) {
       if (arg instanceof PrimitiveStatement) {
-        string = string + this.decodeStatement(arg) + "\n\t";
+        string = string + this.decodeStatement(arg) + "\n\t\t";
       }
     }
     const formattedArgs = args
