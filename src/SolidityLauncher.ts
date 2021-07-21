@@ -50,6 +50,7 @@ import {
   tearDownTempFolders,
 } from "./util/fileSystem";
 import CLI from "./ui/CLI";
+import {getDependencies} from "./util/depencencyResolver";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -209,6 +210,8 @@ export class SolidityLauncher {
       await api.onCompileComplete(config);
 
       const finalArchive = new Archive<TestCase>();
+      let finalImportsMap: Map<string, string> = new Map()
+      let finalDependencies: Map<string, string[]> = new Map()
 
       for (const target of targets) {
         const archive = await testTarget(
@@ -222,12 +225,18 @@ export class SolidityLauncher {
         for (const key of archive.getObjectives()) {
           finalArchive.update(key, archive.getEncoding(key));
         }
+
+        const [importsMap, dependencyMap] = getDependencies(target)
+        finalImportsMap = new Map([...Array.from(finalImportsMap.entries()), ...Array.from(importsMap.entries())]);
+        finalDependencies = new Map([...Array.from(finalDependencies.entries()), ...Array.from(dependencyMap.entries())]);
       }
 
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
-      const stringifier = new SolidityTruffleStringifier();
+
+      const stringifier = new SolidityTruffleStringifier(finalImportsMap, finalDependencies);
+      // const stringifier = new SolidityTruffleStringifier();
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
         api,
@@ -296,7 +305,9 @@ async function testTarget(
 
   const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
 
-  const stringifier = new SolidityTruffleStringifier();
+  const [importsMap, dependencyMap] = getDependencies(target)
+
+  const stringifier = new SolidityTruffleStringifier(importsMap, dependencyMap);
   const suiteBuilder = new SoliditySuiteBuilder(
     stringifier,
     api,

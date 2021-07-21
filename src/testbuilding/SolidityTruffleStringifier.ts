@@ -18,6 +18,14 @@ import { AddressStatement } from "../testcase/statements/AddressStatement";
  * @author Mitchell Olsthoorn
  */
 export class SolidityTruffleStringifier implements TestCaseDecoder {
+  private imports: Map<string, string>
+  private contractDependencies: Map<string, string[]>;
+
+  constructor(imports: Map<string, string>, contractDependencies: Map<string, string[]>) {
+    this.imports = imports
+    this.contractDependencies = contractDependencies
+  }
+
   decodeConstructor(statement: Statement): string {
     if (!(statement instanceof ConstructorCall))
       throw new Error(`${statement} is not a constructor`);
@@ -36,7 +44,6 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
     return (
       string +
-      `\t` +
       `const ${statement.varName} = await ${
         (statement as ConstructorCall).constructorName
       }.new(${formattedArgs});`
@@ -93,24 +100,24 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     }
   }
 
-  getImport(statement: Statement): string {
-    if (statement instanceof ConstructorCall) {
-      // TODO This assumes constructor name is also name of the file
-      return `const ${
-        (statement as ConstructorCall).constructorName
-      } = artifacts.require("${
-        (statement as ConstructorCall).constructorName
-      }");\n\n`;
+  getImport(constructorName: string): string {
+    if (!this.imports.has(constructorName)) {
+      throw new Error(`Cannot find the import, constructor: ${constructorName} belongs to`)
     }
 
-    return "";
+    return `const ${
+      constructorName
+    } = artifacts.require("${
+      this.imports.get(constructorName)
+    }");
+    `;
   }
 
   decodeTestCase(
     testCase: TestCase | TestCase[],
     targetName: string,
     addLogs?: boolean,
-    additionalAssertions?: Map<TestCase, { [p: string]: string }>
+    additionalAssertions?: Map<TestCase, { [p: string]: string }>,
   ): string {
     if (testCase instanceof TestCase) {
       testCase = [testCase];
@@ -150,6 +157,11 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         }
       }
 
+      // linking the dependencies of the contract
+      // if (this.contractDependencies.has(ind.))
+
+      const importableGenes: ConstructorCall[] = []
+
       const constructor = ind.root;
       stack.push(constructor);
 
@@ -158,6 +170,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
         if (gene instanceof ConstructorCall) {
           testString += `\t\t${this.decodeConstructor(gene)}\n`;
+          importableGenes.push(<ConstructorCall>gene)
         } else if (gene instanceof PrimitiveStatement) {
           testString += `\t\t${this.decodeStatement(gene)}\n`;
         } else if (gene instanceof ObjectFunctionCall) {
@@ -187,11 +200,35 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
             gene.varName
           )}', '' + ${gene.varName})\n`;
         }
+      }
 
-        const importString: string = this.getImport(gene);
+      for (const gene of importableGenes) {
+        const contract = gene.constructorName
 
-        if (!imports.includes(importString) && importString.length) {
+        const importString: string = this.getImport(contract);
+
+        if (imports.includes(importString) || importString.length === 0) {
+          continue
+        }
+
+        imports.push(importString);
+
+        let count = 0
+        for (const dependency of this.contractDependencies.get(contract)) {
+          const importString: string = this.getImport(dependency);
+
+          if (imports.includes(importString) || importString.length === 0) {
+            continue
+          }
+
           imports.push(importString);
+
+          // Create link
+          testString = `\t\tconst lib${count} = await ${dependency}.new();\n`
+              + `\t\tawait ${contract}.link('${dependency}', lib${count}.address);\n\n`
+              + testString
+
+          count += 1
         }
       }
 
