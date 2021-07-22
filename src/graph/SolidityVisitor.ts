@@ -169,7 +169,9 @@ export interface SolidityVisitor extends Visitor {
   "LabelDefinition:exit"?: (node: LabelDefinition) => void;
   "AssemblySwitch:exit"?: (node: AssemblySwitch) => void;
   "AssemblyCase:exit"?: (node: AssemblyCase) => void;
-  "AssemblyFunctionDefinition:exit"?: (node: AssemblyFunctionDefinition) => void;
+  "AssemblyFunctionDefinition:exit"?: (
+    node: AssemblyFunctionDefinition
+  ) => void;
   "AssemblyFunctionReturns:exit"?: (node: AssemblyFunctionReturns) => void;
   "AssemblyFor:exit"?: (node: AssemblyFor) => void;
   "AssemblyIf:exit"?: (node: AssemblyIf) => void;
