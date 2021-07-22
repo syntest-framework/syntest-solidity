@@ -40,14 +40,6 @@ import TruffleConfig = require("@truffle/config");
 
 import API = require("../src/api");
 
-import {
-  createMigrationsContract,
-  createMigrationsDir,
-  generateDeployContracts,
-  generateInitialMigration,
-  removeMigrationsDir,
-} from "./util/deployment";
-
 import { normalizeConfig } from "./util/config";
 import { setNetwork, setNetworkFrom } from "./util/network";
 
@@ -174,8 +166,6 @@ export class SolidityLauncher {
       // Run post-launch server hook;
       await api.onServerReady(config);
 
-      await createMigrationsContract();
-
       const obj = await loadTargetFiles();
       const included = obj["included"];
       const excluded = obj["excluded"];
@@ -234,13 +224,6 @@ export class SolidityLauncher {
         }
       }
 
-      await createMigrationsDir();
-      await generateInitialMigration();
-      await generateDeployContracts(
-        targets,
-        excluded.map((e) => path.basename(e.relativePath).split(".")[0])
-      );
-
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
@@ -255,7 +238,6 @@ export class SolidityLauncher {
       await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
 
       await deleteTempDirectories();
-      await removeMigrationsDir();
 
       config.test_files = await getTestFilePaths({
         testDir: path.resolve(Properties.final_suite_directory),
@@ -295,13 +277,6 @@ async function testTarget(
   truffle,
   config
 ) {
-  await createMigrationsDir();
-  await generateInitialMigration();
-  await generateDeployContracts(
-    [target],
-    excluded.map((e) => path.basename(e.relativePath).split(".")[0])
-  );
-
   await createDirectoryStructure();
   await createTempDirectoryStructure();
 
@@ -416,8 +391,6 @@ async function testTarget(
   writer.write(collector, statisticFile + "/statistics.csv");
 
   await deleteTempDirectories();
-
-  await removeMigrationsDir();
 
   return archive;
 }
