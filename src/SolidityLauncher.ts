@@ -40,14 +40,6 @@ import TruffleConfig = require("@truffle/config");
 
 import API = require("../src/api");
 
-import {
-  createMigrationsContract,
-  createMigrationsDir,
-  generateDeployContracts,
-  generateInitialMigration,
-  removeMigrationsDir,
-} from "./util/deployment";
-
 import { normalizeConfig } from "./util/config";
 import { setNetwork, setNetworkFrom } from "./util/network";
 
@@ -174,8 +166,6 @@ export class SolidityLauncher {
       // Run post-launch server hook;
       await api.onServerReady(config);
 
-      await createMigrationsContract();
-
       const obj = await loadTargetFiles();
       const included = obj["included"];
       const excluded = obj["excluded"];
@@ -234,13 +224,6 @@ export class SolidityLauncher {
         }
       }
 
-      await createMigrationsDir();
-      await generateInitialMigration();
-      await generateDeployContracts(
-        targets,
-        excluded.map((e) => path.basename(e.relativePath).split(".")[0])
-      );
-
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
@@ -255,7 +238,6 @@ export class SolidityLauncher {
       await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
 
       await deleteTempDirectories();
-      await removeMigrationsDir();
 
       config.test_files = await getTestFilePaths({
         testDir: path.resolve(Properties.final_suite_directory),
@@ -296,13 +278,6 @@ async function testTarget(
   config
 ) {
   try {
-    await createMigrationsDir();
-    await generateInitialMigration();
-    await generateDeployContracts(
-      [target],
-      excluded.map((e) => path.basename(e.relativePath).split(".")[0])
-    );
-
     await createDirectoryStructure();
     await createTempDirectoryStructure();
 
@@ -403,15 +378,12 @@ async function testTarget(
       .getObjectives()
       .filter((objective) => objective instanceof ExceptionObjectiveFunction)
       .length;
-    collector.recordVariable(
-      RuntimeVariable.COVERED_EXCEPTIONS,
-      numOfExceptions
-    );
+    collector.recordVariable(RuntimeVariable.COVERED_EXCEPTIONS, numOfExceptions);
 
     collector.recordVariable(
       RuntimeVariable.COVERAGE,
       (archive.getObjectives().length - numOfExceptions) /
-        currentSubject.getObjectives().length
+      currentSubject.getObjectives().length
     );
 
     const statisticFile = path.resolve(Properties.statistics_directory);
@@ -420,8 +392,6 @@ async function testTarget(
     writer.write(collector, statisticFile + "/statistics.csv");
 
     await deleteTempDirectories();
-
-    await removeMigrationsDir();
 
     return archive;
   } catch (e) {
