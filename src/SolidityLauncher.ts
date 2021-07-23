@@ -111,6 +111,7 @@ export class SolidityLauncher {
     try {
       const ui = new CLI(true);
 
+      // TODO: why again
       config = normalizeConfig(config);
 
       await guessCWD(config.workingDir);
