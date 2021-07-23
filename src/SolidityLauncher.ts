@@ -378,12 +378,15 @@ async function testTarget(
       .getObjectives()
       .filter((objective) => objective instanceof ExceptionObjectiveFunction)
       .length;
-    collector.recordVariable(RuntimeVariable.COVERED_EXCEPTIONS, numOfExceptions);
+    collector.recordVariable(
+      RuntimeVariable.COVERED_EXCEPTIONS,
+      numOfExceptions
+    );
 
     collector.recordVariable(
       RuntimeVariable.COVERAGE,
       (archive.getObjectives().length - numOfExceptions) /
-      currentSubject.getObjectives().length
+        currentSubject.getObjectives().length
     );
 
     const statisticFile = path.resolve(Properties.statistics_directory);

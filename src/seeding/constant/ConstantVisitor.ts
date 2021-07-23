@@ -31,7 +31,6 @@ import { ConstantPool } from "./ConstantPool";
  * @author Mitchell Olsthoorn
  */
 export class ConstantVisitor implements SolidityVisitor {
-
   protected pool: ConstantPool;
 
   constructor(pool: ConstantPool) {
@@ -47,7 +46,7 @@ export class ConstantVisitor implements SolidityVisitor {
     node.symbolAliases.forEach((symbolAlias) => {
       symbolAlias.forEach((alias) => {
         this.pool.addString(alias);
-      })
+      });
     });
     this.pool.addString(node.unitAlias);
   }

@@ -1,6 +1,4 @@
-import {
-  prng
-} from "syntest-framework"
+import { prng } from "syntest-framework";
 
 /**
  * A pool with constants extracted from the subject under test.
@@ -8,17 +6,16 @@ import {
  * @author Mitchell Olsthoorn
  */
 export class ConstantPool {
-
   protected addressPool = new Set<string>();
   protected numberPool = new Set<number>();
   protected stringPool = new Set<string>();
 
   addAddress(value: string): void {
-    this.addressPool.add(value)
+    this.addressPool.add(value);
   }
 
   getAddress(): string {
-    return prng.pickOne(Array.from(this.addressPool))
+    return prng.pickOne(Array.from(this.addressPool));
   }
 
   addNumber(value: number): void {
@@ -26,7 +23,7 @@ export class ConstantPool {
   }
 
   getNumber(): number {
-    return prng.pickOne(Array.from(this.numberPool))
+    return prng.pickOne(Array.from(this.numberPool));
   }
 
   addString(value: string): void {
@@ -34,6 +31,6 @@ export class ConstantPool {
   }
 
   getString(): number {
-    return prng.pickOne(Array.from(this.stringPool))
+    return prng.pickOne(Array.from(this.stringPool));
   }
 }
