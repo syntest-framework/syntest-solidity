@@ -50,7 +50,9 @@ import {
   tearDownTempFolders,
 } from "./util/fileSystem";
 import CLI from "./ui/CLI";
-import { getDependencies } from "./util/depencencyResolver";
+import { readFileSync } from "fs";
+import { ImportVisitor } from "./graph/ImportVisitor";
+import { LibraryVisitor } from "./graph/LibraryVisitor";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -227,7 +229,12 @@ export class SolidityLauncher {
           finalArchive.update(key, archive.getEncoding(key));
         }
 
-        const [importsMap, dependencyMap] = getDependencies(target);
+        // TODO: check if we can prevent recalculating the dependencies
+        const ast = SolidityParser.parse(target.actualSource, {
+          loc: true,
+          range: true,
+        });
+        const { importsMap, dependencyMap } = getImportDependencies(ast, target);
         finalImportsMap = new Map([
           ...Array.from(finalImportsMap.entries()),
           ...Array.from(importsMap.entries()),
@@ -315,7 +322,7 @@ async function testTarget(
 
     const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
 
-    const [importsMap, dependencyMap] = getDependencies(target);
+    const { importsMap, dependencyMap } = getImportDependencies(ast, target);
 
     const stringifier = new SolidityTruffleStringifier(
       importsMap,
@@ -426,6 +433,51 @@ async function testTarget(
     }
     throw e;
   }
+}
+
+function getImportDependencies(ast: any, target: any) {
+  const contractName = target.instrumented.contractName;
+
+  // Import the contract under test
+  const importsMap = new Map<string, string>();
+  importsMap.set(contractName, contractName);
+
+  // Find all external imports in the contract under test
+  const importVisitor = new ImportVisitor();
+  SolidityParser.visit(ast, importVisitor);
+
+  // For each external import scan the file for libraries with public and external functions
+  const libraries: string[] = [];
+  importVisitor.imports.forEach((importPath: string) => {
+    // Full path to the imported file
+    const pathLib = path.join(path.dirname(target.canonicalPath), importPath);
+
+    // Read the imported file
+    // TODO: use the already parsed excluded information to prevent duplicate file reading
+    const source = readFileSync(pathLib).toString();
+
+    // Parse the imported file
+    const astLib = SolidityParser.parse(source, {
+      loc: true,
+      range: true
+    });
+
+    // Scan for libraries with public or external functions
+    const libraryVisitor = new LibraryVisitor();
+    SolidityParser.visit(astLib, libraryVisitor);
+
+    // Import the external file in the test
+    importsMap.set(path.basename(importPath).split(".")[0], path.basename(importPath).split(".")[0]);
+
+    // Import the found libraries
+    // TODO: check for duplicates in libraries
+    libraries.push(...libraryVisitor.libraries);
+  });
+
+  // Return the library dependency information
+  const dependencyMap = new Map<string, string[]>();
+  dependencyMap.set(contractName, libraries);
+  return { importsMap, dependencyMap };
 }
 
 function collectCoverageData(
