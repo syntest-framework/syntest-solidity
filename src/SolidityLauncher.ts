@@ -50,7 +50,7 @@ import {
   tearDownTempFolders,
 } from "./util/fileSystem";
 import CLI from "./ui/CLI";
-import {getDependencies} from "./util/depencencyResolver";
+import { getDependencies } from "./util/depencencyResolver";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -211,8 +211,8 @@ export class SolidityLauncher {
       await api.onCompileComplete(config);
 
       const finalArchive = new Archive<TestCase>();
-      let finalImportsMap: Map<string, string> = new Map()
-      let finalDependencies: Map<string, string[]> = new Map()
+      let finalImportsMap: Map<string, string> = new Map();
+      let finalDependencies: Map<string, string[]> = new Map();
 
       for (const target of targets) {
         const archive = await testTarget(
@@ -227,16 +227,24 @@ export class SolidityLauncher {
           finalArchive.update(key, archive.getEncoding(key));
         }
 
-        const [importsMap, dependencyMap] = getDependencies(target)
-        finalImportsMap = new Map([...Array.from(finalImportsMap.entries()), ...Array.from(importsMap.entries())]);
-        finalDependencies = new Map([...Array.from(finalDependencies.entries()), ...Array.from(dependencyMap.entries())]);
+        const [importsMap, dependencyMap] = getDependencies(target);
+        finalImportsMap = new Map([
+          ...Array.from(finalImportsMap.entries()),
+          ...Array.from(importsMap.entries()),
+        ]);
+        finalDependencies = new Map([
+          ...Array.from(finalDependencies.entries()),
+          ...Array.from(dependencyMap.entries()),
+        ]);
       }
 
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
-
-      const stringifier = new SolidityTruffleStringifier(finalImportsMap, finalDependencies);
+      const stringifier = new SolidityTruffleStringifier(
+        finalImportsMap,
+        finalDependencies
+      );
       // const stringifier = new SolidityTruffleStringifier();
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
@@ -287,124 +295,137 @@ async function testTarget(
   truffle,
   config
 ) {
-  await createDirectoryStructure();
-  await createTempDirectoryStructure();
+  try {
+    await createDirectoryStructure();
+    await createTempDirectoryStructure();
 
-  getLogger().info(`Testing target: ${target.relativePath}`);
+    getLogger().info(`Testing target: ${target.relativePath}`);
 
-  const ast = SolidityParser.parse(target.actualSource, {
-    loc: true,
-    range: true,
-  });
+    const ast = SolidityParser.parse(target.actualSource, {
+      loc: true,
+      range: true,
+    });
 
-  const contractName = target.instrumented.contractName;
-  const cfgFactory = new SolidityCFGFactory();
-  const cfg = cfgFactory.convertAST(ast, false, false);
-  const fnMap = target.instrumented.fnMap;
+    const contractName = target.instrumented.contractName;
+    const cfgFactory = new SolidityCFGFactory();
+    const cfg = cfgFactory.convertAST(ast, false, false);
+    const fnMap = target.instrumented.fnMap;
 
-  drawGraph(cfg, path.join(Properties.cfg_directory, `${contractName}.svg`));
+    drawGraph(cfg, path.join(Properties.cfg_directory, `${contractName}.svg`));
 
-  const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
+    const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
 
-  const [importsMap, dependencyMap] = getDependencies(target)
+    const [importsMap, dependencyMap] = getDependencies(target);
 
-  const stringifier = new SolidityTruffleStringifier(importsMap, dependencyMap);
-  const suiteBuilder = new SoliditySuiteBuilder(
-    stringifier,
-    api,
-    truffle,
-    config
-  );
+    const stringifier = new SolidityTruffleStringifier(
+      importsMap,
+      dependencyMap
+    );
+    const suiteBuilder = new SoliditySuiteBuilder(
+      stringifier,
+      api,
+      truffle,
+      config
+    );
 
-  const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
+    const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
 
-  const sampler = new SolidityRandomSampler(currentSubject);
-  const algorithm = createAlgorithmFromConfig(sampler, runner);
+    const sampler = new SolidityRandomSampler(currentSubject);
+    const algorithm = createAlgorithmFromConfig(sampler, runner);
 
-  await suiteBuilder.clearDirectory(Properties.temp_test_directory);
+    await suiteBuilder.clearDirectory(Properties.temp_test_directory);
 
-  // allocate budget manager
-  const iterationBudget = new IterationBudget(Properties.iteration_budget);
-  const evaluationBudget = new EvaluationBudget();
-  const searchBudget = new SearchTimeBudget(Properties.search_time);
-  const totalTimeBudget = new TotalTimeBudget(Properties.total_time);
-  const budgetManager = new BudgetManager();
-  budgetManager.addBudget(iterationBudget);
-  budgetManager.addBudget(evaluationBudget);
-  budgetManager.addBudget(searchBudget);
-  budgetManager.addBudget(totalTimeBudget);
+    // allocate budget manager
+    const iterationBudget = new IterationBudget(Properties.iteration_budget);
+    const evaluationBudget = new EvaluationBudget();
+    const searchBudget = new SearchTimeBudget(Properties.search_time);
+    const totalTimeBudget = new TotalTimeBudget(Properties.total_time);
+    const budgetManager = new BudgetManager();
+    budgetManager.addBudget(iterationBudget);
+    budgetManager.addBudget(evaluationBudget);
+    budgetManager.addBudget(searchBudget);
+    budgetManager.addBudget(totalTimeBudget);
 
-  // This searches for a covering population
-  const archive = await algorithm.search(currentSubject, budgetManager);
+    // This searches for a covering population
+    const archive = await algorithm.search(currentSubject, budgetManager);
 
-  const collector = new StatisticsCollector(totalTimeBudget);
-  collector.recordVariable(RuntimeVariable.VERSION, 1);
-  collector.recordVariable(
-    RuntimeVariable.CONFIGURATION,
-    Properties.configuration
-  );
-  collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
-  collector.recordVariable(
-    RuntimeVariable.PROBE_ENABLED,
-    Properties.probe_objective
-  );
-  collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
-  collector.recordVariable(
-    RuntimeVariable.TOTAL_OBJECTIVES,
-    currentSubject.getObjectives().length
-  );
-
-  collector.recordVariable(
-    RuntimeVariable.COVERED_OBJECTIVES,
-    archive.getObjectives().length
-  );
-
-  collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
-  collector.recordVariable(
-    RuntimeVariable.SEARCH_TIME,
-    searchBudget.getCurrentBudget()
-  );
-
-  collector.recordVariable(
-    RuntimeVariable.TOTAL_TIME,
-    totalTimeBudget.getCurrentBudget()
-  );
-
-  collector.recordVariable(
-    RuntimeVariable.ITERATIONS,
-    iterationBudget.getCurrentBudget()
-  );
-
-  collector.recordVariable(
-    RuntimeVariable.EVALUATIONS,
-    evaluationBudget.getCurrentBudget()
-  );
-
-  collectCoverageData(collector, archive, "branch");
-  collectCoverageData(collector, archive, "statement");
-  collectCoverageData(collector, archive, "function");
-  collectCoverageData(collector, archive, "probe");
-
-  const numOfExceptions = archive
-    .getObjectives()
-    .filter((objective) => objective instanceof ExceptionObjectiveFunction)
-    .length;
-  collector.recordVariable(RuntimeVariable.COVERED_EXCEPTIONS, numOfExceptions);
-
-  collector.recordVariable(
-    RuntimeVariable.COVERAGE,
-    (archive.getObjectives().length - numOfExceptions) /
+    const collector = new StatisticsCollector(totalTimeBudget);
+    collector.recordVariable(RuntimeVariable.VERSION, 1);
+    collector.recordVariable(
+      RuntimeVariable.CONFIGURATION,
+      Properties.configuration
+    );
+    collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
+    collector.recordVariable(
+      RuntimeVariable.PROBE_ENABLED,
+      Properties.probe_objective
+    );
+    collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
+    collector.recordVariable(
+      RuntimeVariable.TOTAL_OBJECTIVES,
       currentSubject.getObjectives().length
-  );
+    );
 
-  const statisticFile = path.resolve(Properties.statistics_directory);
+    collector.recordVariable(
+      RuntimeVariable.COVERED_OBJECTIVES,
+      archive.getObjectives().length
+    );
 
-  const writer = new SummaryWriter();
-  writer.write(collector, statisticFile + "/statistics.csv");
+    collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
+    collector.recordVariable(
+      RuntimeVariable.SEARCH_TIME,
+      searchBudget.getCurrentBudget()
+    );
 
-  await deleteTempDirectories();
+    collector.recordVariable(
+      RuntimeVariable.TOTAL_TIME,
+      totalTimeBudget.getCurrentBudget()
+    );
 
-  return archive;
+    collector.recordVariable(
+      RuntimeVariable.ITERATIONS,
+      iterationBudget.getCurrentBudget()
+    );
+
+    collector.recordVariable(
+      RuntimeVariable.EVALUATIONS,
+      evaluationBudget.getCurrentBudget()
+    );
+
+    collectCoverageData(collector, archive, "branch");
+    collectCoverageData(collector, archive, "statement");
+    collectCoverageData(collector, archive, "function");
+    collectCoverageData(collector, archive, "probe");
+
+    const numOfExceptions = archive
+      .getObjectives()
+      .filter((objective) => objective instanceof ExceptionObjectiveFunction)
+      .length;
+    collector.recordVariable(
+      RuntimeVariable.COVERED_EXCEPTIONS,
+      numOfExceptions
+    );
+
+    collector.recordVariable(
+      RuntimeVariable.COVERAGE,
+      (archive.getObjectives().length - numOfExceptions) /
+        currentSubject.getObjectives().length
+    );
+
+    const statisticFile = path.resolve(Properties.statistics_directory);
+
+    const writer = new SummaryWriter();
+    writer.write(collector, statisticFile + "/statistics.csv");
+
+    await deleteTempDirectories();
+
+    return archive;
+  } catch (e) {
+    if (e instanceof SolidityParser.ParserError) {
+      console.error(e.errors);
+    }
+    throw e;
+  }
 }
 
 function collectCoverageData(
