@@ -9,6 +9,7 @@ const SolidityParser = require("@solidity-parser/parser");
 import {
   Archive,
   BudgetManager,
+  configureTermination,
   createAlgorithmFromConfig,
   createDirectoryStructure,
   createTempDirectoryStructure,
@@ -27,14 +28,12 @@ import {
   SearchTimeBudget,
   setupLogger,
   setupOptions,
-  SignalTerminationTrigger,
   StatisticsCollector,
   SummaryWriter,
   TestCase,
   TotalTimeBudget,
   loadTargetFiles,
   TargetFile,
-  TerminationManager,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -325,9 +324,7 @@ async function testTarget(
     budgetManager.addBudget(searchBudget);
     budgetManager.addBudget(totalTimeBudget);
 
-    const signalTerminationTrigger = new SignalTerminationTrigger();
-    const terminationManager = new TerminationManager();
-    terminationManager.addTrigger(signalTerminationTrigger);
+    const terminationManager = configureTermination();
 
     // This searches for a covering population
     const archive = await algorithm.search(
