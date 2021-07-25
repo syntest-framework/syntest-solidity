@@ -27,12 +27,14 @@ import {
   SearchTimeBudget,
   setupLogger,
   setupOptions,
+  SignalTerminationTrigger,
   StatisticsCollector,
   SummaryWriter,
   TestCase,
   TotalTimeBudget,
   loadTargetFiles,
   TargetFile,
+  TerminationManager,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -323,8 +325,16 @@ async function testTarget(
     budgetManager.addBudget(searchBudget);
     budgetManager.addBudget(totalTimeBudget);
 
+    const signalTerminationTrigger = new SignalTerminationTrigger();
+    const terminationManager = new TerminationManager();
+    terminationManager.addTrigger(signalTerminationTrigger);
+
     // This searches for a covering population
-    const archive = await algorithm.search(currentSubject, budgetManager);
+    const archive = await algorithm.search(
+      currentSubject,
+      budgetManager,
+      terminationManager
+    );
 
     const collector = new StatisticsCollector(totalTimeBudget);
     collector.recordVariable(RuntimeVariable.VERSION, 1);
