@@ -6,6 +6,7 @@ import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler
 import { SolidityCFGFactory } from "./graph/SolidityCFGFactory";
 const SolidityParser = require("@solidity-parser/parser");
 
+import * as Mocha from 'mocha';
 import Suite from 'mocha/lib/suite.js';
 import {fs} from "memfs";
 
