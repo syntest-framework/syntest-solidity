@@ -116,6 +116,87 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     `;
   }
 
+  convertToStatementStack(ind: TestCase): Statement[] {
+    const stack: Statement[] = [];
+    const queue: Statement[] = [ind.root];
+    while (queue.length) {
+      const current: Statement = queue.splice(0, 1)[0];
+
+      if (current instanceof ConstructorCall) {
+        for (const call of current.getMethodCalls()) {
+          queue.push(call);
+        }
+      } else {
+        stack.push(current);
+
+        for (const child of current.getChildren()) {
+          queue.push(child);
+        }
+      }
+    }
+    return stack
+  }
+
+  gatherImports(importableGenes: ConstructorCall[]): [string[], string[]] {
+    const imports: string[] = [];
+    const linkings: string[] = []
+    for (const gene of importableGenes) {
+      const contract = gene.constructorName;
+
+      const importString: string = this.getImport(contract);
+
+      if (imports.includes(importString) || importString.length === 0) {
+        continue;
+      }
+
+      imports.push(importString);
+
+      let count = 0;
+      for (const dependency of this.contractDependencies.get(contract)) {
+        const importString: string = this.getImport(dependency);
+
+        // Create link
+        linkings.push(`\t\tconst lib${count} = await ${dependency}.new();`)
+        linkings.push(`\t\tawait ${contract}.link('${dependency}', lib${count}.address);\n`)
+
+        if (imports.includes(importString) || importString.length === 0) {
+          continue;
+        }
+
+        imports.push(importString);
+
+        count += 1;
+      }
+    }
+
+    return [imports, linkings]
+  }
+
+  generateAssertions(
+      ind: TestCase,
+      additionalAssertions?: Map<TestCase, { [p: string]: string }>
+  ): string[] {
+    const assertions: string[] = []
+    if (additionalAssertions) {
+      if (additionalAssertions.has(ind)) {
+        const assertion: { [p: string]: string } = additionalAssertions.get(ind);
+        for (const variableName of Object.keys(assertion)) {
+          if (assertion[variableName] === "[object Object]") continue;
+
+          if (variableName.includes("string")) {
+            assertions.push(`\t\tassert.equal(${variableName}, "${assertion[variableName]}")`);
+          } else if (variableName.includes("int")) {
+            assertions.push(`\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))`);
+          } else {
+            assertions.push(`\t\tassert.equal(${variableName}, ${assertion[variableName]})`);
+          }
+        }
+      }
+    }
+
+    return assertions
+  }
+
   decodeTestCase(
     testCase: TestCase | TestCase[],
     targetName: string,
@@ -131,33 +212,16 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     const imports: string[] = [];
 
     for (const ind of testCase) {
-      let testString = "";
-      let assertions = "";
+      const testString = [];
 
-      const stack: Statement[] = [];
-      const queue: Statement[] = [ind.root];
+      const stack: Statement[] = this.convertToStatementStack(ind)
 
       if (addLogs) {
-        testString += `\t\tawait fs.mkdirSync('${path.join(
+        imports.push(`const fs = require('fs');\n\n`)
+        testString.push(`\t\tawait fs.mkdirSync('${path.join(
           Properties.temp_log_directory,
           ind.id
-        )}', { recursive: true })\n`;
-      }
-
-      while (queue.length) {
-        const current: Statement = queue.splice(0, 1)[0];
-
-        if (current instanceof ConstructorCall) {
-          for (const call of current.getMethodCalls()) {
-            queue.push(call);
-          }
-        } else {
-          stack.push(current);
-
-          for (const child of current.getChildren()) {
-            queue.push(child);
-          }
-        }
+        )}', { recursive: true })\n`);
       }
 
       const importableGenes: ConstructorCall[] = [];
@@ -169,94 +233,36 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         const gene: Statement = stack.pop()!;
 
         if (gene instanceof ConstructorCall) {
-          testString += `\t\t${this.decodeConstructor(gene)}\n`;
+          testString.push(`\t\t${this.decodeConstructor(gene)}`);
           importableGenes.push(<ConstructorCall>gene);
         } else if (gene instanceof PrimitiveStatement) {
-          testString += `\t\t${this.decodeStatement(gene)}\n`;
+          testString.push(`\t\t${this.decodeStatement(gene)}`);
         } else if (gene instanceof ObjectFunctionCall) {
-          testString += `\t\t${this.decodeFunctionCall(
-            gene,
-            constructor.varName
-          )}\n`;
+          testString.push(`\t\t${this.decodeFunctionCall(gene, constructor.varName)}`);
         } else {
           throw Error(`The type of gene ${gene} is not recognized`);
         }
 
-        if (gene instanceof PrimitiveStatement) {
-          /*          if (gene.type.startsWith("int") || gene.type.startsWith("uint")) {
-            let value: string = (gene as NumericStatement).value.toFixed();
-            value = `BigInt("${value}")`;
-            assertions += `\t\tassert.equal(${gene.varName}, ${value})\n`;
-          } else if (gene instanceof StringStatement){
-            assertions += `\t\tassert.equal(${gene.varName}, "${gene.value}")\n`;
-          } else {
-            assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`;
-          }
- */
-        } else if (addLogs && gene instanceof ObjectFunctionCall) {
-          testString += `\t\tawait fs.writeFileSync('${path.join(
-            Properties.temp_log_directory,
-            ind.id,
-            gene.varName
-          )}', '' + ${gene.varName})\n`;
+        if (addLogs && gene instanceof ObjectFunctionCall) {
+          testString.push(`\t\tawait fs.writeFileSync('${path.join(
+              Properties.temp_log_directory,
+              ind.id,
+              gene.varName
+          )}', '' + ${gene.varName})`);
         }
       }
 
-      for (const gene of importableGenes) {
-        const contract = gene.constructorName;
+      const [importsOfTest, linkings] = this.gatherImports(importableGenes)
+      imports.push(...importsOfTest)
 
-        const importString: string = this.getImport(contract);
-
-        if (imports.includes(importString) || importString.length === 0) {
-          continue;
-        }
-
-        imports.push(importString);
-
-        let count = 0;
-        for (const dependency of this.contractDependencies.get(contract)) {
-          const importString: string = this.getImport(dependency);
-
-          if (imports.includes(importString) || importString.length === 0) {
-            continue;
-          }
-
-          imports.push(importString);
-
-          // Create link
-          testString =
-            `\t\tconst lib${count} = await ${dependency}.new();\n` +
-            `\t\tawait ${contract}.link('${dependency}', lib${count}.address);\n\n` +
-            testString;
-
-          count += 1;
-        }
-      }
-
-      testString += "\n";
-
-      if (additionalAssertions) {
-        if (additionalAssertions.has(ind)) {
-          const assertion: any = additionalAssertions.get(ind);
-          for (const variableName of Object.keys(assertion)) {
-            if (assertion[variableName] === "[object Object]") continue;
-
-            if (variableName.includes("string")) {
-              assertions += `\t\tassert.equal(${variableName}, "${assertion[variableName]}")\n`;
-            } else if (variableName.includes("int")) {
-              assertions += `\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))\n`;
-            } else {
-              assertions += `\t\tassert.equal(${variableName}, ${assertion[variableName]})\n`;
-            }
-          }
-        }
-      }
+      const assertions = this.generateAssertions(ind, additionalAssertions)
 
       // TODO instead of using the targetName use the function call or a better description of the test
       totalTestString +=
         `\tit('test for ${targetName}', async () => {\n` +
-        `${testString}` +
-        `${assertions}` +
+        `${linkings.join("\n")}` +
+        `${testString.join("\n")}` +
+        `${assertions.join("\n")}` +
         `\t});\n`;
     }
 
@@ -265,10 +271,6 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
     // Add the imports
     test = imports.join("\n") + `\n` + test;
-
-    if (addLogs) {
-      test = `const fs = require('fs');\n\n` + test;
-    }
 
     return test;
   }
