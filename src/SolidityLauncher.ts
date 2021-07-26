@@ -53,7 +53,7 @@ import {
   tearDownTempFolders,
 } from "./util/fileSystem";
 
-import {SolidityCommandLineInterface} from "./ui/SolidityCommandLineInterface";
+import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -112,7 +112,7 @@ export class SolidityLauncher {
     const tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
 
     try {
-      setUserInterface(new SolidityCommandLineInterface())
+      setUserInterface(new SolidityCommandLineInterface());
 
       config = normalizeConfig(config);
 
@@ -148,7 +148,11 @@ export class SolidityLauncher {
       setNetworkFrom(config, accounts);
 
       // Version Info
-      getUserInterface().report("versions", [truffle.version, ganacheVersion, pkg.version]);
+      getUserInterface().report("versions", [
+        truffle.version,
+        ganacheVersion,
+        pkg.version,
+      ]);
 
       // Exit if --version
       if (config.version) {
