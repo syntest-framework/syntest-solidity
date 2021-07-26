@@ -207,7 +207,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       testCase = [testCase];
     }
 
-    let totalTestString = "";
+    const tests: string[] = [];
 
     const imports: string[] = [];
 
@@ -257,20 +257,32 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
       const assertions = this.generateAssertions(ind, additionalAssertions)
 
+      const body = []
+      if (linkings.length) {
+        body.push(`${linkings.join("\n")}`)
+      }
+      if (testString.length) {
+        body.push(`${testString.join("\n")}`)
+      }
+      if (assertions.length) {
+        body.push(`${assertions.join("\n")}`)
+      }
+
       // TODO instead of using the targetName use the function call or a better description of the test
-      totalTestString +=
-        `\tit('test for ${targetName}', async () => {\n` +
-        `${linkings.join("\n")}\n\n` +
-        `${testString.join("\n")}\n\n` +
-        `${assertions.join("\n")}\n` +
-        `\t});\n\n`;
+      tests.push(`\tit('test for ${targetName}', async () => {\n`
+          + `${body.join("\n\n")}`
+          + `\n\t});`)
     }
 
     let test =
-      `contract('${targetName}', (accounts) => {\n` + totalTestString + `\n})`;
+      `contract('${targetName}', (accounts) => {\n` + tests.join("\n\n") + `\n})`;
 
     // Add the imports
-    test = imports.join("") + `\n` + test;
+    test = imports
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .join("\n")
+        + `\n\n`
+        + test;
 
     return test;
   }
