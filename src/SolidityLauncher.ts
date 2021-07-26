@@ -8,7 +8,7 @@ const SolidityParser = require("@solidity-parser/parser");
 
 import * as Mocha from 'mocha';
 import Suite from 'mocha/lib/suite.js';
-import {fs} from "memfs";
+import { mRequire } from './memfs';
 
 import {
   Archive,
@@ -119,7 +119,8 @@ export class SolidityLauncher {
       this.files.forEach(function(file) {
         file = path.resolve(file);
         suite.emit(Suite.constants.EVENT_FILE_PRE_REQUIRE, global, file, self);
-        suite.emit(Suite.constants.EVENT_FILE_REQUIRE, fs.readFileSync(file, 'utf8'), file, self);
+        suite.emit(Suite.constants.EVENT_FILE_REQUIRE, mRequire(file), file, self);
+        // suite.emit(Suite.constants.EVENT_FILE_REQUIRE, require(file), file, self);
         suite.emit(Suite.constants.EVENT_FILE_POST_REQUIRE, global, file, self);
       });
       fn && fn();

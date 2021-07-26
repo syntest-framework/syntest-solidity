@@ -8,7 +8,8 @@ import {
 } from "syntest-framework";
 import * as path from "path";
 import { getTestFilePaths } from "../util/fileSystem";
-import {fs} from "memfs";
+import {mfs}  from '../memfs';
+// import {fs, vol} from 'memfs'
 
 /**
  * @author Dimitri Stallenberg
@@ -38,7 +39,10 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       addLogs,
       additionalAssertions
     );
-    await fs.writeFileSync(filePath, decodedTestCase);
+    mfs.mkdirSync(Properties.temp_test_directory, { recursive: true } );
+    mfs.mkdirSync(Properties.temp_log_directory, { recursive: true } );
+
+    await mfs.writeFileSync(filePath, decodedTestCase);
   }
 
   async createSuite(archive: Archive<TestCase>) {
@@ -71,10 +75,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
 
     for (const key of reducedArchive.keys()) {
       for (const testCase of reducedArchive.get(key)!) {
-        const testPath = path.join(
-          Properties.temp_test_directory,
-          `test${key}${testCase.id}.js`
-        );
+        const testPath = `test${key}${testCase.id}.js`
         await this.writeTestCase(testPath, testCase, "", true);
       }
     }
@@ -103,12 +104,12 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
 
         try {
           // extract the log statements
-          const dir = await fs.readdirSync(
+          const dir = await mfs.readdirSync(
             path.join(Properties.temp_log_directory, testCase.id)
           );
 
           for (const file of dir) {
-            additionalAssertions[file] = await fs.readFileSync(
+            additionalAssertions[file] = await mfs.readFileSync(
               path.join(Properties.temp_log_directory, testCase.id, file),
               "utf8"
             );
@@ -121,14 +122,14 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
           path.join(Properties.temp_log_directory, testCase.id),
           /.*/g
         );
-        await fs.rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
+        await mfs.rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
       }
 
       const testPath = path.join(
         Properties.final_suite_directory,
         `test-${key}.js`
       );
-      await fs.writeFileSync(
+      await mfs.writeFileSync(
         testPath,
         this.decoder.decodeTestCase(
           reducedArchive.get(key)!,
