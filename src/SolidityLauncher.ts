@@ -9,6 +9,7 @@ const SolidityParser = require("@solidity-parser/parser");
 import {
   Archive,
   BudgetManager,
+  configureTermination,
   createAlgorithmFromConfig,
   createDirectoryStructure,
   createTempDirectoryStructure,
@@ -334,8 +335,14 @@ async function testTarget(
     budgetManager.addBudget(searchBudget);
     budgetManager.addBudget(totalTimeBudget);
 
+    const terminationManager = configureTermination();
+
     // This searches for a covering population
-    const archive = await algorithm.search(currentSubject, budgetManager);
+    const archive = await algorithm.search(
+      currentSubject,
+      budgetManager,
+      terminationManager
+    );
 
     const collector = new StatisticsCollector(totalTimeBudget);
     collector.recordVariable(RuntimeVariable.VERSION, 1);
