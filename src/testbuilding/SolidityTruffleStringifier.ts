@@ -112,8 +112,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
     return `const ${constructorName} = artifacts.require("${this.imports.get(
       constructorName
-    )}");
-    `;
+    )}");`;
   }
 
   convertToStatementStack(ind: TestCase): Statement[] {
@@ -178,13 +177,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   ): string[] {
     const assertions: string[] = []
     if (additionalAssertions) {
-      console.log('has additional')
-      console.log(additionalAssertions)
       if (additionalAssertions.has(ind)) {
-        console.log('has additional for ind')
-
         const assertion: { [p: string]: string } = additionalAssertions.get(ind);
-        console.log(assertion)
 
         for (const variableName of Object.keys(assertion)) {
           if (assertion[variableName] === "[object Object]") continue;
