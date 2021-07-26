@@ -157,7 +157,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
         // Create link
         linkings.push(`\t\tconst lib${count} = await ${dependency}.new();`)
-        linkings.push(`\t\tawait ${contract}.link('${dependency}', lib${count}.address);\n`)
+        linkings.push(`\t\tawait ${contract}.link('${dependency}', lib${count}.address);`)
 
         if (imports.includes(importString) || importString.length === 0) {
           continue;
@@ -178,8 +178,14 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   ): string[] {
     const assertions: string[] = []
     if (additionalAssertions) {
+      console.log('has additional')
+      console.log(additionalAssertions)
       if (additionalAssertions.has(ind)) {
+        console.log('has additional for ind')
+
         const assertion: { [p: string]: string } = additionalAssertions.get(ind);
+        console.log(assertion)
+
         for (const variableName of Object.keys(assertion)) {
           if (assertion[variableName] === "[object Object]") continue;
 
@@ -260,17 +266,17 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       // TODO instead of using the targetName use the function call or a better description of the test
       totalTestString +=
         `\tit('test for ${targetName}', async () => {\n` +
-        `${linkings.join("\n")}` +
-        `${testString.join("\n")}` +
-        `${assertions.join("\n")}` +
-        `\t});\n`;
+        `${linkings.join("\n")}\n\n` +
+        `${testString.join("\n")}\n\n` +
+        `${assertions.join("\n")}\n` +
+        `\t});\n\n`;
     }
 
     let test =
       `contract('${targetName}', (accounts) => {\n` + totalTestString + `\n})`;
 
     // Add the imports
-    test = imports.join("\n") + `\n` + test;
+    test = imports.join("") + `\n` + test;
 
     return test;
   }
