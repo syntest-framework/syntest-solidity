@@ -252,7 +252,7 @@ export class SolidityLauncher {
         finalImportsMap,
         finalDependencies
       );
-      // const stringifier = new SolidityTruffleStringifier();
+
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
         api,

@@ -160,9 +160,6 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         }
       }
 
-      // linking the dependencies of the contract
-      // if (this.contractDependencies.has(ind.))
-
       const importableGenes: ConstructorCall[] = [];
 
       const constructor = ind.root;
