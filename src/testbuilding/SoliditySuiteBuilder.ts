@@ -6,9 +6,9 @@ import {
   Archive,
   ExceptionObjectiveFunction,
 } from "syntest-framework";
-import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
 import { getTestFilePaths } from "../util/fileSystem";
+import {fs} from "memfs";
 
 /**
  * @author Dimitri Stallenberg
@@ -38,7 +38,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       addLogs,
       additionalAssertions
     );
-    await writeFileSync(filePath, decodedTestCase);
+    await fs.writeFileSync(filePath, decodedTestCase);
   }
 
   async createSuite(archive: Archive<TestCase>) {
@@ -103,12 +103,12 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
 
         try {
           // extract the log statements
-          const dir = await readdirSync(
+          const dir = await fs.readdirSync(
             path.join(Properties.temp_log_directory, testCase.id)
           );
 
           for (const file of dir) {
-            additionalAssertions[file] = await readFileSync(
+            additionalAssertions[file] = await fs.readFileSync(
               path.join(Properties.temp_log_directory, testCase.id, file),
               "utf8"
             );
@@ -121,14 +121,14 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
           path.join(Properties.temp_log_directory, testCase.id),
           /.*/g
         );
-        await rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
+        await fs.rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
       }
 
       const testPath = path.join(
         Properties.final_suite_directory,
         `test-${key}.js`
       );
-      await writeFileSync(
+      await fs.writeFileSync(
         testPath,
         this.decoder.decodeTestCase(
           reducedArchive.get(key)!,

@@ -6,6 +6,9 @@ import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler
 import { SolidityCFGFactory } from "./graph/SolidityCFGFactory";
 const SolidityParser = require("@solidity-parser/parser");
 
+import Suite from 'mocha/lib/suite.js';
+import {fs} from "memfs";
+
 import {
   Archive,
   BudgetManager,
@@ -107,6 +110,19 @@ export class SolidityLauncher {
     // const tempArtifactsDir = path.join(config.workingDir, '.coverage_artifacts')
     const tempContractsDir = path.join(process.cwd(), ".syntest_coverage");
     const tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
+
+    // @ts-ignore
+    Mocha.prototype.loadFiles = function(fn) {
+      var self = this;
+      var suite = this.suite;
+      this.files.forEach(function(file) {
+        file = path.resolve(file);
+        suite.emit(Suite.constants.EVENT_FILE_PRE_REQUIRE, global, file, self);
+        suite.emit(Suite.constants.EVENT_FILE_REQUIRE, fs.readFileSync(file, 'utf8'), file, self);
+        suite.emit(Suite.constants.EVENT_FILE_POST_REQUIRE, global, file, self);
+      });
+      fn && fn();
+    };
 
     try {
       const ui = new CLI(true);
