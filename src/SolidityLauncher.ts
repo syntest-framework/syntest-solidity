@@ -34,6 +34,8 @@ import {
   TotalTimeBudget,
   loadTargetFiles,
   TargetFile,
+  setUserInterface,
+  getUserInterface,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -50,7 +52,8 @@ import {
   setupTempFolders,
   tearDownTempFolders,
 } from "./util/fileSystem";
-import CLI from "./ui/CLI";
+
+import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -109,7 +112,7 @@ export class SolidityLauncher {
     const tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
 
     try {
-      const ui = new CLI(true);
+      setUserInterface(new SolidityCommandLineInterface());
 
       config = normalizeConfig(config);
 
@@ -126,7 +129,7 @@ export class SolidityLauncher {
 
       config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
 
-      if (config.help) return ui.report("help"); // Exit if --help
+      if (config.help) return getUserInterface().report("help", []); // Exit if --help
 
       const truffle = loadLibrary(config);
       api = new API(myConfig);
@@ -145,7 +148,11 @@ export class SolidityLauncher {
       setNetworkFrom(config, accounts);
 
       // Version Info
-      ui.report("versions", [truffle.version, ganacheVersion, pkg.version]);
+      getUserInterface().report("versions", [
+        truffle.version,
+        ganacheVersion,
+        pkg.version,
+      ]);
 
       // Exit if --version
       if (config.version) {
@@ -158,7 +165,7 @@ export class SolidityLauncher {
         process.exit(0);
       }
 
-      ui.report("network", [
+      getUserInterface().report("network", [
         config.network,
         config.networks[config.network].network_id,
         config.networks[config.network].port,
@@ -187,7 +194,15 @@ export class SolidityLauncher {
       const targets = api.instrument(included);
       const skipped = excluded;
 
-      ui.reportSkipped(config, skipped);
+      let started = false;
+
+      for (const item of skipped) {
+        if (!started) {
+          getUserInterface().report("instr-skip", []);
+          started = true;
+        }
+        getUserInterface().report("instr-skipped", [item.relativePath]);
+      }
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir);
       await save(targets, config.contracts_directory, tempContractsDir);
