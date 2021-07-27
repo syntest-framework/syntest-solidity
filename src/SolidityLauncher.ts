@@ -107,9 +107,6 @@ export class SolidityLauncher {
   public async run(config: TruffleConfig) {
     let api, error, failures;
 
-    // Filesystem & Compiler Re-configuration
-    config = normalizeConfig(config);
-
     // const tempContractsDir = path.join(config.workingDir, '.coverage_contracts')
     // const tempArtifactsDir = path.join(config.workingDir, '.coverage_artifacts')
     const tempContractsDir = path.join(process.cwd(), ".syntest_coverage");
@@ -118,7 +115,7 @@ export class SolidityLauncher {
     try {
       setUserInterface(new SolidityCommandLineInterface());
 
-      // TODO: why again
+      // Filesystem & Compiler Re-configuration
       config = normalizeConfig(config);
 
       await guessCWD(config.workingDir);
