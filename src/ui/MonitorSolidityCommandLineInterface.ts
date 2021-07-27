@@ -1,12 +1,13 @@
-import {CommandLineInterface, yargs} from 'syntest-framework'
+import {MonitorCommandLineInterface, yargs} from 'syntest-framework'
 import { getLogger } from "syntest-framework";
 import Messages from "./Messages";
 
 const chalk = require("chalk");
 const clear = require("clear");
 
-export class SolidityCommandLineInterface extends CommandLineInterface {
+export class MonitorSolidityCommandLineInterface extends MonitorCommandLineInterface {
     private messages: Messages;
+
 
     constructor(silent = false, verbose = false, messages: Messages) {
         super(silent, verbose);
@@ -18,10 +19,12 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
             case 'clear':
                 return clear()
             case 'asciiArt':
-                return console.log(this.messages.asciiArt(args[0]))
+                return
             case 'network':
-                return console.log(this.messages.network(args[0], args[1], args[2]))
+                this.logs.push(this.messages.network(args[0], args[1], args[2]))
+                return
             case 'help':
+                clear()
                 return yargs
                     // .help("h")
                     // .alias("h", "help")
@@ -30,15 +33,22 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
                     // .version()
                     .showHelp()
             case 'version':
+                clear()
                 return console.log(this.messages.versions(args[0], args[1], args[2]))
             case 'skip-files':
                 if (!args.length) {
                     return
                 }
-                return console.log(this.messages.skipFiles(args))
+                this.logs.push(this.messages.skipFiles(args))
+                return
             case 'test-target':
-                return console.log(this.messages.testTarget(args[0]))
+                this.logs.push(this.messages.testTarget(args[0]))
+                return
         }
+
+        // if (this.logs.length > 10) {
+        //     this.logs.shift()
+        // }
 
         const c = chalk;
         const ct = c.bold.green(">");

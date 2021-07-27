@@ -7,6 +7,7 @@ import { SolidityCFGFactory } from "./graph/SolidityCFGFactory";
 const SolidityParser = require("@solidity-parser/parser");
 
 import {
+  yargs,
   Archive,
   BudgetManager,
   configureTermination,
@@ -54,6 +55,8 @@ import {
 } from "./util/fileSystem";
 
 import {SolidityCommandLineInterface} from "./ui/SolidityCommandLineInterface";
+import Messages from "./ui/Messages";
+import {MonitorSolidityCommandLineInterface} from "./ui/MonitorSolidityCommandLineInterface";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -77,7 +80,6 @@ function loadLibrary(config) {
     if (config.useGlobalTruffle || config.usePluginTruffle) throw null;
 
     const lib = require("truffle");
-    getLogger().info("lib-local");
     return lib;
   } catch (err) {}
 
@@ -87,7 +89,6 @@ function loadLibrary(config) {
 
     const globalTruffle = path.join(globalModules, "truffle");
     const lib = require(globalTruffle);
-    getLogger().info("lib-global");
     return lib;
   } catch (err) {}
 }
@@ -112,8 +113,6 @@ export class SolidityLauncher {
     const tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
 
     try {
-      setUserInterface(new SolidityCommandLineInterface())
-
       config = normalizeConfig(config);
 
       await guessCWD(config.workingDir);
@@ -127,7 +126,14 @@ export class SolidityLauncher {
       processConfig(myConfig, args);
       setupLogger();
 
+      const messages = new Messages()
+      // setUserInterface(new SolidityCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
+      setUserInterface(new MonitorSolidityCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
+
       config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
+
+      getUserInterface().report('clear', [])
+      getUserInterface().report('asciiArt', ['Syntest'])
 
       if (config.help) return getUserInterface().report("help", []); // Exit if --help
 
@@ -147,18 +153,16 @@ export class SolidityLauncher {
 
       setNetworkFrom(config, accounts);
 
-      // Version Info
-      getUserInterface().report("versions", [truffle.version, ganacheVersion, pkg.version]);
-
       // Exit if --version
       if (config.version) {
+        getUserInterface().report("version", [truffle.version, ganacheVersion, pkg.version]); // Exit if --help
+
         // Finish
         await tearDownTempFolders(tempContractsDir, tempArtifactsDir);
 
         // Shut server down
         await api.finish();
-        getLogger().info(`Version: `);
-        process.exit(0);
+        return
       }
 
       getUserInterface().report("network", [
@@ -190,15 +194,7 @@ export class SolidityLauncher {
       const targets = api.instrument(included);
       const skipped = excluded;
 
-      let started = false;
-
-      for (const item of skipped) {
-        if (!started) {
-          getUserInterface().report("instr-skip", []);
-          started = true;
-        }
-        getUserInterface().report("instr-skipped", [item.relativePath]);
-      }
+      getUserInterface().report("skip-files", skipped.map((s) => s.relativePath));
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir);
       await save(targets, config.contracts_directory, tempContractsDir);
@@ -293,7 +289,7 @@ async function testTarget(
     await createDirectoryStructure();
     await createTempDirectoryStructure();
 
-    getLogger().info(`Testing target: ${target.relativePath}`);
+    getUserInterface().report("test-target", target.relativePath);
 
     const ast = SolidityParser.parse(target.actualSource, {
       loc: true,
