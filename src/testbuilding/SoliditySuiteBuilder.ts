@@ -5,6 +5,7 @@ import {
   TestCase,
   Archive,
   ExceptionObjectiveFunction,
+  getLogger,
 } from "syntest-framework";
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
@@ -89,6 +90,8 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
+      getLogger().error(e);
+      console.trace(e);
     }
     console.log = old;
 
@@ -122,6 +125,8 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
           /.*/g
         );
         await rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
+
+        assertions.set(testCase, additionalAssertions);
       }
 
       const testPath = path.join(
