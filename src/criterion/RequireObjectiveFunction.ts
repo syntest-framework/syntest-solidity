@@ -13,47 +13,62 @@ export class RequireObjectiveFunction<
     subject: SearchSubject<T>,
     id: string,
     line: number,
-    locationIdx: number,
     type: boolean
   ) {
-    super(subject, id, line, locationIdx, type);
+    super(subject, id, line, type);
   }
 
   calculateDistance(encoding: T): number {
     const executionResult = encoding.getExecutionResult();
 
-    const postCondition = executionResult
-      .getTraces()
-      .find((trace) => trace.type === "probePost" && trace.line === this._line);
+    if (executionResult === undefined) {
+      return Number.MAX_VALUE;
+    }
 
-    const preCondition = executionResult
-      .getTraces()
-      .find((trace) => trace.type === "probePre" && trace.line === this._line);
+    if (executionResult.coversLine(this._line)) {
+      const postCondition = executionResult
+        .getTraces()
+        .find(
+          (trace) => trace.type === "probePost" && trace.line === this._line
+        );
 
-    if (this.type) {
-      if (postCondition.hits > 0) return 0;
-      else {
-        if (preCondition.hits > 0) {
-          return BranchDistance.branchDistanceNumeric(
-            preCondition.opcode,
-            preCondition.left,
-            preCondition.right,
-            true
-          );
+      const preCondition = executionResult
+        .getTraces()
+        .find(
+          (trace) => trace.type === "probePre" && trace.line === this._line
+        );
+
+      if (this.type) {
+        if (postCondition.hits > 0) return 0;
+        else {
+          if (preCondition.hits > 0) {
+            return BranchDistance.branchDistanceNumeric(
+              preCondition.opcode,
+              preCondition.left,
+              preCondition.right,
+              true
+            );
+          }
         }
+      } else {
+        return BranchDistance.branchDistanceNumeric(
+          preCondition.opcode,
+          preCondition.left,
+          preCondition.right,
+          false
+        );
       }
-    } else {
-      return BranchDistance.branchDistanceNumeric(
-        preCondition.opcode,
-        preCondition.left,
-        preCondition.right,
-        false
-      );
     }
 
     // find the corresponding branch node inside the cfg
     const branchNode = this._subject.cfg.nodes.find((n: Node) => {
-      return n.locationIdx === this._locationIdx && n.line === this._line;
+      return n.probe && n.lines.includes(this._line);
+    });
+    const childEdge = this._subject.cfg.edges.find((edge) => {
+      return edge.from === branchNode.id && edge.branchType === this._type;
+    });
+    const childNode = this._subject.cfg.nodes.find((node) => {
+      return node.id === childEdge.to;
     });
 
     // find the closest covered branch to the objective branch
@@ -64,7 +79,7 @@ export class RequireObjectiveFunction<
         .getTraces()
         .filter(
           (trace) =>
-            trace.line === n.line &&
+            n.lines.includes(trace.line) &&
             (trace.type === "branch" ||
               trace.type === "probePre" ||
               trace.type === "probePost" ||
@@ -72,7 +87,7 @@ export class RequireObjectiveFunction<
             trace.hits > 0
         );
       for (const trace of traces) {
-        const pathDistance = this._subject.getPath(n.id, branchNode.id);
+        const pathDistance = this._subject.getPath(n.id, childNode.id);
         if (approachLevel > pathDistance) {
           approachLevel = pathDistance;
           closestHitNode = trace;

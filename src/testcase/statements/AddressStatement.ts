@@ -1,5 +1,5 @@
 import {
-  getProperty,
+  Properties,
   PrimitiveStatement,
   prng,
   TestCaseSampler,
@@ -16,11 +16,11 @@ export class AddressStatement extends PrimitiveStatement<string> {
 
   constructor(type: string, uniqueId: string, value: string, account: BigNumber) {
     super(type, uniqueId, value);
-    this.account = account;
+    this._account = account;
   }
 
   mutate(sampler: TestCaseSampler, depth: number): AddressStatement {
-    if (prng.nextBoolean(getProperty("resample_gene_probability"))) {
+    if (prng.nextBoolean(Properties.resample_gene_probability)) {
       return <AddressStatement>(
         sampler.sampleStatement(depth, this.type, "primitive")
       );
@@ -41,7 +41,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   copy(): AddressStatement {
-    return new AddressStatement(this.type, this.id, this.value, this.account);
+    return new AddressStatement(this.type, this.id, this.value, this._account);
   }
 
   static getRandom(type = "address") {

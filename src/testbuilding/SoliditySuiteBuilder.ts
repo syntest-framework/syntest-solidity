@@ -1,14 +1,14 @@
 import {
-  getProperty,
+  Properties,
   TestCaseDecoder,
   SuiteBuilder,
   TestCase,
   Archive,
+  ExceptionObjectiveFunction,
 } from "syntest-framework";
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
-
-const truffleUtils = require("../../plugins/resources/truffle.utils");
+import { getTestFilePaths } from "../util/fileSystem";
 
 /**
  * @author Dimitri Stallenberg
@@ -72,23 +72,28 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     for (const key of reducedArchive.keys()) {
       for (const testCase of reducedArchive.get(key)!) {
         const testPath = path.join(
-          getProperty("temp_test_directory"),
+          Properties.temp_test_directory,
           `test${key}${testCase.id}.js`
         );
         await this.writeTestCase(testPath, testCase, "", true);
       }
     }
 
-    this.config.test_files = await truffleUtils.getTestFilePaths(this.config);
+    this.config.test_files = await getTestFilePaths(this.config);
+
     // Run tests
+    const old = console.log;
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    console.log = function () {};
     try {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
     }
+    console.log = old;
 
     // Create final tests files with additional assertions
-    await this.clearDirectory(getProperty("temp_test_directory"));
+    await this.clearDirectory(Properties.temp_test_directory);
 
     for (const key of reducedArchive.keys()) {
       const assertions = new Map();
@@ -99,12 +104,12 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         try {
           // extract the log statements
           const dir = await readdirSync(
-            path.join(getProperty("temp_log_directory"), testCase.id)
+            path.join(Properties.temp_log_directory, testCase.id)
           );
 
           for (const file of dir) {
             additionalAssertions[file] = await readFileSync(
-              path.join(getProperty("temp_log_directory"), testCase.id, file),
+              path.join(Properties.temp_log_directory, testCase.id, file),
               "utf8"
             );
           }
@@ -113,18 +118,14 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         }
 
         await this.clearDirectory(
-          path.join(getProperty("temp_log_directory"), testCase.id),
+          path.join(Properties.temp_log_directory, testCase.id),
           /.*/g
         );
-        await rmdirSync(
-          path.join(getProperty("temp_log_directory"), testCase.id)
-        );
-
-        assertions.set(testCase, additionalAssertions);
+        await rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
       }
 
       const testPath = path.join(
-        getProperty("final_suite_directory"),
+        Properties.final_suite_directory,
         `test-${key}.js`
       );
       await writeFileSync(

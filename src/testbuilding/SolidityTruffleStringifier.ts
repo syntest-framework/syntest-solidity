@@ -1,6 +1,6 @@
 import {
   ConstructorCall,
-  getProperty,
+  Properties,
   ObjectFunctionCall,
   PrimitiveStatement,
   Statement,
@@ -11,7 +11,7 @@ import {
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
-import {AddressStatement} from "../testcase/statements/AddressStatement";
+import { AddressStatement } from "../testcase/statements/AddressStatement";
 
 /**
  * @author Dimitri Stallenberg
@@ -69,7 +69,11 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const args = (statement as ObjectFunctionCall).getChildren();
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
-      if (statement.type !== "none" && statement.type !== "") {
+      if (
+        statement.type !== "none" &&
+        statement.type !== "" &&
+        !statement.varName.includes(",")
+      ) {
         return `const ${statement.varName} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
         }.call(${formattedArgs});`;
@@ -118,7 +122,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
       if (addLogs) {
         testString += `\t\tawait fs.mkdirSync('${path.join(
-          getProperty("temp_log_directory"),
+          Properties.temp_log_directory,
           ind.id
         )}', { recursive: true })\n`;
       }
@@ -171,7 +175,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
  */
         } else if (addLogs && gene instanceof ObjectFunctionCall) {
           testString += `\t\tawait fs.writeFileSync('${path.join(
-            getProperty("temp_log_directory"),
+            Properties.temp_log_directory,
             ind.id,
             gene.varName
           )}', '' + ${gene.varName})\n`;
