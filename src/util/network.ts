@@ -1,4 +1,4 @@
-import { getLogger } from "syntest-framework";
+import { getLogger, getUserInterface } from "syntest-framework";
 
 const TruffleProvider = require("@truffle/provider");
 
@@ -30,7 +30,7 @@ export function setNetwork(config, api) {
         api.providerOptions.network_id &&
         api.providerOptions.network_id !== parseInt(network.network_id)
       ) {
-        getLogger().info("id-clash " + [parseInt(network.network_id)]);
+        getUserInterface().info("id-clash " + [parseInt(network.network_id)]);
       }
 
       // Prefer network defined id.
@@ -41,13 +41,13 @@ export function setNetwork(config, api) {
 
     // Check port: use solcoverjs || default if undefined
     if (!network.port) {
-      getLogger().info("no-port " + [api.port]);
+      getUserInterface().info("no-port " + [api.port]);
       network.port = api.port;
     }
 
     // Warn: port conflicts
     if (api.port !== api.defaultPort && api.port !== network.port) {
-      getLogger().info("port-clash " + [network.port]);
+      getUserInterface().info("port-clash " + [network.port]);
     }
 
     // Prefer network port if defined;

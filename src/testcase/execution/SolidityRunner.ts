@@ -14,6 +14,7 @@ import {
 import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { getTestFilePaths } from "../../util/fileSystem";
+import { getUserInterface } from "../../../../syntest-framework/dist/ui/UserInterface";
 
 export class SolidityRunner extends TestCaseRunner {
   protected api: any;
@@ -57,7 +58,7 @@ export class SolidityRunner extends TestCaseRunner {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
-      getLogger().error(e);
+      getUserInterface().error(e);
       console.trace(e);
     }
     console.log = old;
@@ -67,7 +68,7 @@ export class SolidityRunner extends TestCaseRunner {
 
     // If one of the executions failed, log it
     if (stats.failures > 0) {
-      getLogger().error("Test case has failed!");
+      getUserInterface().error("Test case has failed!");
     }
 
     // Retrieve execution traces

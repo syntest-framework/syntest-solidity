@@ -184,7 +184,7 @@ export class SolidityLauncher {
 
         // Shut server down
         await api.finish();
-        getLogger().error(
+        getUserInterface().error(
           `No targets where selected! Try changing the 'include' parameter`
         );
         process.exit(1);

@@ -86,7 +86,7 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
         };
 
         if (!this.silent) {
-            getLogger().info(texts[text]);
+            this.info(texts[text]);
         }
     }
 }

@@ -1,5 +1,4 @@
 import {MonitorCommandLineInterface, yargs} from 'syntest-framework'
-import { getLogger } from "syntest-framework";
 import Messages from "./Messages";
 
 const chalk = require("chalk");
@@ -17,7 +16,7 @@ export class MonitorSolidityCommandLineInterface extends MonitorCommandLineInter
     report(text: string, args = []): void {
         switch (text) {
             case 'clear':
-                return clear()
+                // return clear()
             case 'asciiArt':
                 return
             case 'network':
@@ -49,7 +48,7 @@ export class MonitorSolidityCommandLineInterface extends MonitorCommandLineInter
         // if (this.logs.length > 10) {
         //     this.logs.shift()
         // }
-
+        return
         const c = chalk;
         const ct = c.bold.green(">");
         const w = ":warning:";
@@ -96,7 +95,7 @@ export class MonitorSolidityCommandLineInterface extends MonitorCommandLineInter
         };
 
         if (!this.silent) {
-            getLogger().info(texts[text]);
+            this.info(texts[text]);
         }
     }
 }
