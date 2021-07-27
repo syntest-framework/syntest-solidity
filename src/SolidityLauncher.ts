@@ -251,7 +251,10 @@ export class SolidityLauncher {
           loc: true,
           range: true,
         });
-        const { importsMap, dependencyMap } = getImportDependencies(ast, target);
+        const { importsMap, dependencyMap } = getImportDependencies(
+          ast,
+          target
+        );
         finalImportsMap = new Map([
           ...Array.from(finalImportsMap.entries()),
           ...Array.from(importsMap.entries()),
@@ -482,7 +485,7 @@ function getImportDependencies(ast: any, target: any) {
     // Parse the imported file
     const astLib = SolidityParser.parse(source, {
       loc: true,
-      range: true
+      range: true,
     });
 
     // Scan for libraries with public or external functions
@@ -490,7 +493,10 @@ function getImportDependencies(ast: any, target: any) {
     SolidityParser.visit(astLib, libraryVisitor);
 
     // Import the external file in the test
-    importsMap.set(path.basename(importPath).split(".")[0], path.basename(importPath).split(".")[0]);
+    importsMap.set(
+      path.basename(importPath).split(".")[0],
+      path.basename(importPath).split(".")[0]
+    );
 
     // Import the found libraries
     // TODO: check for duplicates in libraries

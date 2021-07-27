@@ -126,7 +126,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         );
         await rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
 
-        assertions.set(testCase, additionalAssertions)
+        assertions.set(testCase, additionalAssertions);
       }
 
       const testPath = path.join(

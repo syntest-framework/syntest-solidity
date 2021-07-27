@@ -133,12 +133,12 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         }
       }
     }
-    return stack
+    return stack;
   }
 
   gatherImports(importableGenes: ConstructorCall[]): [string[], string[]] {
     const imports: string[] = [];
-    const linkings: string[] = []
+    const linkings: string[] = [];
     for (const gene of importableGenes) {
       const contract = gene.constructorName;
 
@@ -155,8 +155,10 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         const importString: string = this.getImport(dependency);
 
         // Create link
-        linkings.push(`\t\tconst lib${count} = await ${dependency}.new();`)
-        linkings.push(`\t\tawait ${contract}.link('${dependency}', lib${count}.address);`)
+        linkings.push(`\t\tconst lib${count} = await ${dependency}.new();`);
+        linkings.push(
+          `\t\tawait ${contract}.link('${dependency}', lib${count}.address);`
+        );
 
         if (imports.includes(importString) || importString.length === 0) {
           continue;
@@ -168,33 +170,41 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       }
     }
 
-    return [imports, linkings]
+    return [imports, linkings];
   }
 
   generateAssertions(
-      ind: TestCase,
-      additionalAssertions?: Map<TestCase, { [p: string]: string }>
+    ind: TestCase,
+    additionalAssertions?: Map<TestCase, { [p: string]: string }>
   ): string[] {
-    const assertions: string[] = []
+    const assertions: string[] = [];
     if (additionalAssertions) {
       if (additionalAssertions.has(ind)) {
-        const assertion: { [p: string]: string } = additionalAssertions.get(ind);
+        const assertion: { [p: string]: string } = additionalAssertions.get(
+          ind
+        );
 
         for (const variableName of Object.keys(assertion)) {
           if (assertion[variableName] === "[object Object]") continue;
 
           if (variableName.includes("string")) {
-            assertions.push(`\t\tassert.equal(${variableName}, "${assertion[variableName]}")`);
+            assertions.push(
+              `\t\tassert.equal(${variableName}, "${assertion[variableName]}")`
+            );
           } else if (variableName.includes("int")) {
-            assertions.push(`\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))`);
+            assertions.push(
+              `\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))`
+            );
           } else {
-            assertions.push(`\t\tassert.equal(${variableName}, ${assertion[variableName]})`);
+            assertions.push(
+              `\t\tassert.equal(${variableName}, ${assertion[variableName]})`
+            );
           }
         }
       }
     }
 
-    return assertions
+    return assertions;
   }
 
   decodeTestCase(
@@ -214,14 +224,16 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     for (const ind of testCase) {
       const testString = [];
 
-      const stack: Statement[] = this.convertToStatementStack(ind)
+      const stack: Statement[] = this.convertToStatementStack(ind);
 
       if (addLogs) {
-        imports.push(`const fs = require('fs');\n\n`)
-        testString.push(`\t\tawait fs.mkdirSync('${path.join(
-          Properties.temp_log_directory,
-          ind.id
-        )}', { recursive: true })\n`);
+        imports.push(`const fs = require('fs');\n\n`);
+        testString.push(
+          `\t\tawait fs.mkdirSync('${path.join(
+            Properties.temp_log_directory,
+            ind.id
+          )}', { recursive: true })\n`
+        );
       }
 
       const importableGenes: ConstructorCall[] = [];
@@ -238,51 +250,60 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         } else if (gene instanceof PrimitiveStatement) {
           testString.push(`\t\t${this.decodeStatement(gene)}`);
         } else if (gene instanceof ObjectFunctionCall) {
-          testString.push(`\t\t${this.decodeFunctionCall(gene, constructor.varName)}`);
+          testString.push(
+            `\t\t${this.decodeFunctionCall(gene, constructor.varName)}`
+          );
         } else {
           throw Error(`The type of gene ${gene} is not recognized`);
         }
 
         if (addLogs && gene instanceof ObjectFunctionCall) {
-          testString.push(`\t\tawait fs.writeFileSync('${path.join(
+          testString.push(
+            `\t\tawait fs.writeFileSync('${path.join(
               Properties.temp_log_directory,
               ind.id,
               gene.varName
-          )}', '' + ${gene.varName})`);
+            )}', '' + ${gene.varName})`
+          );
         }
       }
 
-      const [importsOfTest, linkings] = this.gatherImports(importableGenes)
-      imports.push(...importsOfTest)
+      const [importsOfTest, linkings] = this.gatherImports(importableGenes);
+      imports.push(...importsOfTest);
 
-      const assertions = this.generateAssertions(ind, additionalAssertions)
+      const assertions = this.generateAssertions(ind, additionalAssertions);
 
-      const body = []
+      const body = [];
       if (linkings.length) {
-        body.push(`${linkings.join("\n")}`)
+        body.push(`${linkings.join("\n")}`);
       }
       if (testString.length) {
-        body.push(`${testString.join("\n")}`)
+        body.push(`${testString.join("\n")}`);
       }
       if (assertions.length) {
-        body.push(`${assertions.join("\n")}`)
+        body.push(`${assertions.join("\n")}`);
       }
 
       // TODO instead of using the targetName use the function call or a better description of the test
-      tests.push(`\tit('test for ${targetName}', async () => {\n`
-          + `${body.join("\n\n")}`
-          + `\n\t});`)
+      tests.push(
+        `\tit('test for ${targetName}', async () => {\n` +
+          `${body.join("\n\n")}` +
+          `\n\t});`
+      );
     }
 
     let test =
-      `contract('${targetName}', (accounts) => {\n` + tests.join("\n\n") + `\n})`;
+      `contract('${targetName}', (accounts) => {\n` +
+      tests.join("\n\n") +
+      `\n})`;
 
     // Add the imports
-    test = imports
+    test =
+      imports
         .filter((value, index, self) => self.indexOf(value) === index)
-        .join("\n")
-        + `\n\n`
-        + test;
+        .join("\n") +
+      `\n\n` +
+      test;
 
     return test;
   }
