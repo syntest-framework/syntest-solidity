@@ -53,11 +53,11 @@ import {
   tearDownTempFolders,
 } from "./util/fileSystem";
 
-import { readFileSync } from "fs";
 import { ImportVisitor } from "./graph/ImportVisitor";
 import { LibraryVisitor } from "./graph/LibraryVisitor";
 
 import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
+import * as fs from "fs";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -480,7 +480,7 @@ function getImportDependencies(ast: any, target: any) {
 
     // Read the imported file
     // TODO: use the already parsed excluded information to prevent duplicate file reading
-    const source = readFileSync(pathLib).toString();
+    const source = fs.readFileSync(pathLib).toString();
 
     // Parse the imported file
     const astLib = SolidityParser.parse(source, {
