@@ -15,175 +15,9 @@ import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { getTestFilePaths } from "../../util/fileSystem";
 
-const colors = require("colors");
-const chai = require("chai");
-const {
-  Web3Shim,
-  createInterfaceAdapter
-} = require("@truffle/interface-adapter");
-const Config = require("@truffle/config");
-const WorkflowCompile = require("@truffle/workflow-compile");
-const Resolver = require("@truffle/resolver");
-const TestRunner = require("./TestRunner");
-const SolidityTest = require("./SolidityTest");
-const RangeUtils = require("@truffle/compile-solidity/compilerSupplier/rangeUtils");
-const expect = require("@truffle/expect");
-const Migrate = require("@truffle/migrate");
-const Profiler = require("@truffle/compile-solidity/profiler");
-const originalrequire = require("original-require");
-const Codec = require("@truffle/codec");
-const debug = require("debug")("lib:test");
-const Debugger = require("@truffle/debugger");
-
-import * as Mocha from 'mocha';
+// import * as Mocha from 'mocha';
 import Suite from 'mocha/lib/suite.js';
 import { mRequire } from '../../memfs';
-
-async function truffleRun (options) {
-  expect.options(options, [
-    "contracts_directory",
-    "contracts_build_directory",
-    "migrations_directory",
-    "test_files",
-    "network",
-    "network_id",
-    "provider"
-  ]);
-
-  // @ts-ignore
-  Mocha.prototype.loadFiles = function(fn) {
-    var self = this;
-    var suite = this.suite;
-    this.files.forEach(function(file) {
-      file = path.resolve(file);
-      suite.emit(Suite.constants.EVENT_FILE_PRE_REQUIRE, global, file, self);
-      suite.emit(Suite.constants.EVENT_FILE_REQUIRE, mRequire(file), file, self);
-      // suite.emit(Suite.constants.EVENT_FILE_REQUIRE, require(file), file, self);
-      suite.emit(Suite.constants.EVENT_FILE_POST_REQUIRE, global, file, self);
-    });
-    fn && fn();
-  };
-
-  const config = Config.default().merge(options);
-
-  config.test_files = config.test_files.map(testFile => {
-    return path.resolve(testFile);
-  });
-
-  const interfaceAdapter = createInterfaceAdapter({
-    provider: config.provider,
-    networkType: config.networks[config.network].type
-  });
-
-  // `accounts` will be populated before each contract() invocation
-  // and passed to it so tests don't have to call it themselves.
-  const web3 = new Web3Shim({
-    provider: config.provider,
-    networkType: config.networks[config.network].type
-        ? config.networks[config.network].type
-        : "web3js"
-  });
-
-  // Override console.warn() because web3 outputs gross errors to it.
-  // e.g., https://github.com/ethereum/web3.js/blob/master/lib/web3/allevents.js#L61
-  // Output looks like this during tests: https://gist.github.com/tcoulter/1988349d1ec65ce6b958
-  const warn = config.logger.warn;
-  config.logger.warn = function (message) {
-    if (message === "cannot find event for log") {
-      return;
-    } else {
-      if (warn) warn.apply(console, arguments);
-    }
-  };
-
-  const mocha = this.createMocha(config);
-
-  const jsTests = config.test_files.filter(file => {
-    return path.extname(file) !== ".sol";
-  });
-
-  const solTests = config.test_files.filter(file => {
-    return path.extname(file) === ".sol";
-  });
-
-  // Add Javascript tests because there's nothing we need to do with them.
-  // Solidity tests will be handled later.
-  jsTests.forEach(file => {
-    // There's an idiosyncracy in Mocha where the same file can't be run twice
-    // unless we delete the `require` cache.
-    // https://github.com/mochajs/mocha/issues/995
-    delete originalrequire.cache[file];
-
-    mocha.addFile(file);
-  });
-
-  const accounts = await this.getAccounts(interfaceAdapter);
-
-  const testResolver = new Resolver(config, {
-    includeTruffleSources: true
-  });
-
-  const { compilations } = await this.compileContractsWithTestFilesIfNeeded(
-      solTests,
-      config,
-      testResolver
-  );
-
-  const testContracts = solTests.map(testFilePath => {
-    return testResolver.require(testFilePath);
-  });
-
-  const runner = new TestRunner(config);
-
-  await this.performInitialDeploy(config, testResolver);
-
-  const sourcePaths = []
-      .concat(
-          ...compilations.map(compilation => compilation.sourceIndexes) //we don't need the indices here, just the paths
-      )
-      .filter(path => path); //make sure we don't pass in any undefined
-
-  await this.defineSolidityTests(mocha, testContracts, sourcePaths, runner);
-
-  const debuggerCompilations = Codec.Compilations.Utils.shimCompilations(
-      compilations
-  );
-
-  //for stack traces, we'll need to set up a light-mode debugger...
-  let bugger;
-  if (config.stacktrace) {
-    debug("stacktraces on!");
-    bugger = await Debugger.forProject({
-      compilations: debuggerCompilations,
-      provider: config.provider,
-      lightMode: true
-    });
-  }
-
-  await this.setJSTestGlobals({
-    config,
-    web3,
-    interfaceAdapter,
-    accounts,
-    testResolver,
-    runner,
-    compilations: debuggerCompilations,
-    bugger
-  });
-
-  // Finally, run mocha.
-  process.on("unhandledRejection", reason => {
-    throw reason;
-  });
-
-  return new Promise(resolve => {
-    this.mochaRunner = mocha.run(failures => {
-      config.logger.warn = warn;
-      resolve(failures);
-    });
-  });
-}
-
 
 export class SolidityRunner extends TestCaseRunner {
   protected api: any;
@@ -194,6 +28,51 @@ export class SolidityRunner extends TestCaseRunner {
     super(suiteBuilder);
     this.api = api;
     this.truffle = truffle;
+
+    this.truffle.test.createMocha = function (config) {
+      console.log('custom create mocha');
+
+      // Allow people to specify config.mocha in their config.
+      const mochaConfig = config.mocha || {};
+
+      // Propagate --bail option to mocha
+      mochaConfig.bail = config.bail;
+
+      // If the command line overrides color usage, use that.
+      if (config.color != null) {
+        mochaConfig.color = config.color;
+      } else if (config.colors != null) {
+        // --colors is a mocha alias for --color
+        mochaConfig.color = config.colors;
+      }
+
+      // Default to true if configuration isn't set anywhere.
+      if (mochaConfig.color == null) {
+        mochaConfig.color = true;
+      }
+
+      let Mocha = mochaConfig.package || require("mocha");
+      delete mochaConfig.package;
+      const mocha = new Mocha(mochaConfig);
+
+      // @ts-ignore
+      console.log(mocha);
+      mocha.loadFiles = function(fn) {
+        var self = this;
+        var suite = this.suite;
+        this.files.forEach(function(file) {
+          file = path.resolve(file);
+          suite.emit(Suite.constants.EVENT_FILE_PRE_REQUIRE, global, file, self);
+          suite.emit(Suite.constants.EVENT_FILE_REQUIRE, mRequire(file), file, self);
+          // suite.emit(Suite.constants.EVENT_FILE_REQUIRE, require(file), file, self);
+          suite.emit(Suite.constants.EVENT_FILE_POST_REQUIRE, global, file, self);
+        });
+        fn && fn();
+      };
+
+      return mocha;
+    }
+
     this.config = config;
   }
 
@@ -225,7 +104,7 @@ export class SolidityRunner extends TestCaseRunner {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     console.log = function () {};
     try {
-      await truffleRun(this.config);
+      await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
       getLogger().error(e);
