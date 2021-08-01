@@ -37,6 +37,7 @@ import {
   TargetFile,
   setUserInterface,
   getUserInterface,
+  getSeed
 } from "syntest-framework";
 
 import * as path from "path";
@@ -56,7 +57,7 @@ import {
 
 import {SolidityCommandLineInterface} from "./ui/SolidityCommandLineInterface";
 import Messages from "./ui/Messages";
-import {MonitorSolidityCommandLineInterface} from "./ui/MonitorSolidityCommandLineInterface";
+import {SolidityMonitorCommandLineInterface} from "./ui/SolidityMonitorCommandLineInterface";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -127,13 +128,14 @@ export class SolidityLauncher {
       setupLogger();
 
       const messages = new Messages()
-      // setUserInterface(new SolidityCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
-      setUserInterface(new MonitorSolidityCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
+      setUserInterface(new SolidityCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
+      // setUserInterface(new SolidityMonitorCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
 
       config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
 
       getUserInterface().report('clear', [])
       getUserInterface().report('asciiArt', ['Syntest'])
+      getUserInterface().report('version', [require('../package.json').version])
 
       if (config.help) return getUserInterface().report("help", []); // Exit if --help
 
@@ -165,11 +167,11 @@ export class SolidityLauncher {
         return
       }
 
-      getUserInterface().report("network", [
-        config.network,
-        config.networks[config.network].network_id,
-        config.networks[config.network].port,
-      ]);
+      // getUserInterface().report("network", [
+      //   config.network,
+      //   config.networks[config.network].network_id,
+      //   config.networks[config.network].port,
+      // ]);
 
       // Run post-launch server hook;
       await api.onServerReady(config);
@@ -190,11 +192,35 @@ export class SolidityLauncher {
         process.exit(1);
       }
 
+
+      getUserInterface().report("targets", included.map((t) => t.relativePath));
+      getUserInterface().report("skip-files", excluded.map((s) => s.relativePath));
+      getUserInterface().report("seed", [getSeed()]);
+      getUserInterface().report("property-set", ['Budgets',
+          [
+              ['Iteration Budget', Properties.iteration_budget],
+              ['Search Time', `${Properties.search_time} seconds`],
+              ['Total Time', `${Properties.total_time} seconds`]
+          ]
+        ])
+      getUserInterface().report("property-set", ['Algorithm',
+        [
+          ['Algorithm', Properties.algorithm],
+          ['Population Size', Properties.population_size]
+        ]
+      ])
+      getUserInterface().report("property-set", ['Variation Probabilities',
+        [
+          ['Resampling', Properties.resample_gene_probability],
+          ['Delta mutation', Properties.delta_mutation_probability],
+          ['Re-sampling from chromosome', Properties.sample_existing_value_probability],
+          ['Crossover', Properties.crossover_probability]
+        ]
+      ])
+
       // Instrument
       const targets = api.instrument(included);
       const skipped = excluded;
-
-      getUserInterface().report("skip-files", skipped.map((s) => s.relativePath));
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir);
       await save(targets, config.contracts_directory, tempContractsDir);
@@ -260,7 +286,8 @@ export class SolidityLauncher {
       await api.onTestsComplete(config);
 
       // Run Istanbul
-      await api.report();
+      const collector = await api.report();
+      // console.log(collector)
       await api.onIstanbulComplete(config);
     } catch (e) {
       error = e;
@@ -289,7 +316,7 @@ async function testTarget(
     await createDirectoryStructure();
     await createTempDirectoryStructure();
 
-    getUserInterface().report("test-target", target.relativePath);
+    getUserInterface().report("test-target", [target.relativePath]);
 
     const ast = SolidityParser.parse(target.actualSource, {
       loc: true,

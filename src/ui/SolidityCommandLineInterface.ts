@@ -30,6 +30,8 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
                     // .version()
                     .showHelp()
             case 'version':
+                return console.log(this.messages.version(args[0]))
+            case 'versions':
                 return console.log(this.messages.versions(args[0], args[1], args[2]))
             case 'skip-files':
                 if (!args.length) {
@@ -38,6 +40,14 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
                 return console.log(this.messages.skipFiles(args))
             case 'test-target':
                 return console.log(this.messages.testTarget(args[0]))
+            case 'targets':
+                return console.log(this.messages.targets(args))
+            case 'seed':
+                return console.log(this.messages.seed[args[0]])
+            case 'algorithm':
+                return console.log(this.messages.algorithm(args[0]))
+            case 'property-set':
+                return console.log(this.messages.propertySet(args[0], args[1]))
         }
 
         const c = chalk;

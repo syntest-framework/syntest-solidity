@@ -4,7 +4,7 @@ import Messages from "./Messages";
 const chalk = require("chalk");
 const clear = require("clear");
 
-export class MonitorSolidityCommandLineInterface extends MonitorCommandLineInterface {
+export class SolidityMonitorCommandLineInterface extends MonitorCommandLineInterface {
     private messages: Messages;
 
 
