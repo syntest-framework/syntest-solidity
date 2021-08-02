@@ -73,7 +73,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         string +
         `expect(await ${
             (statement as ConstructorCall).constructorName
-        }.new(${formattedArgs})).to.be.rejectedWith(Error);`
+        }.new(${formattedArgs})).to.throw();`
     );
   }
 
@@ -134,7 +134,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
       return `expect(await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs})).to.be.rejectedWith(Error);`;
+      }.call(${formattedArgs})).to.throw();`;
     } else {
       throw new Error(`${statement} is not a function call`);
     }
@@ -222,7 +222,6 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
       for (const variableName of Object.keys(assertion)) {
         if (variableName === 'error') {
-// TODO dimitri
           continue
         }
 
@@ -265,7 +264,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       let stopAfter = -1
       if (additionalAssertions && additionalAssertions.has(ind) && additionalAssertions.get(ind)['error']) {
         // minus one since we don't want to include the error file itself
-        stopAfter = Object.keys(additionalAssertions.has(ind)).length - 1
+        stopAfter = Object.keys(additionalAssertions.get(ind)).length
       }
 
 
