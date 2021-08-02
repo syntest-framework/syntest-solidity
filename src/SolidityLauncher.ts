@@ -7,7 +7,6 @@ import { SolidityCFGFactory } from "./graph/SolidityCFGFactory";
 const SolidityParser = require("@solidity-parser/parser");
 
 import {
-  yargs,
   Archive,
   BudgetManager,
   configureTermination,
@@ -19,7 +18,6 @@ import {
   EvaluationBudget,
   ExceptionObjectiveFunction,
   ExecutionResult,
-  getLogger,
   Properties,
   guessCWD,
   IterationBudget,
@@ -58,6 +56,11 @@ import {
 import {SolidityCommandLineInterface} from "./ui/SolidityCommandLineInterface";
 import Messages from "./ui/Messages";
 import {SolidityMonitorCommandLineInterface} from "./ui/SolidityMonitorCommandLineInterface";
+
+import { ImportVisitor } from "./graph/ImportVisitor";
+import { LibraryVisitor } from "./graph/LibraryVisitor";
+
+import * as fs from "fs";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -105,15 +108,13 @@ export class SolidityLauncher {
   public async run(config: TruffleConfig) {
     let api, error, failures;
 
-    // Filesystem & Compiler Re-configuration
-    config = normalizeConfig(config);
-
     // const tempContractsDir = path.join(config.workingDir, '.coverage_contracts')
     // const tempArtifactsDir = path.join(config.workingDir, '.coverage_artifacts')
     const tempContractsDir = path.join(process.cwd(), ".syntest_coverage");
     const tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
 
     try {
+      // Filesystem & Compiler Re-configuration
       config = normalizeConfig(config);
 
       await guessCWD(config.workingDir);
@@ -157,7 +158,7 @@ export class SolidityLauncher {
 
       // Exit if --version
       if (config.version) {
-        getUserInterface().report("version", [truffle.version, ganacheVersion, pkg.version]); // Exit if --help
+        getUserInterface().report("versions", [truffle.version, ganacheVersion, pkg.version]); // Exit if --help
 
         // Finish
         await tearDownTempFolders(tempContractsDir, tempArtifactsDir);
@@ -243,6 +244,8 @@ export class SolidityLauncher {
       await api.onCompileComplete(config);
 
       const finalArchive = new Archive<TestCase>();
+      let finalImportsMap: Map<string, string> = new Map();
+      let finalDependencies: Map<string, string[]> = new Map();
 
       for (const target of targets) {
         const archive = await testTarget(
@@ -256,12 +259,34 @@ export class SolidityLauncher {
         for (const key of archive.getObjectives()) {
           finalArchive.update(key, archive.getEncoding(key));
         }
+
+        // TODO: check if we can prevent recalculating the dependencies
+        const ast = SolidityParser.parse(target.actualSource, {
+          loc: true,
+          range: true,
+        });
+        const { importsMap, dependencyMap } = getImportDependencies(
+          ast,
+          target
+        );
+        finalImportsMap = new Map([
+          ...Array.from(finalImportsMap.entries()),
+          ...Array.from(importsMap.entries()),
+        ]);
+        finalDependencies = new Map([
+          ...Array.from(finalDependencies.entries()),
+          ...Array.from(dependencyMap.entries()),
+        ]);
       }
 
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
-      const stringifier = new SolidityTruffleStringifier();
+      const stringifier = new SolidityTruffleStringifier(
+        finalImportsMap,
+        finalDependencies
+      );
+
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
         api,
@@ -332,7 +357,12 @@ async function testTarget(
 
     const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
 
-    const stringifier = new SolidityTruffleStringifier();
+    const { importsMap, dependencyMap } = getImportDependencies(ast, target);
+
+    const stringifier = new SolidityTruffleStringifier(
+      importsMap,
+      dependencyMap
+    );
     const suiteBuilder = new SoliditySuiteBuilder(
       stringifier,
       api,
@@ -444,6 +474,54 @@ async function testTarget(
     }
     throw e;
   }
+}
+
+function getImportDependencies(ast: any, target: any) {
+  const contractName = target.instrumented.contractName;
+
+  // Import the contract under test
+  const importsMap = new Map<string, string>();
+  importsMap.set(contractName, contractName);
+
+  // Find all external imports in the contract under test
+  const importVisitor = new ImportVisitor();
+  SolidityParser.visit(ast, importVisitor);
+
+  // For each external import scan the file for libraries with public and external functions
+  const libraries: string[] = [];
+  importVisitor.imports.forEach((importPath: string) => {
+    // Full path to the imported file
+    const pathLib = path.join(path.dirname(target.canonicalPath), importPath);
+
+    // Read the imported file
+    // TODO: use the already parsed excluded information to prevent duplicate file reading
+    const source = fs.readFileSync(pathLib).toString();
+
+    // Parse the imported file
+    const astLib = SolidityParser.parse(source, {
+      loc: true,
+      range: true,
+    });
+
+    // Scan for libraries with public or external functions
+    const libraryVisitor = new LibraryVisitor();
+    SolidityParser.visit(astLib, libraryVisitor);
+
+    // Import the external file in the test
+    importsMap.set(
+      path.basename(importPath).split(".")[0],
+      path.basename(importPath).split(".")[0]
+    );
+
+    // Import the found libraries
+    // TODO: check for duplicates in libraries
+    libraries.push(...libraryVisitor.libraries);
+  });
+
+  // Return the library dependency information
+  const dependencyMap = new Map<string, string[]>();
+  dependencyMap.set(contractName, libraries);
+  return { importsMap, dependencyMap };
 }
 
 function collectCoverageData(

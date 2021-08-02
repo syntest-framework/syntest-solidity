@@ -46,7 +46,7 @@ export default class Messages {
             `\n${chalk.bold("=====================")}\n` +
             targets
             .map((t) => `${this.ct} ${t}`)
-            .join("\n") + '\n' +
+            .join("\n") +
             `\n${chalk.bold("=====================")}\n`
 
     }

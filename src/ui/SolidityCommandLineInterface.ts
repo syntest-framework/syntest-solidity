@@ -1,5 +1,5 @@
 import {CommandLineInterface, yargs} from 'syntest-framework'
-import { getLogger } from "syntest-framework";
+
 import Messages from "./Messages";
 
 const chalk = require("chalk");
