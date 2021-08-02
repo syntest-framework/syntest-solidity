@@ -40,9 +40,6 @@ export class SolidityMonitorCommandLineInterface extends MonitorCommandLineInter
                 }
                 this.logs.push(this.messages.skipFiles(args))
                 return
-            case 'test-target':
-                this.logs.push(this.messages.testTarget(args[0]))
-                return
         }
 
         // if (this.logs.length > 10) {

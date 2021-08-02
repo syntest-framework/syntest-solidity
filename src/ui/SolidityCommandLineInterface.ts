@@ -38,16 +38,14 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
                     return
                 }
                 return console.log(this.messages.skipFiles(args))
-            case 'test-target':
-                return console.log(this.messages.testTarget(args[0]))
             case 'targets':
                 return console.log(this.messages.targets(args))
-            case 'seed':
-                return console.log(this.messages.seed[args[0]])
-            case 'algorithm':
-                return console.log(this.messages.algorithm(args[0]))
+            case 'single-property':
+                return console.log(this.messages.singleProperty(args[0], args[1]))
             case 'property-set':
                 return console.log(this.messages.propertySet(args[0], args[1]))
+            case 'header':
+                return console.log(this.messages.header(args[0]))
         }
 
         const c = chalk;

@@ -196,12 +196,16 @@ export class SolidityLauncher {
 
       getUserInterface().report("targets", included.map((t) => t.relativePath));
       getUserInterface().report("skip-files", excluded.map((s) => s.relativePath));
-      getUserInterface().report("seed", [getSeed()]);
+
+      getUserInterface().report("header", ['configuration']);
+
+      getUserInterface().report("single-property", ['Seed', getSeed()]);
       getUserInterface().report("property-set", ['Budgets',
           [
-              ['Iteration Budget', Properties.iteration_budget],
-              ['Search Time', `${Properties.search_time} seconds`],
-              ['Total Time', `${Properties.total_time} seconds`]
+              ['Iteration Budget', `${Properties.iteration_budget} iterations`],
+              ['Evaluation Budget', `${Properties.evaluation_budget} evaluations`],
+              ['Search Time Budget', `${Properties.search_time} seconds`],
+              ['Total Time Budget', `${Properties.total_time} seconds`]
           ]
         ])
       getUserInterface().report("property-set", ['Algorithm',
@@ -215,6 +219,15 @@ export class SolidityLauncher {
           ['Resampling', Properties.resample_gene_probability],
           ['Delta mutation', Properties.delta_mutation_probability],
           ['Re-sampling from chromosome', Properties.sample_existing_value_probability],
+          ['Crossover', Properties.crossover_probability]
+        ]
+      ])
+
+      getUserInterface().report("property-set", ['Sampling',
+        [
+          ['Max Depth', Properties.max_depth],
+          ['Explore Illegal Values', Properties.explore_illegal_values],
+          ['Sample Function Result as Argument', Properties.sample_func_as_arg],
           ['Crossover', Properties.crossover_probability]
         ]
       ])
@@ -303,12 +316,18 @@ export class SolidityLauncher {
       });
 
       // Run tests
+      const old = console.log;
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      console.log = function () {};
       try {
-        failures = await truffle.test.run(config);
+        await truffle.test.run(config);
       } catch (e) {
         error = e.stack;
       }
+      console.log = old;
       await api.onTestsComplete(config);
+
+      getUserInterface().report("header", ['search results']);
 
       // Run Istanbul
       const collector = await api.report();
@@ -341,7 +360,7 @@ async function testTarget(
     await createDirectoryStructure();
     await createTempDirectoryStructure();
 
-    getUserInterface().report("test-target", [target.relativePath]);
+    getUserInterface().report("header", [`Searching: "${target.relativePath}"`]);
 
     const ast = SolidityParser.parse(target.actualSource, {
       loc: true,
