@@ -108,8 +108,6 @@ export class SolidityLauncher {
   public async run(config: TruffleConfig) {
     let api, error, failures;
 
-    // const tempContractsDir = path.join(config.workingDir, '.coverage_contracts')
-    // const tempArtifactsDir = path.join(config.workingDir, '.coverage_artifacts')
     const tempContractsDir = path.join(process.cwd(), ".syntest_coverage");
     const tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
 
@@ -129,8 +127,8 @@ export class SolidityLauncher {
       setupLogger();
 
       const messages = new Messages()
-      setUserInterface(new SolidityCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
-      // setUserInterface(new SolidityMonitorCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
+      // setUserInterface(new SolidityCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
+      setUserInterface(new SolidityMonitorCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
 
       config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
 
@@ -168,11 +166,17 @@ export class SolidityLauncher {
         return
       }
 
-      // getUserInterface().report("network", [
-      //   config.network,
-      //   config.networks[config.network].network_id,
-      //   config.networks[config.network].port,
-      // ]);
+      getUserInterface().report("header", ['General info']);
+
+      getUserInterface().report("property-set", ['Network Info',
+        [
+          ['id', config.network],
+          ['port', config.networks[config.network].network_id],
+          ['network', config.networks[config.network].port],
+        ]
+      ]);
+
+      getUserInterface().report("header", ['Targets']);
 
       // Run post-launch server hook;
       await api.onServerReady(config);

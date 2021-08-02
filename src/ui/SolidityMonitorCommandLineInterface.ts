@@ -17,10 +17,8 @@ export class SolidityMonitorCommandLineInterface extends MonitorCommandLineInter
         switch (text) {
             case 'clear':
                 // return clear()
-            case 'asciiArt':
                 return
-            case 'network':
-                this.logs.push(this.messages.network(args[0], args[1], args[2]))
+            case 'asciiArt':
                 return
             case 'help':
                 clear()
@@ -32,67 +30,34 @@ export class SolidityMonitorCommandLineInterface extends MonitorCommandLineInter
                     // .version()
                     .showHelp()
             case 'version':
-                clear()
-                return console.log(this.messages.versions(args[0], args[1], args[2]))
+                this.logs.push(this.messages.versions(args[0], args[1], args[2]))
+                return
             case 'skip-files':
                 if (!args.length) {
                     return
                 }
                 this.logs.push(this.messages.skipFiles(args))
                 return
+            case 'targets':
+                if (!args.length) {
+                    return
+                }
+                this.logs.push(this.messages.targets(args))
+                return
+            case 'single-property':
+                this.logs.push(this.messages.singleProperty(args[0], args[1]))
+                return
+            case 'property-set':
+                this.logs.push(this.messages.propertySet(args[0], args[1]))
+                return
+            case 'header':
+                this.logs.push(this.messages.header(args[0]))
+                return
         }
 
-        // if (this.logs.length > 10) {
-        //     this.logs.shift()
-        // }
-        return
-        const c = chalk;
-        const ct = c.bold.green(">");
-        const w = ":warning:";
-        const texts = {
-            "sol-tests":
-                `${w}  ${c.red(
-                    "This plugin cannot run Truffle's native solidity tests: "
-                )}` + `${args[0]} test(s) will be skipped.\n`,
-            "id-clash":
-                `${w}  ${c.red("The 'network_id' values in your truffle network ")}` +
-                `${c.red("and .syntest.js are different. Using truffle's: ")} ${c.bold(
-                    args[0]
-                )}.\n`,
-            "port-clash":
-                `${w}  ${c.red("The 'port' values in your truffle network ")}` +
-                `${c.red("and .syntest.js are different. Using truffle's: ")} ${c.bold(
-                    args[0]
-                )}.\n`,
-            "no-port":
-                `${w}  ${c.red("No 'port' was declared in your truffle network. ")}` +
-                `${c.red("Using solidity-coverage's: ")} ${c.bold(args[0])}.\n`,
-            "lib-local": `\n${ct} ${c.grey(
-                "Using Truffle library from local node_modules."
-            )}\n`,
-            "lib-global": `\n${ct} ${c.grey(
-                "Using Truffle library from global node_modules."
-            )}\n`,
-            "lib-warn":
-                `${w}  ${c.red(
-                    "Unable to require Truffle library locally or globally.\n"
-                )}` +
-                `${w}  ${c.red(
-                    "Using fallback Truffle library module instead (v5.0.31)"
-                )}\n` +
-                `${w}  ${c.red(
-                    "Truffle V5 must be a local dependency for fallback to work."
-                )}\n`,
-            help:
-                `Usage: truffle run coverage [options]\n\n` +
-                `Options:\n` +
-                `  --file:       path (or glob) to subset of JS test files. (Quote your globs)\n` +
-                `  --syntestjs: relative path to .syntest.js (ex: ./../.syntest.js)\n` +
-                `  --version:    version info\n`,
-        };
-
-        if (!this.silent) {
-            this.info(texts[text]);
+        while (this.logs.length > 15) {
+            this.logs.shift()
         }
+        throw new Error(`Message not supported by UI: "${text}"`)
     }
 }

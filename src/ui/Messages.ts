@@ -12,14 +12,6 @@ export default class Messages {
         )
     }
 
-    network (id: string, port: string, network: string): string {
-        return `\n${chalk.bold("Network Info")}` +
-        `\n${chalk.bold("============")}\n` +
-        `${this.ct} ${chalk.bold("id")}:      ${id}\n` +
-        `${this.ct} ${chalk.bold("port")}:    ${port}\n` +
-        `${this.ct} ${chalk.bold("network")}: ${network}\n`
-    }
-
     version (syntestSolidity: string): string {
         return `\n${this.ct} ${chalk.bold("syntest-solidity")}: v${syntestSolidity}`
     }
@@ -31,14 +23,14 @@ export default class Messages {
     }
 
     skipFiles (files: string[]): string {
-        return `\n${chalk.bold("Coverage skipped for:")}` +
+        return `\n${chalk.bold("Excluded:")}` +
             `\n${chalk.bold("=====================")}\n` +
             files.map((t) => `${this.ds} ${chalk.grey(t)}`).join("\n") +
             `\n${chalk.bold("=====================")}`
     }
 
     targets (targets: string[]): string {
-        return `\n${chalk.bold("Included for testing:")}` +
+        return `${chalk.bold("Included:")}` +
             `\n${chalk.bold("=====================")}\n` +
             targets
             .map((t) => `${this.ct} ${t}`)

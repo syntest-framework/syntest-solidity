@@ -19,8 +19,6 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
                 return clear()
             case 'asciiArt':
                 return console.log(this.messages.asciiArt(args[0]))
-            case 'network':
-                return console.log(this.messages.network(args[0], args[1], args[2]))
             case 'help':
                 return yargs
                     // .help("h")
@@ -48,53 +46,6 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
                 return console.log(this.messages.header(args[0]))
         }
 
-        const c = chalk;
-        const ct = c.bold.green(">");
-        const w = ":warning:";
-        const texts = {
-            "sol-tests":
-                `${w}  ${c.red(
-                    "This plugin cannot run Truffle's native solidity tests: "
-                )}` + `${args[0]} test(s) will be skipped.\n`,
-            "id-clash":
-                `${w}  ${c.red("The 'network_id' values in your truffle network ")}` +
-                `${c.red("and .syntest.js are different. Using truffle's: ")} ${c.bold(
-                    args[0]
-                )}.\n`,
-            "port-clash":
-                `${w}  ${c.red("The 'port' values in your truffle network ")}` +
-                `${c.red("and .syntest.js are different. Using truffle's: ")} ${c.bold(
-                    args[0]
-                )}.\n`,
-            "no-port":
-                `${w}  ${c.red("No 'port' was declared in your truffle network. ")}` +
-                `${c.red("Using solidity-coverage's: ")} ${c.bold(args[0])}.\n`,
-            "lib-local": `\n${ct} ${c.grey(
-                "Using Truffle library from local node_modules."
-            )}\n`,
-            "lib-global": `\n${ct} ${c.grey(
-                "Using Truffle library from global node_modules."
-            )}\n`,
-            "lib-warn":
-                `${w}  ${c.red(
-                    "Unable to require Truffle library locally or globally.\n"
-                )}` +
-                `${w}  ${c.red(
-                    "Using fallback Truffle library module instead (v5.0.31)"
-                )}\n` +
-                `${w}  ${c.red(
-                    "Truffle V5 must be a local dependency for fallback to work."
-                )}\n`,
-            help:
-                `Usage: truffle run coverage [options]\n\n` +
-                `Options:\n` +
-                `  --file:       path (or glob) to subset of JS test files. (Quote your globs)\n` +
-                `  --syntestjs: relative path to .syntest.js (ex: ./../.syntest.js)\n` +
-                `  --version:    version info\n`,
-        };
-
-        if (!this.silent) {
-            this.info(texts[text]);
-        }
+        throw new Error(`Message not supported by UI: "${text}"`)
     }
 }
