@@ -71,9 +71,9 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
     return (
         string +
-        `expect(await ${
+        `await expect(${
             (statement as ConstructorCall).constructorName
-        }.new(${formattedArgs})).to.throw();`
+        }.new(${formattedArgs})).to.be.rejectedWith(Error);`
     );
   }
 
@@ -132,9 +132,9 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const args = (statement as ObjectFunctionCall).getChildren();
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
-      return `expect(await ${objectName}.${
+      return `await expect(${objectName}.${
           (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs})).to.throw();`;
+      }.call(${formattedArgs})).to.be.rejectedWith(Error);`;
     } else {
       throw new Error(`${statement} is not a function call`);
     }
@@ -263,7 +263,6 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     for (const ind of testCase) {
       let stopAfter = -1
       if (additionalAssertions && additionalAssertions.has(ind) && additionalAssertions.get(ind)['error']) {
-        // minus one since we don't want to include the error file itself
         stopAfter = Object.keys(additionalAssertions.get(ind)).length
       }
 
@@ -288,26 +287,30 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const constructor = ind.root;
       stack.push(constructor);
 
-      let count = 0
+      let primitiveStatements: string[] = []
+      const functionCalls: string[] = []
+      const assertions: string[] = []
+
+      let count = 1
       while (stack.length) {
         const gene: Statement = stack.pop()!;
 
         if (gene instanceof ConstructorCall) {
           if (count === stopAfter) {
-            testString.push(`\n\t\t${this.decodeErroringConstructorCall(gene)}`)
+            assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`)
             break
           }
           testString.push(`\t\t${this.decodeConstructor(gene)}`);
           importableGenes.push(<ConstructorCall>gene);
           count += 1
         } else if (gene instanceof PrimitiveStatement) {
-          testString.push(`\t\t${this.decodeStatement(gene)}`);
+          primitiveStatements.push(`\t\t${this.decodeStatement(gene)}`);
         } else if (gene instanceof ObjectFunctionCall) {
           if (count === stopAfter) {
-            testString.push(`\n\t\t${this.decodeErroringFunctionCall(gene, constructor.varName)}`)
+            assertions.push(`\t\t${this.decodeErroringFunctionCall(gene, constructor.varName)}`)
             break
           }
-          testString.push(
+          functionCalls.push(
             `\t\t${this.decodeFunctionCall(gene, constructor.varName)}`
           );
           count += 1
@@ -315,16 +318,35 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
           throw Error(`The type of gene ${gene} is not recognized`);
         }
 
-        if (addLogs && (gene instanceof ObjectFunctionCall || gene instanceof ConstructorCall)) {
-          testString.push(
-            `\t\tawait fs.writeFileSync('${path.join(
-              Properties.temp_log_directory,
-              ind.id,
-              gene.varName
-            )}', '' + ${gene.varName})`
-          );
+        if (addLogs) {
+          if (gene instanceof ObjectFunctionCall) {
+            functionCalls.push(
+                `\t\tawait fs.writeFileSync('${path.join(
+                    Properties.temp_log_directory,
+                    ind.id,
+                    gene.varName
+                )}', '' + ${gene.varName})`
+            );
+          } else if (gene instanceof ConstructorCall) {
+            testString.push(
+                `\t\tawait fs.writeFileSync('${path.join(
+                    Properties.temp_log_directory,
+                    ind.id,
+                    gene.varName
+                )}', '' + ${gene.varName})`
+            );
+          }
         }
       }
+
+      // filter non-required statements
+      primitiveStatements = primitiveStatements.filter((s) => {
+        const varName = s.split(' ')[1]
+        return functionCalls.find((f) => f.includes(varName))
+      })
+
+      testString.push(...primitiveStatements)
+      testString.push(...functionCalls)
 
       if (addLogs) {
         testString.push(`} catch (e) {`)
@@ -339,8 +361,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const [importsOfTest, linkings] = this.gatherImports(importableGenes);
       imports.push(...importsOfTest);
 
+      if (additionalAssertions) {
+        imports.push(`const chai = require('chai');`)
+        imports.push(`const expect = chai.expect;`)
+        imports.push(`chai.use(require('chai-as-promised'));`)
+      }
 
-      const assertions = this.generateAssertions(ind, additionalAssertions);
+      assertions.unshift(...this.generateAssertions(ind, additionalAssertions));
 
       const body = [];
       if (linkings.length) {
