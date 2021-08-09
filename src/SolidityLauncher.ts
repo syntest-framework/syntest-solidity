@@ -35,7 +35,7 @@ import {
   TargetFile,
   setUserInterface,
   getUserInterface,
-  getSeed
+  getSeed,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -53,9 +53,8 @@ import {
   tearDownTempFolders,
 } from "./util/fileSystem";
 
-import {SolidityCommandLineInterface} from "./ui/SolidityCommandLineInterface";
 import Messages from "./ui/Messages";
-import {SolidityMonitorCommandLineInterface} from "./ui/SolidityMonitorCommandLineInterface";
+import { SolidityMonitorCommandLineInterface } from "./ui/SolidityMonitorCommandLineInterface";
 
 import { ImportVisitor } from "./graph/ImportVisitor";
 import { LibraryVisitor } from "./graph/LibraryVisitor";
@@ -82,9 +81,7 @@ function loadLibrary(config) {
   // Local
   try {
     if (config.useGlobalTruffle || config.usePluginTruffle) throw null;
-
-    const lib = require("truffle");
-    return lib;
+    return require("truffle");
   } catch (err) {}
 
   // Global
@@ -92,8 +89,7 @@ function loadLibrary(config) {
     if (config.usePluginTruffle) throw null;
 
     const globalTruffle = path.join(globalModules, "truffle");
-    const lib = require(globalTruffle);
-    return lib;
+    return require(globalTruffle);
   } catch (err) {}
 }
 
@@ -126,15 +122,23 @@ export class SolidityLauncher {
       processConfig(myConfig, args);
       setupLogger();
 
-      const messages = new Messages()
+      const messages = new Messages();
       // setUserInterface(new SolidityCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
-      setUserInterface(new SolidityMonitorCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
+      setUserInterface(
+        new SolidityMonitorCommandLineInterface(
+          Properties.console_log_level === "silent",
+          Properties.console_log_level === "verbose",
+          messages
+        )
+      );
 
       config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
 
-      getUserInterface().report('clear', [])
-      getUserInterface().report('asciiArt', ['Syntest'])
-      getUserInterface().report('version', [require('../package.json').version])
+      getUserInterface().report("clear", []);
+      getUserInterface().report("asciiArt", ["Syntest"]);
+      getUserInterface().report("version", [
+        require("../package.json").version,
+      ]);
 
       if (config.help) return getUserInterface().report("help", []); // Exit if --help
 
@@ -156,27 +160,32 @@ export class SolidityLauncher {
 
       // Exit if --version
       if (config.version) {
-        getUserInterface().report("versions", [truffle.version, ganacheVersion, pkg.version]); // Exit if --help
+        getUserInterface().report("versions", [
+          truffle.version,
+          ganacheVersion,
+          pkg.version,
+        ]); // Exit if --help
 
         // Finish
         await tearDownTempFolders(tempContractsDir, tempArtifactsDir);
 
         // Shut server down
         await api.finish();
-        return
+        return;
       }
 
-      getUserInterface().report("header", ['General info']);
+      getUserInterface().report("header", ["General info"]);
 
-      getUserInterface().report("property-set", ['Network Info',
+      getUserInterface().report("property-set", [
+        "Network Info",
         [
-          ['id', config.network],
-          ['port', config.networks[config.network].network_id],
-          ['network', config.networks[config.network].port],
-        ]
+          ["id", config.network],
+          ["port", config.networks[config.network].network_id],
+          ["network", config.networks[config.network].port],
+        ],
       ]);
 
-      getUserInterface().report("header", ['Targets']);
+      getUserInterface().report("header", ["Targets"]);
 
       // Run post-launch server hook;
       await api.onServerReady(config);
@@ -197,44 +206,56 @@ export class SolidityLauncher {
         process.exit(1);
       }
 
+      getUserInterface().report(
+        "targets",
+        included.map((t) => t.relativePath)
+      );
+      getUserInterface().report(
+        "skip-files",
+        excluded.map((s) => s.relativePath)
+      );
 
-      getUserInterface().report("targets", included.map((t) => t.relativePath));
-      getUserInterface().report("skip-files", excluded.map((s) => s.relativePath));
+      getUserInterface().report("header", ["configuration"]);
 
-      getUserInterface().report("header", ['configuration']);
-
-      getUserInterface().report("single-property", ['Seed', getSeed()]);
-      getUserInterface().report("property-set", ['Budgets',
+      getUserInterface().report("single-property", ["Seed", getSeed()]);
+      getUserInterface().report("property-set", [
+        "Budgets",
+        [
+          ["Iteration Budget", `${Properties.iteration_budget} iterations`],
+          ["Evaluation Budget", `${Properties.evaluation_budget} evaluations`],
+          ["Search Time Budget", `${Properties.search_time} seconds`],
+          ["Total Time Budget", `${Properties.total_time} seconds`],
+        ],
+      ]);
+      getUserInterface().report("property-set", [
+        "Algorithm",
+        [
+          ["Algorithm", Properties.algorithm],
+          ["Population Size", Properties.population_size],
+        ],
+      ]);
+      getUserInterface().report("property-set", [
+        "Variation Probabilities",
+        [
+          ["Resampling", Properties.resample_gene_probability],
+          ["Delta mutation", Properties.delta_mutation_probability],
           [
-              ['Iteration Budget', `${Properties.iteration_budget} iterations`],
-              ['Evaluation Budget', `${Properties.evaluation_budget} evaluations`],
-              ['Search Time Budget', `${Properties.search_time} seconds`],
-              ['Total Time Budget', `${Properties.total_time} seconds`]
-          ]
-        ])
-      getUserInterface().report("property-set", ['Algorithm',
-        [
-          ['Algorithm', Properties.algorithm],
-          ['Population Size', Properties.population_size]
-        ]
-      ])
-      getUserInterface().report("property-set", ['Variation Probabilities',
-        [
-          ['Resampling', Properties.resample_gene_probability],
-          ['Delta mutation', Properties.delta_mutation_probability],
-          ['Re-sampling from chromosome', Properties.sample_existing_value_probability],
-          ['Crossover', Properties.crossover_probability]
-        ]
-      ])
+            "Re-sampling from chromosome",
+            Properties.sample_existing_value_probability,
+          ],
+          ["Crossover", Properties.crossover_probability],
+        ],
+      ]);
 
-      getUserInterface().report("property-set", ['Sampling',
+      getUserInterface().report("property-set", [
+        "Sampling",
         [
-          ['Max Depth', Properties.max_depth],
-          ['Explore Illegal Values', Properties.explore_illegal_values],
-          ['Sample Function Result as Argument', Properties.sample_func_as_arg],
-          ['Crossover', Properties.crossover_probability]
-        ]
-      ])
+          ["Max Depth", Properties.max_depth],
+          ["Explore Illegal Values", Properties.explore_illegal_values],
+          ["Sample Function Result as Argument", Properties.sample_func_as_arg],
+          ["Crossover", Properties.crossover_probability],
+        ],
+      ]);
 
       // Instrument
       const targets = api.instrument(included);
@@ -331,7 +352,7 @@ export class SolidityLauncher {
       console.log = old;
       await api.onTestsComplete(config);
 
-      getUserInterface().report("header", ['search results']);
+      getUserInterface().report("header", ["search results"]);
 
       // Run Istanbul
       const collector = await api.report();
@@ -364,7 +385,9 @@ async function testTarget(
     await createDirectoryStructure();
     await createTempDirectoryStructure();
 
-    getUserInterface().report("header", [`Searching: "${target.relativePath}"`]);
+    getUserInterface().report("header", [
+      `Searching: "${target.relativePath}"`,
+    ]);
 
     const ast = SolidityParser.parse(target.actualSource, {
       loc: true,

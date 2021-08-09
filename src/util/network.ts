@@ -1,4 +1,4 @@
-import { getLogger, getUserInterface } from "syntest-framework";
+import { getUserInterface } from "syntest-framework";
 
 const TruffleProvider = require("@truffle/provider");
 
@@ -13,7 +13,7 @@ const TruffleProvider = require("@truffle/provider");
  * @param {TruffleConfig}      config
  * @param {SolidityCoverage} api
  */
-export function setNetwork(config, api) {
+export function setNetwork(config: any, api: any): void {
   // --network <network-name>
   if (config.network) {
     const network = config.networks[config.network];
@@ -75,13 +75,15 @@ export function setNetwork(config, api) {
 
 // Truffle complains that these outer keys *are not* set when running plugin fn directly.
 // But throws saying they *cannot* be manually set when running as truffle command.
-export function setOuterConfigKeys(config, api, id) {
+export function setOuterConfigKeys(config: any, api: any, id: any): void {
   try {
     config.network_id = id;
     config.port = api.port;
     config.host = api.host;
     config.provider = TruffleProvider.create(config);
-  } catch (err) {}
+  } catch (err) {
+    return;
+  }
 }
 
 /**
@@ -90,7 +92,7 @@ export function setOuterConfigKeys(config, api, id) {
  * @param {TruffleConfig} config
  * @param {Array}         accounts
  */
-export function setNetworkFrom(config, accounts) {
+export function setNetworkFrom(config: any, accounts: any[]): void {
   if (!config.networks[config.network].from) {
     config.networks[config.network].from = accounts[0];
   }

@@ -1,5 +1,4 @@
 import { SolidityCFGFactory } from "../../src";
-import { drawGraph } from "syntest-framework";
 import * as chai from "chai";
 const SolidityParser = require("@solidity-parser/parser");
 

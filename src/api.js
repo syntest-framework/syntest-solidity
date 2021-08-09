@@ -10,7 +10,7 @@ const ConfigValidator = require("solidity-coverage/lib/validator");
 const Instrumenter = require("./instrumentation/instrumenter"); // Local version
 const Coverage = require("solidity-coverage/lib/coverage");
 const DataCollector = require("./instrumentation/collector"); // Local version
-const { UI, AppUI } = require("solidity-coverage/lib/ui");
+const { AppUI } = require("solidity-coverage/lib/ui");
 
 /**
  * Coverage Runner

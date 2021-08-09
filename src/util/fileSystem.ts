@@ -66,7 +66,8 @@ export async function getTestFilePaths(config) {
   const solregex = /.*\.(sol)$/;
   const hasSols = target.filter((f) => f.match(solregex) != null);
 
-  if (hasSols.length > 0) getUserInterface().info("sol-tests " + [hasSols.length]);
+  if (hasSols.length > 0)
+    getUserInterface().info("sol-tests " + [hasSols.length]);
 
   // Return list of test files
   const testregex = /.*\.(js|ts|es|es6|jsx)$/;
