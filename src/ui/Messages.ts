@@ -1,6 +1,10 @@
 const chalk = require("chalk");
 const figlet = require("figlet");
 
+/**
+ * This class contains standardized functions that create colored and formatted messages to be used by the user-interface.
+ * @author Dimitri
+ */
 export default class Messages {
   private ct: string = chalk.bold.green(">");
   private ds: string = chalk.bold.yellow(">");

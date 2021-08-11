@@ -82,6 +82,7 @@ export function setOuterConfigKeys(config: any, api: any, id: any): void {
     config.host = api.host;
     config.provider = TruffleProvider.create(config);
   } catch (err) {
+    // return statement such that eslint doesn't complain
     return;
   }
 }

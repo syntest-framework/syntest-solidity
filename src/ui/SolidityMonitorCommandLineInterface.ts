@@ -3,6 +3,10 @@ import Messages from "./Messages";
 
 const clear = require("clear");
 
+/**
+ * A solidity specific monitor command line interface.
+ * @author Dimitri
+ */
 export class SolidityMonitorCommandLineInterface extends MonitorCommandLineInterface {
   private messages: Messages;
 
@@ -21,13 +25,7 @@ export class SolidityMonitorCommandLineInterface extends MonitorCommandLineInter
       case "help":
         clear();
         return (
-          yargs
-            // .help("h")
-            // .alias("h", "help")
-            // .version("v")
-            // .alias("v", "version")
-            // .version()
-            .showHelp()
+          yargs.showHelp()
         );
       case "version":
         this.logs.push(this.messages.versions(args[0], args[1], args[2]));

@@ -60,6 +60,7 @@ import { ImportVisitor } from "./graph/ImportVisitor";
 import { LibraryVisitor } from "./graph/LibraryVisitor";
 
 import * as fs from "fs";
+import {SolidityCommandLineInterface} from "./ui/SolidityCommandLineInterface";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -123,14 +124,23 @@ export class SolidityLauncher {
       setupLogger();
 
       const messages = new Messages();
-      // setUserInterface(new SolidityCommandLineInterface(Properties.console_log_level === 'silent', Properties.console_log_level === 'verbose', messages))
-      setUserInterface(
-        new SolidityMonitorCommandLineInterface(
-          Properties.console_log_level === "silent",
-          Properties.console_log_level === "verbose",
-          messages
+
+      if (Properties.user_interface === 'regular') {
+        setUserInterface(new SolidityCommandLineInterface(
+            Properties.console_log_level === 'silent',
+            Properties.console_log_level === 'verbose',
+              messages
+          )
         )
-      );
+      } else if (Properties.user_interface === 'monitor') {
+        setUserInterface(
+            new SolidityMonitorCommandLineInterface(
+                Properties.console_log_level === "silent",
+                Properties.console_log_level === "verbose",
+                messages
+            )
+        );
+      }
 
       config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
 
@@ -341,6 +351,7 @@ export class SolidityLauncher {
       });
 
       // Run tests
+      // by replacing the console.log global function we disable the output of the truffle test results
       const old = console.log;
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       console.log = function () {};
@@ -355,8 +366,7 @@ export class SolidityLauncher {
       getUserInterface().report("header", ["search results"]);
 
       // Run Istanbul
-      const collector = await api.report();
-      // console.log(collector)
+      await api.report();
       await api.onIstanbulComplete(config);
     } catch (e) {
       error = e;

@@ -4,6 +4,10 @@ import Messages from "./Messages";
 
 const clear = require("clear");
 
+/**
+ * A solidity specific command line interface.
+ * @author Dimitri
+ */
 export class SolidityCommandLineInterface extends CommandLineInterface {
   private messages: Messages;
 
@@ -20,13 +24,7 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
         return console.log(this.messages.asciiArt(args[0]));
       case "help":
         return (
-          yargs
-            // .help("h")
-            // .alias("h", "help")
-            // .version("v")
-            // .alias("v", "version")
-            // .version()
-            .showHelp()
+          yargs.showHelp()
         );
       case "version":
         return console.log(this.messages.version(args[0]));

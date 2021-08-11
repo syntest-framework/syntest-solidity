@@ -171,7 +171,6 @@ class API {
     } catch (err) {
       // Fallback to ganache-cli)
       const _ganache = require("ganache-cli");
-      // this.ui.report("vm-fail", [_ganache.version]);
       await this.attachToVM(_ganache);
     }
 
@@ -181,7 +180,6 @@ class API {
 
     await pify(this.server.listen)(this.port);
     const address = `http://${this.host}:${this.port}`;
-    // this.ui.report("server", [address]);
     return address;
   }
 
@@ -209,7 +207,6 @@ class API {
         reporter.write(collector, true, (err) => {
           if (err) return reject(err);
 
-          // this.ui.report("istanbul");
           resolve(collector);
         });
       } catch (error) {
@@ -224,7 +221,6 @@ class API {
    */
   async finish() {
     if (this.server && this.server.close) {
-      // this.ui.report("finish");
       await pify(this.server.close)();
     }
   }
