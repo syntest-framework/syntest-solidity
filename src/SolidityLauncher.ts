@@ -49,6 +49,7 @@ import { normalizeConfig } from "./util/config";
 import { setNetwork, setNetworkFrom } from "./util/network";
 
 import {
+  createTruffleConfig,
   getTestFilePaths,
   save,
   setupTempFolders,
@@ -107,6 +108,8 @@ export class SolidityLauncher {
    * @return {Promise}
    */
   public async run(config: TruffleConfig) {
+    await createTruffleConfig()
+
     let api, error, failures;
 
     // const tempContractsDir = path.join(config.workingDir, '.coverage_contracts')
