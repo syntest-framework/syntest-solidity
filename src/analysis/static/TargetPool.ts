@@ -19,22 +19,22 @@ export class TargetPool {
   protected _targetMapGenerator: TargetMapGenerator;
   protected _controlFlowGraphGenerator: SolidityCFGFactory;
 
-  // Mapping: filename -> source code
+  // Mapping: filepath -> source code
   protected _sources: Map<string, string>;
 
-  // Mapping: filename -> AST
+  // Mapping: filepath -> AST
   protected _abstractSyntaxTrees: Map<string, any>;
 
-  // Mapping: filename -> target name -> target
+  // Mapping: filepath -> target name -> target
   protected _targetMap: Map<string, Map<string, ContractMetadata>>;
 
-  // Mapping: filename -> target name -> function name -> function
+  // Mapping: filepath -> target name -> function name -> function
   protected _functionMaps: Map<
     string,
     Map<string, Map<string, ContractFunction>>
   >;
 
-  // Mapping: filename -> target name -> (function name -> CFG)
+  // Mapping: filepath -> target name -> (function name -> CFG)
   protected _controlFlowGraphs: Map<string, Map<string, any>>;
 
   constructor(

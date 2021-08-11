@@ -16,21 +16,22 @@ export class Target {
   protected _path: string;
   protected _name: string;
 
-  // The Abstract Syntax Trees for each targetPath
+  // Mapping: filepath -> source
   protected _sources: Map<string, string>;
 
-  // The Abstract Syntax Trees for each targetPath
+  // Mapping: filepath -> AST
   protected _abstractSyntaxTrees: Map<string, any>;
 
   protected _context: TargetContext<ContractMetadata>;
 
-  // The different functions for each target
+  // Mapping: contract name -> function name -> function
   protected _functions: Map<string, Map<string, any>>;
 
-  // The Control Flow Graph for each target
+  // Mapping: contract name -> (function name -> CFG)
   protected _controlFlowGraphs: Map<string, any>;
 
-  // The different contracts found in the target
+  protected _linkingGraph: Map<string, Set<string>>;
+
   protected _subject: SearchSubject<TestCase>;
 
   constructor(
@@ -40,7 +41,8 @@ export class Target {
     ASTs: Map<string, any>,
     context: TargetContext<ContractMetadata>,
     functions: Map<string, Map<string, any>>,
-    CFGs: Map<string, any>
+    CFGs: Map<string, any>,
+    linkingGraph: Map<string, Set<string>>
   ) {
     this._path = path.resolve(targetPath);
     this._name = targetName;
@@ -49,6 +51,7 @@ export class Target {
     this._context = context;
     this._functions = functions;
     this._controlFlowGraphs = CFGs;
+    this._linkingGraph = linkingGraph;
   }
 
   /**
@@ -90,13 +93,20 @@ export class Target {
 
     const importGraph = analyzer.analyzeImports(targetPath);
     const context = analyzer.analyzeContext(importGraph);
+    const inheritanceGraph = analyzer.analyzeInheritance(context, targetName);
 
     importGraph.forEach((importedFiles, filePath) => {
       sources.set(filePath, targetPool.getSource(filePath));
       abstractSyntaxTrees.set(filePath, targetPool.getAST(filePath));
+
+      context.getTargets(filePath).forEach((contractMetadata) => {
+        functionMaps.set(
+          contractMetadata.name,
+          targetPool.getFunctionMap(filePath, contractMetadata.name)
+        );
+      });
     });
 
-    const inheritanceGraph = analyzer.analyzeInheritance(context, targetName);
     const linkingGraph = analyzer.analyzeLinking(
       importGraph,
       context,
@@ -110,7 +120,8 @@ export class Target {
       abstractSyntaxTrees,
       context,
       functionMaps,
-      controlFlowGraphs
+      controlFlowGraphs,
+      linkingGraph
     );
   }
 }
