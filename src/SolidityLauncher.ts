@@ -10,6 +10,7 @@ import {
   Archive,
   BudgetManager,
   configureTermination,
+  CoverageWriter,
   createAlgorithmFromConfig,
   createDirectoryStructure,
   createTempDirectoryStructure,
@@ -18,7 +19,6 @@ import {
   EvaluationBudget,
   ExceptionObjectiveFunction,
   ExecutionResult,
-  getLogger,
   Properties,
   guessCWD,
   IterationBudget,
@@ -29,6 +29,7 @@ import {
   setupLogger,
   setupOptions,
   StatisticsCollector,
+  StatisticsSearchListener,
   SummaryWriter,
   TestCase,
   TotalTimeBudget,
@@ -36,6 +37,7 @@ import {
   TargetFile,
   setUserInterface,
   getUserInterface,
+  getSeed,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -47,17 +49,21 @@ import { normalizeConfig } from "./util/config";
 import { setNetwork, setNetworkFrom } from "./util/network";
 
 import {
+  createTruffleConfig,
   getTestFilePaths,
   save,
   setupTempFolders,
   tearDownTempFolders,
 } from "./util/fileSystem";
 
+import Messages from "./ui/Messages";
+import { SolidityMonitorCommandLineInterface } from "./ui/SolidityMonitorCommandLineInterface";
+
 import { ImportVisitor } from "./analysis/static/dependency/ImportVisitor";
 import { LibraryVisitor } from "./analysis/static/dependency/LibraryVisitor";
 
-import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 import * as fs from "fs";
+import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -79,10 +85,7 @@ function loadLibrary(config) {
   // Local
   try {
     if (config.useGlobalTruffle || config.usePluginTruffle) throw null;
-
-    const lib = require("truffle");
-    getLogger().info("lib-local");
-    return lib;
+    return require("truffle");
   } catch (err) {}
 
   // Global
@@ -90,9 +93,7 @@ function loadLibrary(config) {
     if (config.usePluginTruffle) throw null;
 
     const globalTruffle = path.join(globalModules, "truffle");
-    const lib = require(globalTruffle);
-    getLogger().info("lib-global");
-    return lib;
+    return require(globalTruffle);
   } catch (err) {}
 }
 
@@ -105,16 +106,14 @@ export class SolidityLauncher {
    * @return {Promise}
    */
   public async run(config: TruffleConfig) {
+    await createTruffleConfig()
+
     let api, error, failures;
 
-    // const tempContractsDir = path.join(config.workingDir, '.coverage_contracts')
-    // const tempArtifactsDir = path.join(config.workingDir, '.coverage_artifacts')
     const tempContractsDir = path.join(process.cwd(), ".syntest_coverage");
     const tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
 
     try {
-      setUserInterface(new SolidityCommandLineInterface());
-
       // Filesystem & Compiler Re-configuration
       config = normalizeConfig(config);
 
@@ -129,7 +128,33 @@ export class SolidityLauncher {
       processConfig(myConfig, args);
       setupLogger();
 
+      const messages = new Messages();
+
+      if (Properties.user_interface === "regular") {
+        setUserInterface(
+          new SolidityCommandLineInterface(
+            Properties.console_log_level === "silent",
+            Properties.console_log_level === "verbose",
+            messages
+          )
+        );
+      } else if (Properties.user_interface === "monitor") {
+        setUserInterface(
+          new SolidityMonitorCommandLineInterface(
+            Properties.console_log_level === "silent",
+            Properties.console_log_level === "verbose",
+            messages
+          )
+        );
+      }
+
       config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
+
+      getUserInterface().report("clear", []);
+      getUserInterface().report("asciiArt", ["Syntest"]);
+      getUserInterface().report("version", [
+        require("../package.json").version,
+      ]);
 
       if (config.help) return getUserInterface().report("help", []); // Exit if --help
 
@@ -149,29 +174,34 @@ export class SolidityLauncher {
 
       setNetworkFrom(config, accounts);
 
-      // Version Info
-      getUserInterface().report("versions", [
-        truffle.version,
-        ganacheVersion,
-        pkg.version,
-      ]);
-
       // Exit if --version
       if (config.version) {
+        getUserInterface().report("versions", [
+          truffle.version,
+          ganacheVersion,
+          pkg.version,
+        ]); // Exit if --help
+
         // Finish
         await tearDownTempFolders(tempContractsDir, tempArtifactsDir);
 
         // Shut server down
         await api.finish();
-        getLogger().info(`Version: `);
-        process.exit(0);
+        return;
       }
 
-      getUserInterface().report("network", [
-        config.network,
-        config.networks[config.network].network_id,
-        config.networks[config.network].port,
+      getUserInterface().report("header", ["General info"]);
+
+      getUserInterface().report("property-set", [
+        "Network Info",
+        [
+          ["id", config.network],
+          ["port", config.networks[config.network].network_id],
+          ["network", config.networks[config.network].port],
+        ],
       ]);
+
+      getUserInterface().report("header", ["Targets"]);
 
       // Run post-launch server hook;
       await api.onServerReady(config);
@@ -186,25 +216,66 @@ export class SolidityLauncher {
 
         // Shut server down
         await api.finish();
-        getLogger().error(
+        getUserInterface().error(
           `No targets where selected! Try changing the 'include' parameter`
         );
         process.exit(1);
       }
 
+      getUserInterface().report(
+        "targets",
+        included.map((t) => t.relativePath)
+      );
+      getUserInterface().report(
+        "skip-files",
+        excluded.map((s) => s.relativePath)
+      );
+
+      getUserInterface().report("header", ["configuration"]);
+
+      getUserInterface().report("single-property", ["Seed", getSeed()]);
+      getUserInterface().report("property-set", [
+        "Budgets",
+        [
+          ["Iteration Budget", `${Properties.iteration_budget} iterations`],
+          ["Evaluation Budget", `${Properties.evaluation_budget} evaluations`],
+          ["Search Time Budget", `${Properties.search_time} seconds`],
+          ["Total Time Budget", `${Properties.total_time} seconds`],
+        ],
+      ]);
+      getUserInterface().report("property-set", [
+        "Algorithm",
+        [
+          ["Algorithm", Properties.algorithm],
+          ["Population Size", Properties.population_size],
+        ],
+      ]);
+      getUserInterface().report("property-set", [
+        "Variation Probabilities",
+        [
+          ["Resampling", Properties.resample_gene_probability],
+          ["Delta mutation", Properties.delta_mutation_probability],
+          [
+            "Re-sampling from chromosome",
+            Properties.sample_existing_value_probability,
+          ],
+          ["Crossover", Properties.crossover_probability],
+        ],
+      ]);
+
+      getUserInterface().report("property-set", [
+        "Sampling",
+        [
+          ["Max Depth", Properties.max_depth],
+          ["Explore Illegal Values", Properties.explore_illegal_values],
+          ["Sample Function Result as Argument", Properties.sample_func_as_arg],
+          ["Crossover", Properties.crossover_probability],
+        ],
+      ]);
+
       // Instrument
       const targets = api.instrument(included);
       const skipped = excluded;
-
-      let started = false;
-
-      for (const item of skipped) {
-        if (!started) {
-          getUserInterface().report("instr-skip", []);
-          started = true;
-        }
-        getUserInterface().report("instr-skipped", [item.relativePath]);
-      }
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir);
       await save(targets, config.contracts_directory, tempContractsDir);
@@ -286,12 +357,19 @@ export class SolidityLauncher {
       });
 
       // Run tests
+      // by replacing the console.log global function we disable the output of the truffle test results
+      const old = console.log;
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      console.log = function () {};
       try {
-        failures = await truffle.test.run(config);
+        await truffle.test.run(config);
       } catch (e) {
         error = e.stack;
       }
+      console.log = old;
       await api.onTestsComplete(config);
+
+      getUserInterface().report("header", ["search results"]);
 
       // Run Istanbul
       await api.report();
@@ -323,7 +401,9 @@ async function testTarget(
     await createDirectoryStructure();
     await createTempDirectoryStructure();
 
-    getLogger().info(`Testing target: ${target.relativePath}`);
+    getUserInterface().report("header", [
+      `Searching: "${target.relativePath}"`,
+    ]);
 
     const ast = SolidityParser.parse(target.actualSource, {
       loc: true,
@@ -370,21 +450,17 @@ async function testTarget(
     budgetManager.addBudget(searchBudget);
     budgetManager.addBudget(totalTimeBudget);
 
+    // Termination
     const terminationManager = configureTermination();
 
-    // This searches for a covering population
-    const archive = await algorithm.search(
-      currentSubject,
-      budgetManager,
-      terminationManager
-    );
-
+    // Collector
     const collector = new StatisticsCollector(totalTimeBudget);
     collector.recordVariable(RuntimeVariable.VERSION, 1);
     collector.recordVariable(
       RuntimeVariable.CONFIGURATION,
       Properties.configuration
     );
+    collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
     collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
     collector.recordVariable(
       RuntimeVariable.PROBE_ENABLED,
@@ -396,30 +472,37 @@ async function testTarget(
       currentSubject.getObjectives().length
     );
 
+    // Statistics listener
+    const statisticsSearchListener = new StatisticsSearchListener(collector);
+    algorithm.addListener(statisticsSearchListener);
+
+    // This searches for a covering population
+    const archive = await algorithm.search(
+      currentSubject,
+      budgetManager,
+      terminationManager
+    );
+
+    // Gather statistics after the search
     collector.recordVariable(
       RuntimeVariable.COVERED_OBJECTIVES,
       archive.getObjectives().length
     );
-
-    collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
     collector.recordVariable(
       RuntimeVariable.SEARCH_TIME,
-      searchBudget.getCurrentBudget()
+      searchBudget.getUsedBudget()
     );
-
     collector.recordVariable(
       RuntimeVariable.TOTAL_TIME,
-      totalTimeBudget.getCurrentBudget()
+      totalTimeBudget.getUsedBudget()
     );
-
     collector.recordVariable(
       RuntimeVariable.ITERATIONS,
-      iterationBudget.getCurrentBudget()
+      iterationBudget.getUsedBudget()
     );
-
     collector.recordVariable(
       RuntimeVariable.EVALUATIONS,
-      evaluationBudget.getCurrentBudget()
+      evaluationBudget.getUsedBudget()
     );
 
     collectCoverageData(collector, archive, "branch");
@@ -442,10 +525,13 @@ async function testTarget(
         currentSubject.getObjectives().length
     );
 
-    const statisticFile = path.resolve(Properties.statistics_directory);
+    const statisticsDirectory = path.resolve(Properties.statistics_directory);
 
-    const writer = new SummaryWriter();
-    writer.write(collector, statisticFile + "/statistics.csv");
+    const summaryWriter = new SummaryWriter();
+    summaryWriter.write(collector, statisticsDirectory + "/statistics.csv");
+
+    const coverageWriter = new CoverageWriter();
+    coverageWriter.write(collector, statisticsDirectory + "/coverage.csv");
 
     await deleteTempDirectories();
 
