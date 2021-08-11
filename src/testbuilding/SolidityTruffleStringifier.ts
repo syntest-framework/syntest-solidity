@@ -53,6 +53,30 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     );
   }
 
+  decodeErroringConstructorCall(statement: Statement): string {
+    if (!(statement instanceof ConstructorCall))
+      throw new Error(`${statement} is not a constructor`);
+
+    let string = "";
+
+    const args = (statement as ConstructorCall).args;
+    for (const arg of args) {
+      if (arg instanceof PrimitiveStatement) {
+        string = string + this.decodeStatement(arg) + "\n\t\t";
+      }
+    }
+    const formattedArgs = args
+        .map((a: PrimitiveStatement<any>) => a.varName)
+        .join(", ");
+
+    return (
+        string +
+        `await expect(${
+            (statement as ConstructorCall).constructorName
+        }.new(${formattedArgs})).to.be.rejectedWith(Error);`
+    );
+  }
+
   decodeStatement(statement: Statement): string {
     if (!(statement instanceof PrimitiveStatement)) {
       throw new Error(`${statement} is not a primitive statement`);
@@ -98,6 +122,19 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       return `await ${objectName}.${
         (statement as ObjectFunctionCall).functionName
       }.call(${formattedArgs});`;
+    } else {
+      throw new Error(`${statement} is not a function call`);
+    }
+  }
+
+  decodeErroringFunctionCall(statement: Statement, objectName: string): string {
+    if (statement instanceof ObjectFunctionCall) {
+      const args = (statement as ObjectFunctionCall).getChildren();
+      const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
+
+      return `await expect(${objectName}.${
+          (statement as ObjectFunctionCall).functionName
+      }.call(${formattedArgs})).to.be.rejectedWith(Error);`;
     } else {
       throw new Error(`${statement} is not a function call`);
     }
@@ -178,28 +215,30 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     additionalAssertions?: Map<TestCase, { [p: string]: string }>
   ): string[] {
     const assertions: string[] = [];
-    if (additionalAssertions) {
-      if (additionalAssertions.has(ind)) {
-        const assertion: { [p: string]: string } = additionalAssertions.get(
-          ind
-        );
+    if (additionalAssertions && additionalAssertions.has(ind)) {
+      const assertion: { [p: string]: string } = additionalAssertions.get(
+        ind
+      );
 
-        for (const variableName of Object.keys(assertion)) {
-          if (assertion[variableName] === "[object Object]") continue;
+      for (const variableName of Object.keys(assertion)) {
+        if (variableName === 'error') {
+          continue
+        }
 
-          if (variableName.includes("string")) {
-            assertions.push(
-              `\t\tassert.equal(${variableName}, "${assertion[variableName]}")`
-            );
-          } else if (variableName.includes("int")) {
-            assertions.push(
-              `\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))`
-            );
-          } else {
-            assertions.push(
-              `\t\tassert.equal(${variableName}, ${assertion[variableName]})`
-            );
-          }
+        if (assertion[variableName] === "[object Object]") continue;
+
+        if (variableName.includes("string")) {
+          assertions.push(
+            `\t\tassert.equal(${variableName}, "${assertion[variableName]}")`
+          );
+        } else if (variableName.includes("int")) {
+          assertions.push(
+            `\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))`
+          );
+        } else {
+          assertions.push(
+            `\t\tassert.equal(${variableName}, ${assertion[variableName]})`
+          );
         }
       }
     }
@@ -222,8 +261,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     const imports: string[] = [];
 
     for (const ind of testCase) {
-      const testString = [];
+      // The stopAfter variable makes sure that when one of the function calls has thrown an exception the test case ends there.
+      let stopAfter = -1
+      if (additionalAssertions && additionalAssertions.has(ind) && additionalAssertions.get(ind)['error']) {
+        stopAfter = Object.keys(additionalAssertions.get(ind)).length
+      }
 
+      const testString = [];
       const stack: Statement[] = this.convertToStatementStack(ind);
 
       if (addLogs) {
@@ -234,6 +278,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
             ind.id
           )}', { recursive: true })\n`
         );
+        testString.push('try {')
       }
 
       const importableGenes: ConstructorCall[] = [];
@@ -241,37 +286,87 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const constructor = ind.root;
       stack.push(constructor);
 
+      let primitiveStatements: string[] = []
+      const functionCalls: string[] = []
+      const assertions: string[] = []
+
+      let count = 1
       while (stack.length) {
         const gene: Statement = stack.pop()!;
 
         if (gene instanceof ConstructorCall) {
+          if (count === stopAfter) {
+            assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`)
+            break
+          }
           testString.push(`\t\t${this.decodeConstructor(gene)}`);
           importableGenes.push(<ConstructorCall>gene);
+          count += 1
         } else if (gene instanceof PrimitiveStatement) {
-          testString.push(`\t\t${this.decodeStatement(gene)}`);
+          primitiveStatements.push(`\t\t${this.decodeStatement(gene)}`);
         } else if (gene instanceof ObjectFunctionCall) {
-          testString.push(
+          if (count === stopAfter) {
+            assertions.push(`\t\t${this.decodeErroringFunctionCall(gene, constructor.varName)}`)
+            break
+          }
+          functionCalls.push(
             `\t\t${this.decodeFunctionCall(gene, constructor.varName)}`
           );
+          count += 1
         } else {
           throw Error(`The type of gene ${gene} is not recognized`);
         }
 
-        if (addLogs && gene instanceof ObjectFunctionCall) {
-          testString.push(
-            `\t\tawait fs.writeFileSync('${path.join(
-              Properties.temp_log_directory,
-              ind.id,
-              gene.varName
-            )}', '' + ${gene.varName})`
-          );
+        if (addLogs) {
+          if (gene instanceof ObjectFunctionCall) {
+            functionCalls.push(
+                `\t\tawait fs.writeFileSync('${path.join(
+                    Properties.temp_log_directory,
+                    ind.id,
+                    gene.varName
+                )}', '' + ${gene.varName})`
+            );
+          } else if (gene instanceof ConstructorCall) {
+            testString.push(
+                `\t\tawait fs.writeFileSync('${path.join(
+                    Properties.temp_log_directory,
+                    ind.id,
+                    gene.varName
+                )}', '' + ${gene.varName})`
+            );
+          }
         }
+      }
+
+      // filter non-required statements
+      primitiveStatements = primitiveStatements.filter((s) => {
+        const varName = s.split(' ')[1]
+        return functionCalls.find((f) => f.includes(varName))
+      })
+
+      testString.push(...primitiveStatements)
+      testString.push(...functionCalls)
+
+      if (addLogs) {
+        testString.push(`} catch (e) {`)
+        testString.push(`await fs.writeFileSync('${path.join(
+            Properties.temp_log_directory,
+            ind.id,
+            'error'
+        )}', '' + e.stack)`)
+        testString.push('}')
       }
 
       const [importsOfTest, linkings] = this.gatherImports(importableGenes);
       imports.push(...importsOfTest);
 
-      const assertions = this.generateAssertions(ind, additionalAssertions);
+      if (additionalAssertions) {
+        imports.push(`const chai = require('chai');`)
+        imports.push(`const expect = chai.expect;`)
+        imports.push(`chai.use(require('chai-as-promised'));`)
+      }
+
+      assertions.unshift(...this.generateAssertions(ind, additionalAssertions));
 
       const body = [];
       if (linkings.length) {
