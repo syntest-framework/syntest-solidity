@@ -261,14 +261,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     const imports: string[] = [];
 
     for (const ind of testCase) {
+      // The stopAfter variable makes sure that when one of the function calls has thrown an exception the test case ends there.
       let stopAfter = -1
       if (additionalAssertions && additionalAssertions.has(ind) && additionalAssertions.get(ind)['error']) {
         stopAfter = Object.keys(additionalAssertions.get(ind)).length
       }
 
-
       const testString = [];
-
       const stack: Statement[] = this.convertToStatementStack(ind);
 
       if (addLogs) {
