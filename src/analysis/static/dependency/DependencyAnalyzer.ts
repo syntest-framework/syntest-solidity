@@ -7,6 +7,7 @@ import {
 import * as path from "path";
 import { TargetContext } from "./TargetContext";
 import { ImportVisitor } from "./ImportVisitor";
+import { Graph } from "../Graph";
 
 const SolidityParser = require("@solidity-parser/parser");
 
@@ -27,8 +28,8 @@ export class DependencyAnalyzer {
    *
    * @param targetPath The target file to analyze
    */
-  analyzeImports(targetPath: string): Map<string, Set<string>> {
-    const importGraph = new Map<string, Set<string>>();
+  analyzeImports(targetPath: string): Graph<string> {
+    const importGraph = new Graph<string>();
 
     const queue: string[] = [];
     queue.push(path.resolve(targetPath));
@@ -36,7 +37,8 @@ export class DependencyAnalyzer {
     while (queue.length != 0) {
       // Traverse queue breadth-first
       const filePath = queue.shift();
-      const imports = new Set<string>();
+
+      importGraph.addNode(filePath);
 
       const ast = this._targetPool.getAST(filePath);
       const visitor = new ImportVisitor();
@@ -52,10 +54,8 @@ export class DependencyAnalyzer {
           if (!queue.includes(foundAbsoluteImportPath))
             queue.push(foundAbsoluteImportPath);
 
-          imports.add(foundAbsoluteImportPath);
+          importGraph.addEdge(filePath, foundAbsoluteImportPath);
         });
-
-      importGraph.set(filePath, imports);
     }
 
     return importGraph;
@@ -66,12 +66,10 @@ export class DependencyAnalyzer {
    *
    * @param importGraph The import graph of the target
    */
-  analyzeContext(
-    importGraph: Map<string, Set<string>>
-  ): TargetContext<ContractMetadata> {
+  analyzeContext(importGraph: Graph<string>): TargetContext<ContractMetadata> {
     const targetContext = new TargetContext<ContractMetadata>();
 
-    importGraph.forEach((importedFiles, currentImport) => {
+    importGraph.getNodes().forEach((currentImport) => {
       const targetMap = this._targetPool.getTargetMap(currentImport);
       targetMap.forEach(
         (contractMetadata: ContractMetadata, contractName: string) => {
@@ -92,8 +90,8 @@ export class DependencyAnalyzer {
   analyzeInheritance(
     targetContext: TargetContext<ContractMetadata>,
     targetName: string
-  ): Map<string, string> {
-    const inheritanceGraph = new Map<string, string>();
+  ): Graph<string> {
+    const inheritanceGraph = new Graph<string>();
 
     const queue: { targetName: string; parentName: string }[] = [];
 
@@ -107,9 +105,11 @@ export class DependencyAnalyzer {
       // Traverse queue breadth-first
       const queueEntry = queue.shift();
 
+      inheritanceGraph.addNode(queueEntry.targetName);
+
       // If entry has parent add it to the graph
       if (queueEntry.parentName != null)
-        inheritanceGraph.set(queueEntry.parentName, queueEntry.targetName);
+        inheritanceGraph.addEdge(queueEntry.parentName, queueEntry.targetName);
 
       // Retrieve target metadata
       const targetMetadata = targetContext.getTarget(queueEntry.targetName);
@@ -134,11 +134,11 @@ export class DependencyAnalyzer {
    * @param targetName The name of the target
    */
   analyzeLinking(
-    importGraph: Map<string, Set<string>>,
+    importGraph: Graph<string>,
     targetContext: TargetContext<ContractMetadata>,
     targetName: string
-  ): Map<string, Set<string>> {
-    const linkingGraph = new Map<string, Set<string>>();
+  ): Graph<string> {
+    const linkingGraph = new Graph<string>();
 
     if (targetContext.getLocation(targetName) == null) return;
 
@@ -154,51 +154,53 @@ export class DependencyAnalyzer {
 
       // Initialize the linking graph nodes
       queueEntry.targetNames.forEach((name) => {
-        linkingGraph.set(name, new Set<string>());
+        linkingGraph.addNode(name);
       });
 
       // Loop over all imports
-      importGraph.get(queueEntry.targetPath).forEach((importedFilePath) => {
-        const linkedContracts = new Set<string>();
+      importGraph
+        .getAdjacentNodes(queueEntry.targetPath)
+        .forEach((importedFilePath) => {
+          const linkedContracts = new Set<string>();
 
-        const contracts = this._targetPool.getTargetMap(importedFilePath);
-        contracts.forEach((contractMetadata: ContractMetadata) => {
-          if (contractMetadata.kind === ContractKind.Library) {
-            const functions = this._targetPool.getFunctionMap(
-              importedFilePath,
-              contractMetadata.name
-            );
-            functions.forEach((contractFunction: ContractFunction) => {
-              // Add library if it has public or external functions
-              if (
-                contractFunction.visibility ===
-                  ContractFunctionVisibility.Public ||
-                contractFunction.visibility ===
-                  ContractFunctionVisibility.External
-              ) {
-                linkedContracts.add(contractMetadata.name);
-              }
+          const contracts = this._targetPool.getTargetMap(importedFilePath);
+          contracts.forEach((contractMetadata: ContractMetadata) => {
+            if (contractMetadata.kind === ContractKind.Library) {
+              const functions = this._targetPool.getFunctionMap(
+                importedFilePath,
+                contractMetadata.name
+              );
+              functions.forEach((contractFunction: ContractFunction) => {
+                // Add library if it has public or external functions
+                if (
+                  contractFunction.visibility ===
+                    ContractFunctionVisibility.Public ||
+                  contractFunction.visibility ===
+                    ContractFunctionVisibility.External
+                ) {
+                  linkedContracts.add(contractMetadata.name);
+                }
+              });
+            }
+          });
+
+          // Add found public or external libraries to the linking graph
+          queueEntry.targetNames.forEach((name) => {
+            linkedContracts.forEach((linkedContract) => {
+              linkingGraph.addEdge(name, linkedContract);
             });
-          }
-        });
+          });
 
-        // Add found public or external libraries to the linking graph
-        queueEntry.targetNames.forEach((name) => {
-          linkedContracts.forEach((linkedContract) => {
-            linkingGraph.get(name).add(linkedContract);
+          // Push found imports on the queue
+          queue.push({
+            targetPath: importedFilePath,
+            // If no public or external libraries where found add the current ones
+            targetNames:
+              linkedContracts.size == 0
+                ? queueEntry.targetNames
+                : [...linkedContracts],
           });
         });
-
-        // Push found imports on the queue
-        queue.push({
-          targetPath: importedFilePath,
-          // If no public or external libraries where found add the current ones
-          targetNames:
-            linkedContracts.size == 0
-              ? queueEntry.targetNames
-              : [...linkedContracts],
-        });
-      });
     }
 
     return linkingGraph;

@@ -4,6 +4,7 @@ import * as path from "path";
 import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
 import { TargetContext } from "./dependency/TargetContext";
 import { ContractMetadata } from "./map/ContractMetadata";
+import { Graph } from "./Graph";
 
 /**
  * Target system under test.
@@ -30,7 +31,7 @@ export class Target {
   // Mapping: contract name -> (function name -> CFG)
   protected _controlFlowGraphs: Map<string, any>;
 
-  protected _linkingGraph: Map<string, Set<string>>;
+  protected _linkingGraph: Graph<string>;
 
   protected _subject: SearchSubject<TestCase>;
 
@@ -42,7 +43,7 @@ export class Target {
     context: TargetContext<ContractMetadata>,
     functions: Map<string, Map<string, any>>,
     CFGs: Map<string, any>,
-    linkingGraph: Map<string, Set<string>>
+    linkingGraph: Graph<string>
   ) {
     this._path = path.resolve(targetPath);
     this._name = targetName;
@@ -95,7 +96,7 @@ export class Target {
     const context = analyzer.analyzeContext(importGraph);
     const inheritanceGraph = analyzer.analyzeInheritance(context, targetName);
 
-    importGraph.forEach((importedFiles, filePath) => {
+    importGraph.getNodes().forEach((filePath) => {
       sources.set(filePath, targetPool.getSource(filePath));
       abstractSyntaxTrees.set(filePath, targetPool.getAST(filePath));
 
