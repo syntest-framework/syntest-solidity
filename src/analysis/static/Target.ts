@@ -1,0 +1,116 @@
+import { SearchSubject, TestCase } from "syntest-framework";
+import { TargetPool } from "./TargetPool";
+import * as path from "path";
+import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
+import { TargetContext } from "./dependency/TargetContext";
+import { ContractMetadata } from "./map/ContractMetadata";
+
+/**
+ * Target system under test.
+ *
+ * This class contains all data related to the target system.
+ *
+ * @author Mitchell Olsthoorn
+ */
+export class Target {
+  protected _path: string;
+  protected _name: string;
+
+  // The Abstract Syntax Trees for each targetPath
+  protected _sources: Map<string, string>;
+
+  // The Abstract Syntax Trees for each targetPath
+  protected _abstractSyntaxTrees: Map<string, any>;
+
+  protected _context: TargetContext<ContractMetadata>;
+
+  // The different functions for each target
+  protected _functions: Map<string, Map<string, any>>;
+
+  // The Control Flow Graph for each target
+  protected _controlFlowGraphs: Map<string, any>;
+
+  // The different contracts found in the target
+  protected _subject: SearchSubject<TestCase>;
+
+  constructor(
+    targetPath: string,
+    targetName: string,
+    sources: Map<string, string>,
+    ASTs: Map<string, any>,
+    context: TargetContext<ContractMetadata>,
+    functions: Map<string, Map<string, any>>,
+    CFGs: Map<string, any>
+  ) {
+    this._path = path.resolve(targetPath);
+    this._name = targetName;
+    this._sources = sources;
+    this._abstractSyntaxTrees = ASTs;
+    this._context = context;
+    this._functions = functions;
+    this._controlFlowGraphs = CFGs;
+  }
+
+  /**
+   * Create a target from the target pool.
+   *
+   * @param targetPool The target pool to load the target information from
+   * @param targetPath The path to the target file
+   * @param targetName the name of the target
+   */
+  static fromPool(
+    targetPool: TargetPool,
+    targetPath: string,
+    targetName: string
+  ): Target {
+    const absoluteTargetPath = path.resolve(targetPath);
+
+    // Get source, AST, FunctionMap, and CFG for target under test
+    const sources = new Map<string, string>();
+    const abstractSyntaxTrees = new Map<string, any>();
+    const functionMaps = new Map<string, Map<string, any>>();
+    const controlFlowGraphs = new Map<string, any>();
+
+    sources.set(absoluteTargetPath, targetPool.getSource(absoluteTargetPath));
+    abstractSyntaxTrees.set(
+      absoluteTargetPath,
+      targetPool.getAST(absoluteTargetPath)
+    );
+    functionMaps.set(
+      targetName,
+      targetPool.getFunctionMap(absoluteTargetPath, targetName)
+    );
+    controlFlowGraphs.set(
+      targetName,
+      targetPool.getCFG(absoluteTargetPath, targetName)
+    );
+
+    // Analyze dependencies
+    const analyzer = new DependencyAnalyzer(targetPool);
+
+    const importGraph = analyzer.analyzeImports(targetPath);
+    const context = analyzer.analyzeContext(importGraph);
+
+    importGraph.forEach((importedFiles, filePath) => {
+      sources.set(filePath, targetPool.getSource(filePath));
+      abstractSyntaxTrees.set(filePath, targetPool.getAST(filePath));
+    });
+
+    const inheritanceGraph = analyzer.analyzeInheritance(context, targetName);
+    const linkingGraph = analyzer.analyzeLinking(
+      importGraph,
+      context,
+      targetName
+    );
+
+    return new Target(
+      absoluteTargetPath,
+      targetName,
+      sources,
+      abstractSyntaxTrees,
+      context,
+      functionMaps,
+      controlFlowGraphs
+    );
+  }
+}
