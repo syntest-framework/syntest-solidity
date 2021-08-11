@@ -48,14 +48,18 @@ $ syntest-solidity [options]
 ```
 
 #### As a truffle plugin
+
 To run syntest-solidity as a plugin of the truffle testing library, you need to create a truffle-config.js with the following contents:
+
 ```js
 module.exports = {
   test_directory: ".syntest/tests",
-  plugins: ["syntest-solidity"]
+  plugins: ["syntest-solidity"],
 };
 ```
+
 This file is auto-generated when using the standalone tool.
+
 ```bash
 $ truffle run syntest-solidity [options]
 ```

@@ -106,7 +106,7 @@ export class SolidityLauncher {
    * @return {Promise}
    */
   public async run(config: TruffleConfig) {
-    await createTruffleConfig()
+    await createTruffleConfig();
 
     let api, error, failures;
 
