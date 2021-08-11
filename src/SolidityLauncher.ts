@@ -10,6 +10,7 @@ import {
   Archive,
   BudgetManager,
   configureTermination,
+  CoverageWriter,
   createAlgorithmFromConfig,
   createDirectoryStructure,
   createTempDirectoryStructure,
@@ -29,6 +30,7 @@ import {
   setupLogger,
   setupOptions,
   StatisticsCollector,
+  StatisticsSearchListener,
   SummaryWriter,
   TestCase,
   TotalTimeBudget,
@@ -373,21 +375,17 @@ async function testTarget(
     budgetManager.addBudget(searchBudget);
     budgetManager.addBudget(totalTimeBudget);
 
+    // Termination
     const terminationManager = configureTermination();
 
-    // This searches for a covering population
-    const archive = await algorithm.search(
-      currentSubject,
-      budgetManager,
-      terminationManager
-    );
-
+    // Collector
     const collector = new StatisticsCollector(totalTimeBudget);
     collector.recordVariable(RuntimeVariable.VERSION, 1);
     collector.recordVariable(
       RuntimeVariable.CONFIGURATION,
       Properties.configuration
     );
+    collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
     collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
     collector.recordVariable(
       RuntimeVariable.PROBE_ENABLED,
@@ -399,30 +397,37 @@ async function testTarget(
       currentSubject.getObjectives().length
     );
 
+    // Statistics listener
+    const statisticsSearchListener = new StatisticsSearchListener(collector);
+    algorithm.addListener(statisticsSearchListener);
+
+    // This searches for a covering population
+    const archive = await algorithm.search(
+      currentSubject,
+      budgetManager,
+      terminationManager
+    );
+
+    // Gather statistics after the search
     collector.recordVariable(
       RuntimeVariable.COVERED_OBJECTIVES,
       archive.getObjectives().length
     );
-
-    collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
     collector.recordVariable(
       RuntimeVariable.SEARCH_TIME,
-      searchBudget.getCurrentBudget()
+      searchBudget.getUsedBudget()
     );
-
     collector.recordVariable(
       RuntimeVariable.TOTAL_TIME,
-      totalTimeBudget.getCurrentBudget()
+      totalTimeBudget.getUsedBudget()
     );
-
     collector.recordVariable(
       RuntimeVariable.ITERATIONS,
-      iterationBudget.getCurrentBudget()
+      iterationBudget.getUsedBudget()
     );
-
     collector.recordVariable(
       RuntimeVariable.EVALUATIONS,
-      evaluationBudget.getCurrentBudget()
+      evaluationBudget.getUsedBudget()
     );
 
     collectCoverageData(collector, archive, "branch");
@@ -445,10 +450,13 @@ async function testTarget(
         currentSubject.getObjectives().length
     );
 
-    const statisticFile = path.resolve(Properties.statistics_directory);
+    const statisticsDirectory = path.resolve(Properties.statistics_directory);
 
-    const writer = new SummaryWriter();
-    writer.write(collector, statisticFile + "/statistics.csv");
+    const summaryWriter = new SummaryWriter();
+    summaryWriter.write(collector, statisticsDirectory + "/statistics.csv");
+
+    const coverageWriter = new CoverageWriter();
+    coverageWriter.write(collector, statisticsDirectory + "/coverage.csv");
 
     await deleteTempDirectories();
 

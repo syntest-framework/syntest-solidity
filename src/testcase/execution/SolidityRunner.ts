@@ -14,7 +14,6 @@ import {
 import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { getTestFilePaths } from "../../util/fileSystem";
-import SilentMochaReporter from "../../util/SilentMochaReporter";
 
 export class SolidityRunner extends TestCaseRunner {
   protected api: any;
@@ -40,13 +39,11 @@ export class SolidityRunner extends TestCaseRunner {
     );
 
     this.config.test_files = await getTestFilePaths(this.config);
-    // this.config.mocha = {
-    //   reporter: SilentMochaReporter
-    // }
 
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
 
+    // By replacing the global log function we disable the output of the truffle test framework
     const old = console.log
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     console.log = () => {}
@@ -64,11 +61,6 @@ export class SolidityRunner extends TestCaseRunner {
     // Retrieve execution information from the Mocha runner
     const mochaRunner: Runner = this.truffle.test.mochaRunner;
     const stats = mochaRunner.stats;
-
-    // If one of the executions failed, log it
-    if (stats.failures > 0) {
-      getLogger().error("Test case has failed!");
-    }
 
     // Retrieve execution traces
     const instrumentationData = this.api.getInstrumentationData();
@@ -120,8 +112,6 @@ export class SolidityRunner extends TestCaseRunner {
 
     // Remove test file
     await this.suiteBuilder.deleteTestCase(this.config.test_files[0]);
-
-    this.config.mocha = null
 
     return executionResult;
   }
