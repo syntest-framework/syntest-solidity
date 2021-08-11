@@ -62,7 +62,7 @@ import { ImportVisitor } from "./graph/ImportVisitor";
 import { LibraryVisitor } from "./graph/LibraryVisitor";
 
 import * as fs from "fs";
-import {SolidityCommandLineInterface} from "./ui/SolidityCommandLineInterface";
+import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -127,20 +127,21 @@ export class SolidityLauncher {
 
       const messages = new Messages();
 
-      if (Properties.user_interface === 'regular') {
-        setUserInterface(new SolidityCommandLineInterface(
-            Properties.console_log_level === 'silent',
-            Properties.console_log_level === 'verbose',
-              messages
-          )
-        )
-      } else if (Properties.user_interface === 'monitor') {
+      if (Properties.user_interface === "regular") {
         setUserInterface(
-            new SolidityMonitorCommandLineInterface(
-                Properties.console_log_level === "silent",
-                Properties.console_log_level === "verbose",
-                messages
-            )
+          new SolidityCommandLineInterface(
+            Properties.console_log_level === "silent",
+            Properties.console_log_level === "verbose",
+            messages
+          )
+        );
+      } else if (Properties.user_interface === "monitor") {
+        setUserInterface(
+          new SolidityMonitorCommandLineInterface(
+            Properties.console_log_level === "silent",
+            Properties.console_log_level === "verbose",
+            messages
+          )
         );
       }
 

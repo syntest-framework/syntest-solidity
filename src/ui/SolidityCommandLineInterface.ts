@@ -23,9 +23,7 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
       case "asciiArt":
         return console.log(this.messages.asciiArt(args[0]));
       case "help":
-        return (
-          yargs.showHelp()
-        );
+        return yargs.showHelp();
       case "version":
         return console.log(this.messages.version(args[0]));
       case "versions":

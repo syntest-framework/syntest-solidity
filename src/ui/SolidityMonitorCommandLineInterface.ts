@@ -24,9 +24,7 @@ export class SolidityMonitorCommandLineInterface extends MonitorCommandLineInter
         return;
       case "help":
         clear();
-        return (
-          yargs.showHelp()
-        );
+        return yargs.showHelp();
       case "version":
         this.logs.push(this.messages.versions(args[0], args[1], args[2]));
         return;
