@@ -53,8 +53,8 @@ import {
   tearDownTempFolders,
 } from "./util/fileSystem";
 
-import { ImportVisitor } from "./graph/ImportVisitor";
-import { LibraryVisitor } from "./graph/LibraryVisitor";
+import { ImportVisitor } from "./analysis/static/dependency/ImportVisitor";
+import { LibraryVisitor } from "./analysis/static/dependency/LibraryVisitor";
 
 import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 import * as fs from "fs";
@@ -471,7 +471,7 @@ function getImportDependencies(ast: any, target: any) {
 
   // For each external import scan the file for libraries with public and external functions
   const libraries: string[] = [];
-  importVisitor.imports.forEach((importPath: string) => {
+  importVisitor.getImports().forEach((importPath: string) => {
     // Full path to the imported file
     const pathLib = path.join(path.dirname(target.canonicalPath), importPath);
 

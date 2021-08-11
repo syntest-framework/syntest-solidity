@@ -1,4 +1,4 @@
-import { SolidityVisitor } from "./SolidityVisitor";
+import { SolidityVisitor } from "../SolidityVisitor";
 import {
   ContractDefinition,
   FunctionDefinition,

@@ -1,4 +1,4 @@
-import { SolidityVisitor } from "./SolidityVisitor";
+import { SolidityVisitor } from "../SolidityVisitor";
 import { ImportDirective } from "@solidity-parser/parser";
 
 /**
@@ -7,9 +7,19 @@ import { ImportDirective } from "@solidity-parser/parser";
  * @author Mitchell Olsthoorn
  */
 export class ImportVisitor implements SolidityVisitor {
-  public imports = [];
+  protected _imports = new Set<string>();
 
+  /**
+   * @inheritDoc
+   */
   ImportDirective(node: ImportDirective): void {
-    this.imports.push(node.path);
+    this._imports.add(node.path);
+  }
+
+  /**
+   * Return the found imports.
+   */
+  getImports(): string[] {
+    return Array.from(this._imports);
   }
 }
