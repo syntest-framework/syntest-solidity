@@ -489,6 +489,10 @@ async function testTarget(
       archive.getObjectives().length
     );
     collector.recordVariable(
+      RuntimeVariable.INITIALIZATION_TIME,
+      totalTimeBudget.getUsedBudget() - searchBudget.getUsedBudget()
+    );
+    collector.recordVariable(
       RuntimeVariable.SEARCH_TIME,
       searchBudget.getUsedBudget()
     );
