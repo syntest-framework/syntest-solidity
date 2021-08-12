@@ -121,13 +121,20 @@ export class ContractVisitor implements SolidityVisitor {
       return modifier.name;
     });
 
-    const returnParameters = node.returnParameters.map((param) => {
-      const functionParameter: ContractFunctionParameter = {
-        name: param.name,
-        type: this._resolveTypes(param.typeName),
-      };
-      return functionParameter;
-    });
+    const returnParameters = node.returnParameters
+      ? node.returnParameters.map((param) => {
+          const functionParameter: ContractFunctionParameter = {
+            name: param.name,
+            type: this._resolveTypes(param.typeName),
+          };
+          return functionParameter;
+        })
+      : [
+          <ContractFunctionParameter>{
+            name: "",
+            type: "void",
+          },
+        ];
 
     const contractFunction: ContractFunction = {
       name: name,
