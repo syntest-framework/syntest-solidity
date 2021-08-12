@@ -4,6 +4,7 @@ import {
   prng,
   TestCaseSampler,
 } from "syntest-framework";
+import { ConstantPool } from "../../seeding/constant/ConstantPool";
 
 /**
  * Special statement specific to solidity contracts
@@ -23,6 +24,13 @@ export class AddressStatement extends PrimitiveStatement<string> {
         sampler.sampleStatement(depth, this.type, "primitive")
       );
     }
+
+    if (this.value.startsWith("0x")){
+      return <AddressStatement>(
+        sampler.sampleStatement(depth, this.type, "primitive")
+      );
+    }
+
     if (prng.nextBoolean)
       return new AddressStatement(
         this.type,
@@ -44,13 +52,29 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   static getRandom(type = "address") {
-    const account = prng.nextInt(-1, 5);
-    const value = `accounts[${account}]`;
+    let account = -1;
+    if (prng.nextDouble(0, 1) <= Properties.constant_pool_probability){
+      const value = ConstantPool.getInstance().getAddress();
+      if (value != null){
+        return new AddressStatement(type, prng.uniqueId(), value, account);
+      }
+    }
 
+    account = prng.nextInt(-5, 5);
+    if (account < 0){
+      const value = "0x".concat(account.toString(16).padStart(40, "0"));
+      return new AddressStatement(type, prng.uniqueId(), value, account);
+    }
+
+    const value = `accounts[${account}]`;
     return new AddressStatement(type, prng.uniqueId(), value, account);
   }
 
   get account(): number {
     return this._account;
+  }
+
+  public toCode(): string {
+    return `const ${this.varName} = ${this.value}`;
   }
 }

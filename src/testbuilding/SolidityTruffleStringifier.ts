@@ -89,14 +89,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = "${primitive.value}"`;
     } else if (statement instanceof AddressStatement) {
-      if (statement.account < 0) {
-        const address = "0x".concat(
-          (-statement.account).toString(16).padStart(40, "0")
-        );
-        return `const ${statement.varName} = "${address}"`;
-      } else {
-        return `const ${statement.varName} = ${primitive.value}`;
-      }
+      return (statement as AddressStatement).toCode();
     } else if (statement instanceof ByteStatement) {
       const bytes = web3_utils.bytesToHex((statement as ByteStatement).value);
       return `const ${statement.varName} = "${bytes}"`;
