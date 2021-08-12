@@ -2,6 +2,7 @@ import { PrimitiveStatement } from "syntest-framework/dist/testcase/statements/P
 import { TestCaseSampler } from "syntest-framework/dist/testcase/sampling/TestCaseSampler";
 import { prng } from "syntest-framework/dist/util/prng";
 import { Properties } from "syntest-framework/dist/properties";
+import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 
 /**
  * @author Dimitri Stallenberg
@@ -166,15 +167,11 @@ export class StringStatement extends PrimitiveStatement<string> {
     maxlength = Properties.string_maxlength
   ): StringStatement {
 
-
-   // if (prng.nextDouble(0, 1) <= Properties){
-      //const value = this.pool.getString();
-      //if (value == null)
-      //  return StringStatement.getRandom();
-
-      //return StringStatement.createWithValue(this.pool.getString());
-   // }
-
+    if (prng.nextDouble(0, 1) <= Properties.constant_pool_probability){
+      const value = ConstantPool.getInstance().getString();
+      if (value != null)
+        return StringStatement.createWithValue(value);
+    }
 
     const valueLength = prng.nextInt(0, maxlength - 1);
     let value = "";
