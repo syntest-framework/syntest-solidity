@@ -14,8 +14,8 @@ import { Graph } from "./Graph";
  * @author Mitchell Olsthoorn
  */
 export class Target {
-  protected _path: string;
-  protected _name: string;
+  protected readonly _path: string;
+  protected readonly _name: string;
 
   // Mapping: filepath -> source
   protected _sources: Map<string, string>;
@@ -25,10 +25,10 @@ export class Target {
 
   protected _context: TargetContext<ContractMetadata>;
 
-  // Mapping: contract name -> function name -> function
+  // Mapping: target name -> function name -> function
   protected _functions: Map<string, Map<string, any>>;
 
-  // Mapping: contract name -> (function name -> CFG)
+  // Mapping: target name -> (function name -> CFG)
   protected _controlFlowGraphs: Map<string, any>;
 
   protected _linkingGraph: Graph<string>;
@@ -124,5 +124,41 @@ export class Target {
       controlFlowGraphs,
       linkingGraph
     );
+  }
+
+  get path(): string {
+    return this._path;
+  }
+
+  get name(): string {
+    return this._name;
+  }
+
+  getSources(targetPath: string): string {
+    return this._sources.get(targetPath);
+  }
+
+  getAST(targetPath: string): any {
+    return this._abstractSyntaxTrees.get(targetPath);
+  }
+
+  getContext(): TargetContext<ContractMetadata> {
+    return this._context;
+  }
+
+  getFunctions(targetName: string): Map<string, any> {
+    return this._functions.get(targetName);
+  }
+
+  getCFG(targetName: string): any {
+    return this._controlFlowGraphs.get(targetName);
+  }
+
+  getLinkingGraph(): Graph<string> {
+    return this._linkingGraph;
+  }
+
+  getSubject(): SearchSubject<TestCase> {
+    return this._subject;
   }
 }
