@@ -111,9 +111,11 @@ export class ContractVisitor implements SolidityVisitor {
         break;
     }
 
-    const overrides = node.override.map((override) => {
-      return override.namePath;
-    });
+    const overrides = node.override
+      ? node.override.map((override) => {
+          return override.namePath;
+        })
+      : [];
 
     const modifiers = node.modifiers.map((modifier) => {
       return modifier.name;
