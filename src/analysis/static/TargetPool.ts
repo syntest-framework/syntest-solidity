@@ -47,6 +47,15 @@ export class TargetPool {
     this._abstractSyntaxTreeGenerator = abtractSyntaxTreeGenerator;
     this._targetMapGenerator = targetMapGenerator;
     this._controlFlowGraphGenerator = controlFlowGraphGenerator;
+
+    this._sources = new Map<string, string>();
+    this._abstractSyntaxTrees = new Map<string, any>();
+    this._targetMap = new Map<string, Map<string, ContractMetadata>>();
+    this._functionMaps = new Map<
+      string,
+      Map<string, Map<string, ContractFunction>>
+    >();
+    this._controlFlowGraphs = new Map<string, Map<string, any>>();
   }
 
   getSource(targetPath: string): string {

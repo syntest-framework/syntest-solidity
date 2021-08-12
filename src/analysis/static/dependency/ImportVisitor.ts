@@ -7,7 +7,11 @@ import { ImportDirective } from "@solidity-parser/parser";
  * @author Mitchell Olsthoorn
  */
 export class ImportVisitor implements SolidityVisitor {
-  protected _imports = new Set<string>();
+  protected _imports: Set<string>;
+
+  constructor() {
+    this._imports = new Set<string>();
+  }
 
   /**
    * @inheritDoc

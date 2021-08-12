@@ -19,8 +19,13 @@ import {
  */
 export class ContractVisitor implements SolidityVisitor {
   protected _current: ContractMetadata;
-  protected _contracts = new Map<string, ContractMetadata>();
-  protected _functions = new Map<string, Map<string, ContractFunction>>();
+  protected _contracts: Map<string, ContractMetadata>;
+  protected _functions: Map<string, Map<string, ContractFunction>>;
+
+  constructor() {
+    this._contracts = new Map<string, ContractMetadata>();
+    this._functions = new Map<string, Map<string, ContractFunction>>();
+  }
 
   ContractDefinition(node: ContractDefinition): void {
     const name = node.name;
