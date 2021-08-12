@@ -96,7 +96,8 @@ export class Target {
     const context = analyzer.analyzeContext(importGraph);
     const inheritanceGraph = analyzer.analyzeInheritance(context, targetName);
 
-    importGraph.getNodes().forEach((filePath) => {
+    const nodes = importGraph.getNodes();
+    nodes.forEach((filePath) => {
       sources.set(filePath, targetPool.getSource(filePath));
       abstractSyntaxTrees.set(filePath, targetPool.getAST(filePath));
 

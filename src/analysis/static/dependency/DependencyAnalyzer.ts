@@ -44,8 +44,8 @@ export class DependencyAnalyzer {
       const visitor = new ImportVisitor();
       SolidityParser.visit(ast, visitor);
 
-      visitor
-        .getImports()
+      const imports = visitor.getImports();
+      imports
         .map((foundImportPath) => {
           // Resolve relative path
           return path.resolve(filePath, foundImportPath);
@@ -69,7 +69,8 @@ export class DependencyAnalyzer {
   analyzeContext(importGraph: Graph<string>): TargetContext<ContractMetadata> {
     const targetContext = new TargetContext<ContractMetadata>();
 
-    importGraph.getNodes().forEach((currentImport) => {
+    const nodes = importGraph.getNodes();
+    nodes.forEach((currentImport) => {
       const targetMap = this._targetPool.getTargetMap(currentImport);
       targetMap.forEach(
         (contractMetadata: ContractMetadata, contractName: string) => {
@@ -158,49 +159,48 @@ export class DependencyAnalyzer {
       });
 
       // Loop over all imports
-      importGraph
-        .getAdjacentNodes(queueEntry.targetPath)
-        .forEach((importedFilePath) => {
-          const linkedContracts = new Set<string>();
+      const adjacentNodes = importGraph.getAdjacentNodes(queueEntry.targetPath);
+      adjacentNodes.forEach((importedFilePath) => {
+        const linkedContracts = new Set<string>();
 
-          const contracts = this._targetPool.getTargetMap(importedFilePath);
-          contracts.forEach((contractMetadata: ContractMetadata) => {
-            if (contractMetadata.kind === ContractKind.Library) {
-              const functions = this._targetPool.getFunctionMap(
-                importedFilePath,
-                contractMetadata.name
-              );
-              functions.forEach((contractFunction: ContractFunction) => {
-                // Add library if it has public or external functions
-                if (
-                  contractFunction.visibility ===
-                    ContractFunctionVisibility.Public ||
-                  contractFunction.visibility ===
-                    ContractFunctionVisibility.External
-                ) {
-                  linkedContracts.add(contractMetadata.name);
-                }
-              });
-            }
-          });
-
-          // Add found public or external libraries to the linking graph
-          queueEntry.targetNames.forEach((name) => {
-            linkedContracts.forEach((linkedContract) => {
-              linkingGraph.addEdge(name, linkedContract);
+        const contracts = this._targetPool.getTargetMap(importedFilePath);
+        contracts.forEach((contractMetadata: ContractMetadata) => {
+          if (contractMetadata.kind === ContractKind.Library) {
+            const functions = this._targetPool.getFunctionMap(
+              importedFilePath,
+              contractMetadata.name
+            );
+            functions.forEach((contractFunction: ContractFunction) => {
+              // Add library if it has public or external functions
+              if (
+                contractFunction.visibility ===
+                  ContractFunctionVisibility.Public ||
+                contractFunction.visibility ===
+                  ContractFunctionVisibility.External
+              ) {
+                linkedContracts.add(contractMetadata.name);
+              }
             });
-          });
+          }
+        });
 
-          // Push found imports on the queue
-          queue.push({
-            targetPath: importedFilePath,
-            // If no public or external libraries where found add the current ones
-            targetNames:
-              linkedContracts.size == 0
-                ? queueEntry.targetNames
-                : [...linkedContracts],
+        // Add found public or external libraries to the linking graph
+        queueEntry.targetNames.forEach((name) => {
+          linkedContracts.forEach((linkedContract) => {
+            linkingGraph.addEdge(name, linkedContract);
           });
         });
+
+        // Push found imports on the queue
+        queue.push({
+          targetPath: importedFilePath,
+          // If no public or external libraries where found add the current ones
+          targetNames:
+            linkedContracts.size == 0
+              ? queueEntry.targetNames
+              : [...linkedContracts],
+        });
+      });
     }
 
     return linkingGraph;
