@@ -99,26 +99,29 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     await this.clearDirectory(Properties.temp_test_directory);
 
     for (const key of reducedArchive.keys()) {
-      const assertions = await this.gatherAssertions(reducedArchive, key)
+      const assertions = await this.gatherAssertions(reducedArchive, key);
       const testPath = path.join(
-          Properties.final_suite_directory,
-          `test-${key}.js`
+        Properties.final_suite_directory,
+        `test-${key}.js`
       );
       await writeFileSync(
-          testPath,
-          this.decoder.decodeTestCase(
-              reducedArchive.get(key)!,
-              `${key}`,
-              false,
-              assertions
-          )
+        testPath,
+        this.decoder.decodeTestCase(
+          reducedArchive.get(key)!,
+          `${key}`,
+          false,
+          assertions
+        )
       );
     }
 
     this.api.resetInstrumentationData();
   }
 
-  async gatherAssertions (archive: Map<string, TestCase[]>, key: string): Promise<Map<TestCase, { [p: string]: string }>> {
+  async gatherAssertions(
+    archive: Map<string, TestCase[]>,
+    key: string
+  ): Promise<Map<TestCase, { [p: string]: string }>> {
     const assertions = new Map();
 
     for (const testCase of archive.get(key)!) {
@@ -127,13 +130,13 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       try {
         // extract the log statements
         const dir = await readdirSync(
-            path.join(Properties.temp_log_directory, testCase.id)
+          path.join(Properties.temp_log_directory, testCase.id)
         );
 
         for (const file of dir) {
           additionalAssertions[file] = await readFileSync(
-              path.join(Properties.temp_log_directory, testCase.id, file),
-              "utf8"
+            path.join(Properties.temp_log_directory, testCase.id, file),
+            "utf8"
           );
         }
       } catch (error) {
@@ -141,14 +144,14 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       }
 
       await this.clearDirectory(
-          path.join(Properties.temp_log_directory, testCase.id),
-          /.*/g
+        path.join(Properties.temp_log_directory, testCase.id),
+        /.*/g
       );
       await rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
 
       assertions.set(testCase, additionalAssertions);
     }
 
-    return assertions
+    return assertions;
   }
 }
