@@ -157,8 +157,4 @@ export class Target {
   getLinkingGraph(): Graph<string> {
     return this._linkingGraph;
   }
-
-  getSubject(): SearchSubject<TestCase> {
-    return this._subject;
-  }
 }
