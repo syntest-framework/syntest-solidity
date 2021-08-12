@@ -4,6 +4,7 @@ import {
   Properties,
   SuiteBuilder,
   TestCaseRunner,
+  getUserInterface,
 } from "syntest-framework";
 import * as path from "path";
 import {
@@ -54,7 +55,7 @@ export class SolidityRunner extends TestCaseRunner {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
-      getLogger().error(e);
+      getUserInterface().error(e);
       console.trace(e);
     }
     console.log = old;
@@ -62,6 +63,11 @@ export class SolidityRunner extends TestCaseRunner {
     // Retrieve execution information from the Mocha runner
     const mochaRunner: Runner = this.truffle.test.mochaRunner;
     const stats = mochaRunner.stats;
+
+    // If one of the executions failed, log it
+    if (stats.failures > 0) {
+      getUserInterface().error("Test case has failed!");
+    }
 
     // Retrieve execution traces
     const instrumentationData = this.api.getInstrumentationData();
