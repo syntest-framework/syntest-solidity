@@ -60,7 +60,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
       }
     }
 
-    account = prng.nextInt(-5, 5);
+    account = prng.nextInt(-1, 5);
     if (account < 0){
       const value = "0x".concat(account.toString(16).padStart(40, "0"));
       return new AddressStatement(type, prng.uniqueId(), value, account);
