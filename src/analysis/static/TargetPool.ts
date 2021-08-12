@@ -123,7 +123,11 @@ export class TargetPool {
       return this._controlFlowGraphs.get(absoluteTargetPath).get(targetName);
     } else {
       const targetAST = this.getAST(absoluteTargetPath);
-      const cfg = this._controlFlowGraphGenerator.convertAST(targetAST);
+      const cfg = this._controlFlowGraphGenerator.convertAST(
+        targetAST,
+        false,
+        false
+      );
       this._controlFlowGraphs.get(absoluteTargetPath).set(targetName, cfg);
       return cfg;
     }
