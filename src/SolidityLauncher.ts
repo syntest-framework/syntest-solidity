@@ -364,7 +364,7 @@ async function testTarget(
     const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
 
     // Parse the contract for extracting constant
-    const pool = new ConstantPool();
+    const pool = ConstantPool.getInstance();
     const constantVisitor = new ConstantVisitor(pool);
     SolidityParser.visit(ast, constantVisitor);
 
