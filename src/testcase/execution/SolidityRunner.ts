@@ -14,6 +14,7 @@ import {
 import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { getTestFilePaths } from "../../util/fileSystem";
+import { getUserInterface } from "../../../../syntest-framework/dist/ui/UserInterface";
 
 export class SolidityRunner extends TestCaseRunner {
   protected api: any;
@@ -35,36 +36,37 @@ export class SolidityRunner extends TestCaseRunner {
     await this.suiteBuilder.writeTestCase(
       testPath,
       testCase,
-      testCase.root.constructorName
+      testCase.root.constructorName,
     );
-    // config.testDir = path.join(process.cwd(), Properties.temp_test_directory)
 
-    // this.config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
     this.config.test_files = await getTestFilePaths(this.config);
 
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
 
-    // Run tests
-    const old = console.log;
+
+    // By replacing the global log function we disable the output of the truffle test framework
+    const old = console.log
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    console.log = function () {};
+    console.log = () => {}
+
+    // Run tests
     try {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
-      getLogger().error(e);
+      getUserInterface().error(e);
       console.trace(e);
     }
-    console.log = old;
+    console.log = old
+
     // Retrieve execution information from the Mocha runner
     const mochaRunner: Runner = this.truffle.test.mochaRunner;
     const stats = mochaRunner.stats;
 
     // If one of the executions failed, log it
     if (stats.failures > 0) {
-      getLogger().error("Test case has failed!");
-      process.exit()
+      getUserInterface().error("Test case has failed!");
     }
 
     // Retrieve execution traces
@@ -88,6 +90,7 @@ export class SolidityRunner extends TestCaseRunner {
 
       let status: SolidityExecutionStatus;
       let exception: string = null;
+
       if (test.isPassed()) {
         status = SolidityExecutionStatus.PASSED;
       } else if (test.timedOut) {

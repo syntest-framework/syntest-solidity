@@ -9,6 +9,8 @@ const SolidityParser = require("@solidity-parser/parser");
 import {
   Archive,
   BudgetManager,
+  configureTermination,
+  CoverageWriter,
   createAlgorithmFromConfig,
   createDirectoryStructure,
   createTempDirectoryStructure,
@@ -17,7 +19,6 @@ import {
   EvaluationBudget,
   ExceptionObjectiveFunction,
   ExecutionResult,
-  getLogger,
   Properties,
   guessCWD,
   IterationBudget,
@@ -28,12 +29,16 @@ import {
   setupLogger,
   setupOptions,
   StatisticsCollector,
+  StatisticsSearchListener,
   SummaryWriter,
   TestCase,
   TotalTimeBudget,
   loadTargetFiles,
   TargetFile,
   CFG,
+  setUserInterface,
+  getUserInterface,
+  getSeed,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -41,25 +46,27 @@ import TruffleConfig = require("@truffle/config");
 
 import API = require("../src/api");
 
-import {
-  createMigrationsContract,
-  createMigrationsDir,
-  generateDeployContracts,
-  generateInitialMigration,
-  removeMigrationsDir,
-} from "./util/deployment";
-
 import { normalizeConfig } from "./util/config";
 import { setNetwork, setNetworkFrom } from "./util/network";
 
 import {
+  createTruffleConfig,
   getTestFilePaths,
   save,
   setupTempFolders,
   tearDownTempFolders,
 } from "./util/fileSystem";
-import CLI from "./ui/CLI";
+
 import {getFunctionDescriptions} from "./graph/CFGUtils";
+
+import Messages from "./ui/Messages";
+import { SolidityMonitorCommandLineInterface } from "./ui/SolidityMonitorCommandLineInterface";
+
+import { ImportVisitor } from "./graph/ImportVisitor";
+import { LibraryVisitor } from "./graph/LibraryVisitor";
+
+import * as fs from "fs";
+import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -81,10 +88,7 @@ function loadLibrary(config) {
   // Local
   try {
     if (config.useGlobalTruffle || config.usePluginTruffle) throw null;
-
-    const lib = require("truffle");
-    getLogger().info("lib-local");
-    return lib;
+    return require("truffle");
   } catch (err) {}
 
   // Global
@@ -92,9 +96,7 @@ function loadLibrary(config) {
     if (config.usePluginTruffle) throw null;
 
     const globalTruffle = path.join(globalModules, "truffle");
-    const lib = require(globalTruffle);
-    getLogger().info("lib-global");
-    return lib;
+    return require(globalTruffle);
   } catch (err) {}
 }
 
@@ -107,19 +109,15 @@ export class SolidityLauncher {
    * @return {Promise}
    */
   public async run(config: TruffleConfig) {
+    await createTruffleConfig()
+
     let api, error, failures;
 
-    // Filesystem & Compiler Re-configuration
-    config = normalizeConfig(config);
-
-    // const tempContractsDir = path.join(config.workingDir, '.coverage_contracts')
-    // const tempArtifactsDir = path.join(config.workingDir, '.coverage_artifacts')
     const tempContractsDir = path.join(process.cwd(), ".syntest_coverage");
     const tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
 
     try {
-      const ui = new CLI(true);
-
+      // Filesystem & Compiler Re-configuration
       config = normalizeConfig(config);
 
       await guessCWD(config.workingDir);
@@ -133,9 +131,35 @@ export class SolidityLauncher {
       processConfig(myConfig, args);
       setupLogger();
 
+      const messages = new Messages();
+
+      if (Properties.user_interface === "regular") {
+        setUserInterface(
+          new SolidityCommandLineInterface(
+            Properties.console_log_level === "silent",
+            Properties.console_log_level === "verbose",
+            messages
+          )
+        );
+      } else if (Properties.user_interface === "monitor") {
+        setUserInterface(
+          new SolidityMonitorCommandLineInterface(
+            Properties.console_log_level === "silent",
+            Properties.console_log_level === "verbose",
+            messages
+          )
+        );
+      }
+
       config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
 
-      if (config.help) return ui.report("help"); // Exit if --help
+      getUserInterface().report("clear", []);
+      getUserInterface().report("asciiArt", ["Syntest"]);
+      getUserInterface().report("version", [
+        require("../package.json").version,
+      ]);
+
+      if (config.help) return getUserInterface().report("help", []); // Exit if --help
 
       const truffle = loadLibrary(config);
       api = new API(myConfig);
@@ -153,30 +177,37 @@ export class SolidityLauncher {
 
       setNetworkFrom(config, accounts);
 
-      // Version Info
-      ui.report("versions", [truffle.version, ganacheVersion, pkg.version]);
-
       // Exit if --version
       if (config.version) {
+        getUserInterface().report("versions", [
+          truffle.version,
+          ganacheVersion,
+          pkg.version,
+        ]); // Exit if --help
+
         // Finish
         await tearDownTempFolders(tempContractsDir, tempArtifactsDir);
 
         // Shut server down
         await api.finish();
-        getLogger().info(`Version: `);
-        process.exit(0);
+        return;
       }
 
-      ui.report("network", [
-        config.network,
-        config.networks[config.network].network_id,
-        config.networks[config.network].port,
+      getUserInterface().report("header", ["General info"]);
+
+      getUserInterface().report("property-set", [
+        "Network Info",
+        [
+          ["id", config.network],
+          ["port", config.networks[config.network].network_id],
+          ["network", config.networks[config.network].port],
+        ],
       ]);
+
+      getUserInterface().report("header", ["Targets"]);
 
       // Run post-launch server hook;
       await api.onServerReady(config);
-
-      await createMigrationsContract();
 
       const obj = await loadTargetFiles();
       const included = obj["included"];
@@ -188,17 +219,66 @@ export class SolidityLauncher {
 
         // Shut server down
         await api.finish();
-        getLogger().error(
+        getUserInterface().error(
           `No targets where selected! Try changing the 'include' parameter`
         );
         process.exit(1);
       }
 
+      getUserInterface().report(
+        "targets",
+        included.map((t) => t.relativePath)
+      );
+      getUserInterface().report(
+        "skip-files",
+        excluded.map((s) => s.relativePath)
+      );
+
+      getUserInterface().report("header", ["configuration"]);
+
+      getUserInterface().report("single-property", ["Seed", getSeed()]);
+      getUserInterface().report("property-set", [
+        "Budgets",
+        [
+          ["Iteration Budget", `${Properties.iteration_budget} iterations`],
+          ["Evaluation Budget", `${Properties.evaluation_budget} evaluations`],
+          ["Search Time Budget", `${Properties.search_time} seconds`],
+          ["Total Time Budget", `${Properties.total_time} seconds`],
+        ],
+      ]);
+      getUserInterface().report("property-set", [
+        "Algorithm",
+        [
+          ["Algorithm", Properties.algorithm],
+          ["Population Size", Properties.population_size],
+        ],
+      ]);
+      getUserInterface().report("property-set", [
+        "Variation Probabilities",
+        [
+          ["Resampling", Properties.resample_gene_probability],
+          ["Delta mutation", Properties.delta_mutation_probability],
+          [
+            "Re-sampling from chromosome",
+            Properties.sample_existing_value_probability,
+          ],
+          ["Crossover", Properties.crossover_probability],
+        ],
+      ]);
+
+      getUserInterface().report("property-set", [
+        "Sampling",
+        [
+          ["Max Depth", Properties.max_depth],
+          ["Explore Illegal Values", Properties.explore_illegal_values],
+          ["Sample Function Result as Argument", Properties.sample_func_as_arg],
+          ["Crossover", Properties.crossover_probability],
+        ],
+      ]);
+
       // Instrument
       const targets = api.instrument(included);
       const skipped = excluded;
-
-      ui.reportSkipped(config, skipped);
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir);
       await save(targets, config.contracts_directory, tempContractsDir);
@@ -221,6 +301,8 @@ export class SolidityLauncher {
       await api.onCompileComplete(config);
 
       const finalArchive = new Archive<TestCase>();
+      let finalImportsMap: Map<string, string> = new Map();
+      let finalDependencies: Map<string, string[]> = new Map();
 
       for (const target of targets) {
         const {archive, contracts} = await testFile(
@@ -234,19 +316,35 @@ export class SolidityLauncher {
         finalArchive.merge(archive)
 
         target.contracts = contracts
-      }
 
-      await createMigrationsDir();
-      await generateInitialMigration();
-      await generateDeployContracts(
-        targets,
-        excluded.map((e) => path.basename(e.relativePath).split(".")[0])
-      );
+
+        // TODO: check if we can prevent recalculating the dependencies
+        const ast = SolidityParser.parse(target.actualSource, {
+          loc: true,
+          range: true,
+        });
+        const { importsMap, dependencyMap } = getImportDependencies(
+          ast,
+          target
+        );
+        finalImportsMap = new Map([
+          ...Array.from(finalImportsMap.entries()),
+          ...Array.from(importsMap.entries()),
+        ]);
+        finalDependencies = new Map([
+          ...Array.from(finalDependencies.entries()),
+          ...Array.from(dependencyMap.entries()),
+        ]);
+      }
 
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
-      const stringifier = new SolidityTruffleStringifier();
+      const stringifier = new SolidityTruffleStringifier(
+        finalImportsMap,
+        finalDependencies
+      );
+
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
         api,
@@ -257,20 +355,25 @@ export class SolidityLauncher {
       await suiteBuilder.createSuite(finalArchive);
 
       await deleteTempDirectories();
-      // await removeMigrationsDir();
-      // TODO instead of removing -> move final migration dir to syntest folder
 
       config.test_files = await getTestFilePaths({
         testDir: path.resolve(Properties.final_suite_directory),
       });
 
       // Run tests
+      // by replacing the console.log global function we disable the output of the truffle test results
+      const old = console.log;
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      console.log = function () {};
       try {
-        failures = await truffle.test.run(config);
+        await truffle.test.run(config);
       } catch (e) {
         error = e.stack;
       }
+      console.log = old;
       await api.onTestsComplete(config);
+
+      getUserInterface().report("header", ["search results"]);
 
       // Run Istanbul
       await api.report();
@@ -375,124 +478,196 @@ async function testContract(
   cfg: CFG,
   contractName: string
 ) {
-  await createMigrationsDir();
-  await generateInitialMigration();
-  await generateDeployContracts(
-    [{
-      ...target,
-      contracts: [contractName]
-    }],
-    excluded.map((e) => path.basename(e.relativePath).split(".")[0])
-  );
+  try {
+    await createDirectoryStructure();
+    await createTempDirectoryStructure();
 
-  await createTempDirectoryStructure();
+    getUserInterface().report("header", [
+      `Searching: "${target.relativePath}"`,
+    ]);
 
-  getLogger().info(`Testing target: ${target.relativePath} -> ${contractName}`);
+    const ast = SolidityParser.parse(target.actualSource, {
+      loc: true,
+      range: true,
+    });
 
-  const functionDescriptions = getFunctionDescriptions(cfg, contractName)
+    const functionDescriptions = getFunctionDescriptions(cfg, contractName)
 
-  // TODO nested targets wont work (i.e. deeper folders)
-  const currentSubject = new SoliditySubject(target.relativePath, contractName, cfg, functionDescriptions);
+    drawGraph(cfg, path.join(Properties.cfg_directory, `${contractName}.svg`));
 
-  const stringifier = new SolidityTruffleStringifier();
-  const suiteBuilder = new SoliditySuiteBuilder(
-    stringifier,
-    api,
-    truffle,
-    config
-  );
+    const currentSubject = new SoliditySubject(target.relativePath, contractName, cfg, functionDescriptions);
 
-  const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
+    const { importsMap, dependencyMap } = getImportDependencies(ast, target);
 
-  const sampler = new SolidityRandomSampler(currentSubject);
-  const algorithm = createAlgorithmFromConfig(sampler, runner);
+    const stringifier = new SolidityTruffleStringifier(
+      importsMap,
+      dependencyMap
+    );
+    const suiteBuilder = new SoliditySuiteBuilder(
+      stringifier,
+      api,
+      truffle,
+      config
+    );
 
-  await suiteBuilder.clearDirectory(Properties.temp_test_directory);
+    const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
 
-  // allocate budget manager
-  const iterationBudget = new IterationBudget(Properties.iteration_budget);
-  const evaluationBudget = new EvaluationBudget();
-  const searchBudget = new SearchTimeBudget(Properties.search_time);
-  const totalTimeBudget = new TotalTimeBudget(Properties.total_time);
-  const budgetManager = new BudgetManager();
-  budgetManager.addBudget(iterationBudget);
-  budgetManager.addBudget(evaluationBudget);
-  budgetManager.addBudget(searchBudget);
-  budgetManager.addBudget(totalTimeBudget);
+    const sampler = new SolidityRandomSampler(currentSubject);
+    const algorithm = createAlgorithmFromConfig(sampler, runner);
 
-  // This searches for a covering population
-  const archive = await algorithm.search(currentSubject, budgetManager);
+    await suiteBuilder.clearDirectory(Properties.temp_test_directory);
 
-  const collector = new StatisticsCollector(totalTimeBudget);
-  collector.recordVariable(RuntimeVariable.VERSION, 1);
-  collector.recordVariable(
-    RuntimeVariable.CONFIGURATION,
-    Properties.configuration
-  );
-  collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
-  collector.recordVariable(
-    RuntimeVariable.PROBE_ENABLED,
-    Properties.probe_objective
-  );
-  collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
-  collector.recordVariable(
-    RuntimeVariable.TOTAL_OBJECTIVES,
-    currentSubject.getObjectives().length
-  );
+    // allocate budget manager
+    const iterationBudget = new IterationBudget(Properties.iteration_budget);
+    const evaluationBudget = new EvaluationBudget();
+    const searchBudget = new SearchTimeBudget(Properties.search_time);
+    const totalTimeBudget = new TotalTimeBudget(Properties.total_time);
+    const budgetManager = new BudgetManager();
+    budgetManager.addBudget(iterationBudget);
+    budgetManager.addBudget(evaluationBudget);
+    budgetManager.addBudget(searchBudget);
+    budgetManager.addBudget(totalTimeBudget);
 
-  collector.recordVariable(
-    RuntimeVariable.COVERED_OBJECTIVES,
-    archive.getObjectives().length
-  );
+    // Termination
+    const terminationManager = configureTermination();
 
-  collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
-  collector.recordVariable(
-    RuntimeVariable.SEARCH_TIME,
-    searchBudget.getCurrentBudget()
-  );
-
-  collector.recordVariable(
-    RuntimeVariable.TOTAL_TIME,
-    totalTimeBudget.getCurrentBudget()
-  );
-
-  collector.recordVariable(
-    RuntimeVariable.ITERATIONS,
-    iterationBudget.getCurrentBudget()
-  );
-
-  collector.recordVariable(
-    RuntimeVariable.EVALUATIONS,
-    evaluationBudget.getCurrentBudget()
-  );
-
-  collectCoverageData(collector, archive, "branch");
-  collectCoverageData(collector, archive, "statement");
-  collectCoverageData(collector, archive, "function");
-  collectCoverageData(collector, archive, "probe");
-
-  const numOfExceptions = archive
-    .getObjectives()
-    .filter((objective) => objective instanceof ExceptionObjectiveFunction)
-    .length;
-  collector.recordVariable(RuntimeVariable.COVERED_EXCEPTIONS, numOfExceptions);
-
-  collector.recordVariable(
-    RuntimeVariable.COVERAGE,
-    (archive.getObjectives().length - numOfExceptions) /
+    // Collector
+    const collector = new StatisticsCollector(totalTimeBudget);
+    collector.recordVariable(RuntimeVariable.VERSION, 1);
+    collector.recordVariable(
+      RuntimeVariable.CONFIGURATION,
+      Properties.configuration
+    );
+    collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
+    collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
+    collector.recordVariable(
+      RuntimeVariable.PROBE_ENABLED,
+      Properties.probe_objective
+    );
+    collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
+    collector.recordVariable(
+      RuntimeVariable.TOTAL_OBJECTIVES,
       currentSubject.getObjectives().length
-  );
+    );
 
-  const statisticFile = path.resolve(Properties.statistics_directory);
+    // Statistics listener
+    const statisticsSearchListener = new StatisticsSearchListener(collector);
+    algorithm.addListener(statisticsSearchListener);
 
-  const writer = new SummaryWriter();
-  writer.write(collector, statisticFile + "/statistics.csv");
+    // This searches for a covering population
+    const archive = await algorithm.search(
+      currentSubject,
+      budgetManager,
+      terminationManager
+    );
 
-  await deleteTempDirectories();
+    // Gather statistics after the search
+    collector.recordVariable(
+      RuntimeVariable.COVERED_OBJECTIVES,
+      archive.getObjectives().length
+    );
+    collector.recordVariable(
+      RuntimeVariable.SEARCH_TIME,
+      searchBudget.getUsedBudget()
+    );
+    collector.recordVariable(
+      RuntimeVariable.TOTAL_TIME,
+      totalTimeBudget.getUsedBudget()
+    );
+    collector.recordVariable(
+      RuntimeVariable.ITERATIONS,
+      iterationBudget.getUsedBudget()
+    );
+    collector.recordVariable(
+      RuntimeVariable.EVALUATIONS,
+      evaluationBudget.getUsedBudget()
+    );
 
-  await removeMigrationsDir();
+    collectCoverageData(collector, archive, "branch");
+    collectCoverageData(collector, archive, "statement");
+    collectCoverageData(collector, archive, "function");
+    collectCoverageData(collector, archive, "probe");
 
-  return archive;
+    const numOfExceptions = archive
+      .getObjectives()
+      .filter((objective) => objective instanceof ExceptionObjectiveFunction)
+      .length;
+    collector.recordVariable(
+      RuntimeVariable.COVERED_EXCEPTIONS,
+      numOfExceptions
+    );
+
+    collector.recordVariable(
+      RuntimeVariable.COVERAGE,
+      (archive.getObjectives().length - numOfExceptions) /
+        currentSubject.getObjectives().length
+    );
+
+    const statisticsDirectory = path.resolve(Properties.statistics_directory);
+
+    const summaryWriter = new SummaryWriter();
+    summaryWriter.write(collector, statisticsDirectory + "/statistics.csv");
+
+    const coverageWriter = new CoverageWriter();
+    coverageWriter.write(collector, statisticsDirectory + "/coverage.csv");
+
+    await deleteTempDirectories();
+
+    return archive;
+  } catch (e) {
+    if (e instanceof SolidityParser.ParserError) {
+      console.error(e.errors);
+    }
+    throw e;
+  }
+}
+
+function getImportDependencies(ast: any, target: any) {
+  const contractName = target.instrumented.contractName;
+
+  // Import the contract under test
+  const importsMap = new Map<string, string>();
+  importsMap.set(contractName, contractName);
+
+  // Find all external imports in the contract under test
+  const importVisitor = new ImportVisitor();
+  SolidityParser.visit(ast, importVisitor);
+
+  // For each external import scan the file for libraries with public and external functions
+  const libraries: string[] = [];
+  importVisitor.imports.forEach((importPath: string) => {
+    // Full path to the imported file
+    const pathLib = path.join(path.dirname(target.canonicalPath), importPath);
+
+    // Read the imported file
+    // TODO: use the already parsed excluded information to prevent duplicate file reading
+    const source = fs.readFileSync(pathLib).toString();
+
+    // Parse the imported file
+    const astLib = SolidityParser.parse(source, {
+      loc: true,
+      range: true,
+    });
+
+    // Scan for libraries with public or external functions
+    const libraryVisitor = new LibraryVisitor();
+    SolidityParser.visit(astLib, libraryVisitor);
+
+    // Import the external file in the test
+    importsMap.set(
+      path.basename(importPath).split(".")[0],
+      path.basename(importPath).split(".")[0]
+    );
+
+    // Import the found libraries
+    // TODO: check for duplicates in libraries
+    libraries.push(...libraryVisitor.libraries);
+  });
+
+  // Return the library dependency information
+  const dependencyMap = new Map<string, string[]>();
+  dependencyMap.set(contractName, libraries);
+  return { importsMap, dependencyMap };
 }
 
 function collectCoverageData(
