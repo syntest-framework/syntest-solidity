@@ -60,8 +60,8 @@ import Messages from "./ui/Messages";
 import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 import { SolidityMonitorCommandLineInterface } from "./ui/SolidityMonitorCommandLineInterface";
 
-import { ImportVisitor } from "./graph/ImportVisitor";
-import { LibraryVisitor } from "./graph/LibraryVisitor";
+import { ImportVisitor } from "./analysis/static/dependency/ImportVisitor";
+import { LibraryVisitor } from "./analysis/static/dependency/LibraryVisitor";
 
 import * as fs from "fs";
 
@@ -69,6 +69,12 @@ import { ConstantPool } from "./seeding/constant/ConstantPool";
 import { ConstantVisitor } from "./seeding/constant/ConstantVisitor";
 import { SolidityTestCase } from "./testcase/SolidityTestCase";
 import { SolidityTreeCrossover } from "./search/operators/crossover/SolidityTreeCrossover";
+
+import { Target } from "./analysis/static/Target";
+import { TargetPool } from "./analysis/static/TargetPool";
+import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
+import { ASTGenerator } from "./analysis/static/ast/ASTGenerator";
+import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -305,6 +311,17 @@ export class SolidityLauncher {
       const finalArchive = new Archive<SolidityTestCase>();
       let finalImportsMap: Map<string, string> = new Map();
       let finalDependencies: Map<string, string[]> = new Map();
+
+      const sourceGenerator = new SourceGenerator();
+      const astGenerator = new ASTGenerator();
+      const targetMapGenerator = new TargetMapGenerator();
+      const cfgGenerator = new SolidityCFGFactory();
+      const targetPool = new TargetPool(
+        sourceGenerator,
+        astGenerator,
+        targetMapGenerator,
+        cfgGenerator
+      );
 
       for (const target of targets) {
         const archive = await testTarget(
@@ -576,7 +593,7 @@ function getImportDependencies(ast: any, target: any) {
 
   // For each external import scan the file for libraries with public and external functions
   const libraries: string[] = [];
-  importVisitor.imports.forEach((importPath: string) => {
+  importVisitor.getImports().forEach((importPath: string) => {
     // Full path to the imported file
     const pathLib = path.join(path.dirname(target.canonicalPath), importPath);
 

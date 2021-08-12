@@ -1,4 +1,4 @@
-import { SolidityVisitor } from "../../graph/SolidityVisitor";
+import { SolidityVisitor } from "../../analysis/static/SolidityVisitor";
 import {
   PragmaDirective,
   ImportDirective,
