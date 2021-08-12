@@ -141,7 +141,8 @@ export class DependencyAnalyzer {
   ): Graph<string> {
     const linkingGraph = new Graph<string>();
 
-    if (targetContext.getLocation(targetName) == null) return;
+    if (targetContext.getLocation(targetName) == null)
+      throw new Error(`Target ${targetName} not found`);
 
     const queue: { targetPath: string; targetNames: string[] }[] = [];
     queue.push({
