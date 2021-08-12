@@ -48,7 +48,7 @@ export class DependencyAnalyzer {
       imports
         .map((foundImportPath) => {
           // Resolve relative path
-          return path.resolve(filePath, foundImportPath);
+          return path.resolve(path.dirname(filePath), foundImportPath);
         })
         .forEach((foundAbsoluteImportPath) => {
           if (!queue.includes(foundAbsoluteImportPath))
