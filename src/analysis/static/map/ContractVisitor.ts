@@ -149,9 +149,15 @@ export class ContractVisitor implements SolidityVisitor {
       returnParameters: returnParameters,
     };
 
-    const functionSignature = `${name}(${parameters.join(
-      ","
-    )}):${returnParameters.join(",")}`;
+    const functionSignature = `${name}(${parameters
+      .map((param) => {
+        return param.type;
+      })
+      .join(",")}):${returnParameters
+      .map((param) => {
+        return param.type;
+      })
+      .join(",")}`;
 
     if (!this._functions.has(this._current.name))
       this._functions.set(
