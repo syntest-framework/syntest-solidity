@@ -64,6 +64,11 @@ import { LibraryVisitor } from "./analysis/static/dependency/LibraryVisitor";
 
 import * as fs from "fs";
 import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
+import { Target } from "./analysis/static/Target";
+import { TargetPool } from "./analysis/static/TargetPool";
+import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
+import { ASTGenerator } from "./analysis/static/ast/ASTGenerator";
+import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -300,6 +305,17 @@ export class SolidityLauncher {
       const finalArchive = new Archive<TestCase>();
       let finalImportsMap: Map<string, string> = new Map();
       let finalDependencies: Map<string, string[]> = new Map();
+
+      const sourceGenerator = new SourceGenerator();
+      const astGenerator = new ASTGenerator();
+      const targetMapGenerator = new TargetMapGenerator();
+      const cfgGenerator = new SolidityCFGFactory();
+      const targetPool = new TargetPool(
+        sourceGenerator,
+        astGenerator,
+        targetMapGenerator,
+        cfgGenerator
+      );
 
       for (const target of targets) {
         const archive = await testTarget(
