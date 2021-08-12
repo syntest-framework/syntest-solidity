@@ -36,7 +36,7 @@ export class SolidityRunner extends TestCaseRunner {
     await this.suiteBuilder.writeTestCase(
       testPath,
       testCase,
-      (testCase.root as ConstructorCall).constructorName,
+      (testCase.root as ConstructorCall).constructorName
     );
 
     this.config.test_files = await getTestFilePaths(this.config);
@@ -45,9 +45,9 @@ export class SolidityRunner extends TestCaseRunner {
     this.api.resetInstrumentationData();
 
     // By replacing the global log function we disable the output of the truffle test framework
-    const old = console.log
+    const old = console.log;
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    console.log = () => {}
+    console.log = () => {};
 
     // Run tests
     try {
@@ -57,7 +57,7 @@ export class SolidityRunner extends TestCaseRunner {
       getLogger().error(e);
       console.trace(e);
     }
-    console.log = old
+    console.log = old;
 
     // Retrieve execution information from the Mocha runner
     const mochaRunner: Runner = this.truffle.test.mochaRunner;

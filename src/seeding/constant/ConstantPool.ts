@@ -12,8 +12,7 @@ export class ConstantPool {
   protected numberPool = new Set<number>();
   protected stringPool = new Set<string>();
 
-  private constructor() {
-  }
+  private constructor() {}
 
   /**
    * The static method that controls the access to the singleton instance.

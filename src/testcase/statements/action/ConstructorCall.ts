@@ -74,7 +74,10 @@ export class ConstructorCall extends ActionStatement {
     return this;
   }
 
-  protected addMethodCall(depth: number, sampler: EncodingSampler<SolidityTestCase>) {
+  protected addMethodCall(
+    depth: number,
+    sampler: EncodingSampler<SolidityTestCase>
+  ) {
     let count = 0;
     while (prng.nextDouble(0, 1) <= Math.pow(0.5, count) && count < 10) {
       const index = prng.nextInt(0, this._calls.length);
@@ -82,8 +85,11 @@ export class ConstructorCall extends ActionStatement {
       // get a random test case and we extract one of its method call
       // ugly solution for now. But we have to fix with proper refactoring
       const randomTest: SolidityTestCase = sampler.sample();
-      this._calls.splice(index, 0,
-        (randomTest.root as ConstructorCall).getMethodCalls()[0]);
+      this._calls.splice(
+        index,
+        0,
+        (randomTest.root as ConstructorCall).getMethodCalls()[0]
+      );
       count++;
     }
   }

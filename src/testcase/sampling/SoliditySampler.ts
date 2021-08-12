@@ -1,8 +1,4 @@
-import {
-  TestCaseSampler,
-  Statement,
-  SearchSubject,
-} from "syntest-framework";
+import { TestCaseSampler, Statement, SearchSubject } from "syntest-framework";
 import { ConstantPool } from "../../seeding/constant/ConstantPool";
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
@@ -18,7 +14,10 @@ export abstract class SoliditySampler extends TestCaseSampler {
 
   protected pool: ConstantPool;
 
-  protected constructor(subject: SearchSubject<SolidityTestCase>, pool: ConstantPool) {
+  protected constructor(
+    subject: SearchSubject<SolidityTestCase>,
+    pool: ConstantPool
+  ) {
     super(subject);
     this.pool = pool;
   }

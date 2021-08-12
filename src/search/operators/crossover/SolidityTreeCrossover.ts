@@ -2,7 +2,7 @@ import {
   prng,
   Statement,
   AbstractTreeCrossover,
-  Properties
+  Properties,
 } from "syntest-framework";
 import { SolidityTestCase } from "../../../testcase/SolidityTestCase";
 import { ConstructorCall } from "../../../testcase/statements/action/ConstructorCall";
@@ -21,8 +21,7 @@ import { NumericStatement } from "../../../testcase/statements/primitive/Numeric
  * @author Annibale Panichella
  * @author Dimitri Stallenberg
  */
-export class SolidityTreeCrossover implements AbstractTreeCrossover{
-
+export class SolidityTreeCrossover implements AbstractTreeCrossover {
   public crossOver(
     parentA: SolidityTestCase,
     parentB: SolidityTestCase
@@ -32,7 +31,11 @@ export class SolidityTreeCrossover implements AbstractTreeCrossover{
 
     let queueA: any = [];
 
-    for (let i = 0; i < (rootA as ConstructorCall).getMethodCalls().length; i++) {
+    for (
+      let i = 0;
+      i < (rootA as ConstructorCall).getMethodCalls().length;
+      i++
+    ) {
       queueA.push({
         parent: rootA,
         childIndex: i,
@@ -79,7 +82,10 @@ export class SolidityTreeCrossover implements AbstractTreeCrossover{
 
     rootA.args = [...parentA.root.args];
     rootB.args = [...parentB.root.args];
-    return [new SolidityTestCase(rootA as ConstructorCall), new SolidityTestCase(rootB as ConstructorCall)];
+    return [
+      new SolidityTestCase(rootA as ConstructorCall),
+      new SolidityTestCase(rootB as ConstructorCall),
+    ];
   }
 
   /**
@@ -118,7 +124,8 @@ export class SolidityTreeCrossover implements AbstractTreeCrossover{
       if (wanted.type === pair.child.type) {
         if (wanted instanceof NumericStatement) {
           if (
-            wanted.upper_bound == (pair.child as NumericStatement).upper_bound &&
+            wanted.upper_bound ==
+              (pair.child as NumericStatement).upper_bound &&
             wanted.lower_bound == (pair.child as NumericStatement).lower_bound
           ) {
             similar.push(pair);
@@ -132,5 +139,3 @@ export class SolidityTreeCrossover implements AbstractTreeCrossover{
     return similar;
   }
 }
-
-

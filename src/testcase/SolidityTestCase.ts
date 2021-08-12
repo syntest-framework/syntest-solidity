@@ -1,6 +1,14 @@
-import { AbstractTestCase, prng, TestCaseDecoder, Encoding, ExecutionResult, ObjectiveFunction, EncodingSampler, getUserInterface  } from "syntest-framework";
+import {
+  AbstractTestCase,
+  prng,
+  TestCaseDecoder,
+  Encoding,
+  ExecutionResult,
+  ObjectiveFunction,
+  EncodingSampler,
+  getUserInterface,
+} from "syntest-framework";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
-
 
 /**
  * SolidityTestCase class
@@ -32,7 +40,9 @@ export class SolidityTestCase extends AbstractTestCase {
 
   mutate(sampler: EncodingSampler<SolidityTestCase>) {
     getUserInterface().debug(`Mutating test case: ${this._id}`);
-    return new SolidityTestCase((this._root as ConstructorCall).mutate(sampler, 0));
+    return new SolidityTestCase(
+      (this._root as ConstructorCall).mutate(sampler, 0)
+    );
   }
 
   hashCode(decoder: TestCaseDecoder): number {

@@ -166,11 +166,9 @@ export class StringStatement extends PrimitiveStatement<string> {
     alphabet = Properties.string_alphabet,
     maxlength = Properties.string_maxlength
   ): StringStatement {
-
-    if (prng.nextDouble(0, 1) <= Properties.constant_pool_probability){
+    if (prng.nextDouble(0, 1) <= Properties.constant_pool_probability) {
       const value = ConstantPool.getInstance().getString();
-      if (value != null)
-        return StringStatement.createWithValue(value);
+      if (value != null) return StringStatement.createWithValue(value);
     }
 
     const valueLength = prng.nextInt(0, maxlength - 1);
@@ -189,7 +187,7 @@ export class StringStatement extends PrimitiveStatement<string> {
     );
   }
 
-  static createWithValue(value: string): StringStatement{
+  static createWithValue(value: string): StringStatement {
     return new StringStatement(
       "string",
       prng.uniqueId(),

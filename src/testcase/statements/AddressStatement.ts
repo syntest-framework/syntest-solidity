@@ -25,7 +25,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
       );
     }
 
-    if (this.value.startsWith("0x")){
+    if (this.value.startsWith("0x")) {
       return <AddressStatement>(
         sampler.sampleStatement(depth, this.type, "primitive")
       );
@@ -48,20 +48,25 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   copy(): AddressStatement {
-    return new AddressStatement(this.type, prng.uniqueId(), this.value, this._account);
+    return new AddressStatement(
+      this.type,
+      prng.uniqueId(),
+      this.value,
+      this._account
+    );
   }
 
   static getRandom(type = "address") {
     let account = -1;
-    if (prng.nextDouble(0, 1) <= Properties.constant_pool_probability){
+    if (prng.nextDouble(0, 1) <= Properties.constant_pool_probability) {
       const value = ConstantPool.getInstance().getAddress();
-      if (value != null){
+      if (value != null) {
         return new AddressStatement(type, prng.uniqueId(), value, account);
       }
     }
 
     account = prng.nextInt(-1, 5);
-    if (account < 0){
+    if (account < 0) {
       const value = "0x".concat(account.toString(16).padStart(40, "0"));
       return new AddressStatement(type, prng.uniqueId(), value, account);
     }

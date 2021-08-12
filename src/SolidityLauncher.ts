@@ -37,7 +37,7 @@ import {
   TargetFile,
   setUserInterface,
   getUserInterface,
-  AbstractTestCase
+  AbstractTestCase,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -112,7 +112,7 @@ export class SolidityLauncher {
    * @return {Promise}
    */
   public async run(config: TruffleConfig) {
-    await createTruffleConfig()
+    await createTruffleConfig();
 
     let api, error, failures;
 
@@ -249,7 +249,10 @@ export class SolidityLauncher {
         );
 
         for (const key of archive.getObjectives()) {
-          finalArchive.update(key, archive.getEncoding(key) as SolidityTestCase);
+          finalArchive.update(
+            key,
+            archive.getEncoding(key) as SolidityTestCase
+          );
         }
 
         // TODO: check if we can prevent recalculating the dependencies

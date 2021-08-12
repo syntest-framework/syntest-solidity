@@ -24,7 +24,6 @@ import { StringStatement } from "../statements/primitive/StringStatement";
  * @author Dimitri Stallenberg
  */
 export class SolidityRandomSampler extends SoliditySampler {
-
   /**
    * Constructor
    */
@@ -171,10 +170,9 @@ export class SolidityRandomSampler extends SoliditySampler {
       } else if (type === "address") {
         return AddressStatement.getRandom();
       } else if (type === "string") {
-        if (prng.nextDouble(0, 1) <= this.POOL_PROB){
+        if (prng.nextDouble(0, 1) <= this.POOL_PROB) {
           const value = this.pool.getString();
-          if (value == null)
-            return StringStatement.getRandom();
+          if (value == null) return StringStatement.getRandom();
 
           return StringStatement.createWithValue(this.pool.getString());
         }

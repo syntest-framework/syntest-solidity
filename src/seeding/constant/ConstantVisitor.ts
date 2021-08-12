@@ -50,7 +50,7 @@ export class ConstantVisitor implements SolidityVisitor {
   }
 
   StringLiteral(node: StringLiteral): void {
-    if(this._isAddress(node.value)) {
+    if (this._isAddress(node.value)) {
       this.pool.addAddress(node.value);
       return;
     }
@@ -59,7 +59,7 @@ export class ConstantVisitor implements SolidityVisitor {
   }
 
   NumberLiteral(node: NumberLiteral): void {
-    if(this._isAddress(node.number)) {
+    if (this._isAddress(node.number)) {
       this.pool.addAddress(node.number);
       return;
     }
@@ -89,11 +89,9 @@ export class ConstantVisitor implements SolidityVisitor {
   }
 
   protected _isAddress(value: string): boolean {
-    if (value === "0x0")
-      return true;
+    if (value === "0x0") return true;
 
-    if (value.startsWith("0x") && value.length == 42)
-      return true;
+    if (value.startsWith("0x") && value.length == 42) return true;
 
     return false;
   }
