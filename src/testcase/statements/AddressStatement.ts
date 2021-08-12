@@ -40,7 +40,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   copy(): AddressStatement {
-    return new AddressStatement(this.type, this.id, this.value, this._account);
+    return new AddressStatement(this.type, prng.uniqueId(), this.value, this._account);
   }
 
   static getRandom(type = "address") {

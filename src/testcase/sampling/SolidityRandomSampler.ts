@@ -1,20 +1,22 @@
 import {
-  BoolStatement,
-  ConstructorCall,
   Properties,
-  NumericStatement,
-  ObjectFunctionCall,
   ActionStatement,
+  AbstractTestCase,
   prng,
   Statement,
-  StringStatement,
-  TestCase,
 } from "syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/AddressStatement";
 import BigNumber from "bignumber.js";
 import { ByteStatement } from "../statements/ByteStatement";
 import { SoliditySubject } from "../../search/SoliditySubject";
+import { ConstantPool } from "../../seeding/constant/ConstantPool";
+import { SolidityTestCase } from "../SolidityTestCase";
+import { ConstructorCall } from "../statements/action/ConstructorCall";
+import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
+import { NumericStatement } from "../statements/primitive/NumericStatement";
+import { BoolStatement } from "../statements/primitive/BoolStatement";
+import { StringStatement } from "../statements/primitive/StringStatement";
 
 /**
  * SolidityRandomSampler class
@@ -22,14 +24,15 @@ import { SoliditySubject } from "../../search/SoliditySubject";
  * @author Dimitri Stallenberg
  */
 export class SolidityRandomSampler extends SoliditySampler {
+
   /**
    * Constructor
    */
-  constructor(subject: SoliditySubject<TestCase>) {
-    super(subject);
+  constructor(subject: SoliditySubject<AbstractTestCase>, pool: ConstantPool) {
+    super(subject, pool);
   }
 
-  sample(): TestCase {
+  sample(): SolidityTestCase {
     const root = this.sampleConstructor(0);
 
     const nCalls = prng.nextInt(1, 5);
@@ -37,7 +40,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       const call = this.sampleMethodCall(root);
       root.setMethodCall(index, call as ActionStatement);
     }
-    return new TestCase(root);
+    return new SolidityTestCase(root);
   }
 
   sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
@@ -168,6 +171,13 @@ export class SolidityRandomSampler extends SoliditySampler {
       } else if (type === "address") {
         return AddressStatement.getRandom();
       } else if (type === "string") {
+        if (prng.nextDouble(0, 1) <= this.POOL_PROB){
+          const value = this.pool.getString();
+          if (value == null)
+            return StringStatement.getRandom();
+
+          return StringStatement.createWithValue(this.pool.getString());
+        }
         return StringStatement.getRandom();
       } else if (type.includes("string")) {
         return StringStatement.getRandom();

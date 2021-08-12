@@ -30,7 +30,7 @@ export class ConstantPool {
     this.stringPool.add(value);
   }
 
-  getString(): number {
+  getString(): string {
     return prng.pickOne(Array.from(this.stringPool));
   }
 }

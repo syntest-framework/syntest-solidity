@@ -32,12 +32,12 @@ import {
   StatisticsCollector,
   StatisticsSearchListener,
   SummaryWriter,
-  TestCase,
   TotalTimeBudget,
   loadTargetFiles,
   TargetFile,
   setUserInterface,
   getUserInterface,
+  AbstractTestCase
 } from "syntest-framework";
 
 import * as path from "path";
@@ -61,6 +61,10 @@ import { LibraryVisitor } from "./graph/LibraryVisitor";
 
 import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 import * as fs from "fs";
+import { ConstantPool } from "./seeding/constant/ConstantPool";
+import { ConstantVisitor } from "./seeding/constant/ConstantVisitor";
+import { SolidityTestCase } from "./testcase/SolidityTestCase";
+import { SolidityTreeCrossover } from "./search/operators/crossover/SolidityTreeCrossover";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -231,7 +235,7 @@ export class SolidityLauncher {
       await truffle.contracts.compile(config);
       await api.onCompileComplete(config);
 
-      const finalArchive = new Archive<TestCase>();
+      const finalArchive = new Archive<SolidityTestCase>();
       let finalImportsMap: Map<string, string> = new Map();
       let finalDependencies: Map<string, string[]> = new Map();
 
@@ -245,7 +249,7 @@ export class SolidityLauncher {
         );
 
         for (const key of archive.getObjectives()) {
-          finalArchive.update(key, archive.getEncoding(key));
+          finalArchive.update(key, archive.getEncoding(key) as SolidityTestCase);
         }
 
         // TODO: check if we can prevent recalculating the dependencies
@@ -282,7 +286,7 @@ export class SolidityLauncher {
         config
       );
 
-      await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
+      await suiteBuilder.createSuite(finalArchive as Archive<SolidityTestCase>);
 
       await deleteTempDirectories();
 
@@ -359,8 +363,15 @@ async function testTarget(
 
     const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
 
-    const sampler = new SolidityRandomSampler(currentSubject);
-    const algorithm = createAlgorithmFromConfig(sampler, runner);
+    // Parse the contract for extracting constant
+    const pool = new ConstantPool();
+    const constantVisitor = new ConstantVisitor(pool);
+    SolidityParser.visit(ast, constantVisitor);
+
+    const sampler = new SolidityRandomSampler(currentSubject, pool);
+
+    const crossover = new SolidityTreeCrossover();
+    const algorithm = createAlgorithmFromConfig(sampler, runner, crossover);
 
     await suiteBuilder.clearDirectory(Properties.temp_test_directory);
 

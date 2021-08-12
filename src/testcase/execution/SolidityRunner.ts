@@ -3,7 +3,6 @@ import {
   getLogger,
   Properties,
   SuiteBuilder,
-  TestCase,
   TestCaseRunner,
 } from "syntest-framework";
 import * as path from "path";
@@ -14,6 +13,8 @@ import {
 import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { getTestFilePaths } from "../../util/fileSystem";
+import { SolidityTestCase } from "../SolidityTestCase";
+import { ConstructorCall } from "../statements/action/ConstructorCall";
 
 export class SolidityRunner extends TestCaseRunner {
   protected api: any;
@@ -28,14 +29,14 @@ export class SolidityRunner extends TestCaseRunner {
   }
 
   async execute(
-    subject: SoliditySubject<TestCase>,
-    testCase: TestCase
+    subject: SoliditySubject<SolidityTestCase>,
+    testCase: SolidityTestCase
   ): Promise<ExecutionResult> {
     const testPath = path.join(Properties.temp_test_directory, "tempTest.js");
     await this.suiteBuilder.writeTestCase(
       testPath,
       testCase,
-      testCase.root.constructorName,
+      (testCase.root as ConstructorCall).constructorName,
     );
 
     this.config.test_files = await getTestFilePaths(this.config);

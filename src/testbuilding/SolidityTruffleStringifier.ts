@@ -1,17 +1,17 @@
 import {
-  ConstructorCall,
   Properties,
-  ObjectFunctionCall,
   PrimitiveStatement,
   Statement,
-  StringStatement,
   TestCaseDecoder,
-  TestCase,
 } from "syntest-framework";
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
 import { AddressStatement } from "../testcase/statements/AddressStatement";
+import { ConstructorCall } from "../testcase/statements/action/ConstructorCall";
+import { StringStatement } from "../testcase/statements/primitive/StringStatement";
+import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunctionCall";
+import { SolidityTestCase } from "../testcase/SolidityTestCase";
 
 /**
  * @author Dimitri Stallenberg
@@ -152,7 +152,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     )}");`;
   }
 
-  convertToStatementStack(ind: TestCase): Statement[] {
+  convertToStatementStack(ind: SolidityTestCase): Statement[] {
     const stack: Statement[] = [];
     const queue: Statement[] = [ind.root];
     while (queue.length) {
@@ -211,8 +211,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   }
 
   generateAssertions(
-    ind: TestCase,
-    additionalAssertions?: Map<TestCase, { [p: string]: string }>
+    ind: SolidityTestCase,
+    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
   ): string[] {
     const assertions: string[] = [];
     if (additionalAssertions && additionalAssertions.has(ind)) {
@@ -247,12 +247,12 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   }
 
   decodeTestCase(
-    testCase: TestCase | TestCase[],
+    testCase: SolidityTestCase | SolidityTestCase[],
     targetName: string,
     addLogs?: boolean,
-    additionalAssertions?: Map<TestCase, { [p: string]: string }>
+    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
   ): string {
-    if (testCase instanceof TestCase) {
+    if (testCase instanceof SolidityTestCase) {
       testCase = [testCase];
     }
 
