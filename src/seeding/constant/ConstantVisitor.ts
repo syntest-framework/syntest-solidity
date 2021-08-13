@@ -41,54 +41,7 @@ export class ConstantVisitor implements SolidityVisitor {
     return this.pool;
   }
 
-  ImportDirective(node: ImportDirective): void {
-    this.pool.addString(node.path);
-    node.symbolAliases.forEach((symbolAlias) => {
-      symbolAlias.forEach((alias) => {
-        this.pool.addString(alias);
-      });
-    });
-    this.pool.addString(node.unitAlias);
-  }
-
-  PragmaDirective(node: PragmaDirective): void {
-    this.pool.addString(node.name);
-    this.pool.addString(node.value);
-  }
-
-  ContractDefinition(node: ContractDefinition): void {
-    this.pool.addString(node.name);
-  }
-
-  UsingForDeclaration(node: UsingForDeclaration): void {
-    this.pool.addString(node.libraryName);
-  }
-
-  StructDefinition(node: StructDefinition): void {
-    this.pool.addString(node.name);
-  }
-
-  ModifierDefinition(node: ModifierDefinition): void {
-    this.pool.addString(node.name);
-  }
-
-  ModifierInvocation(node: ModifierInvocation): void {
-    this.pool.addString(node.name);
-  }
-
-  FunctionDefinition(node: FunctionDefinition): void {
-    this.pool.addString(node.name);
-  }
-
-  EventDefinition(node: EventDefinition): void {
-    this.pool.addString(node.name);
-  }
-
   EnumValue(node: EnumValue): void {
-    this.pool.addString(node.name);
-  }
-
-  EnumDefinition(node: EnumDefinition): void {
     this.pool.addString(node.name);
   }
 
@@ -96,24 +49,21 @@ export class ConstantVisitor implements SolidityVisitor {
     this.pool.addString(node.name);
   }
 
-  UserDefinedTypeName(node: UserDefinedTypeName): void {
-    this.pool.addString(node.namePath);
-  }
-
-  FunctionTypeName(node: FunctionTypeName): void {
-    this.pool.addString(node.stateMutability);
-    this.pool.addString(node.visibility);
-  }
-
-  ElementaryTypeName(node: ElementaryTypeName): void {
-    this.pool.addString(node.name);
-  }
-
   StringLiteral(node: StringLiteral): void {
+    if (this._isAddress(node.value)) {
+      this.pool.addAddress(node.value);
+      return;
+    }
+
     this.pool.addString(node.value);
   }
 
   NumberLiteral(node: NumberLiteral): void {
+    if (this._isAddress(node.number)) {
+      this.pool.addAddress(node.number);
+      return;
+    }
+
     this.pool.addNumber(parseInt(node.number));
   }
 
@@ -136,5 +86,13 @@ export class ConstantVisitor implements SolidityVisitor {
 
   DecimalNumber(node: DecimalNumber): void {
     this.pool.addNumber(parseFloat(node.value));
+  }
+
+  protected _isAddress(value: string): boolean {
+    if (value === "0x0") return true;
+
+    if (value.startsWith("0x") && value.length == 42) return true;
+
+    return false;
   }
 }

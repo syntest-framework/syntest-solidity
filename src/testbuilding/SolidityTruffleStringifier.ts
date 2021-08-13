@@ -1,17 +1,17 @@
 import {
-  ConstructorCall,
   Properties,
-  ObjectFunctionCall,
   PrimitiveStatement,
   Statement,
-  StringStatement,
   TestCaseDecoder,
-  TestCase,
 } from "syntest-framework";
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
 import { AddressStatement } from "../testcase/statements/AddressStatement";
+import { ConstructorCall } from "../testcase/statements/action/ConstructorCall";
+import { StringStatement } from "../testcase/statements/primitive/StringStatement";
+import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunctionCall";
+import { SolidityTestCase } from "../testcase/SolidityTestCase";
 
 /**
  * @author Dimitri Stallenberg
@@ -89,14 +89,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = "${primitive.value}"`;
     } else if (statement instanceof AddressStatement) {
-      if (statement.account < 0) {
-        const address = "0x".concat(
-          (-statement.account).toString(16).padStart(40, "0")
-        );
-        return `const ${statement.varName} = "${address}"`;
-      } else {
-        return `const ${statement.varName} = ${primitive.value}`;
-      }
+      return (statement as AddressStatement).toCode();
     } else if (statement instanceof ByteStatement) {
       const bytes = web3_utils.bytesToHex((statement as ByteStatement).value);
       return `const ${statement.varName} = "${bytes}"`;
@@ -152,7 +145,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     )}");`;
   }
 
-  convertToStatementStack(ind: TestCase): Statement[] {
+  convertToStatementStack(ind: SolidityTestCase): Statement[] {
     const stack: Statement[] = [];
     const queue: Statement[] = [ind.root];
     while (queue.length) {
@@ -211,8 +204,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   }
 
   generateAssertions(
-    ind: TestCase,
-    additionalAssertions?: Map<TestCase, { [p: string]: string }>
+    ind: SolidityTestCase,
+    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
   ): string[] {
     const assertions: string[] = [];
     if (additionalAssertions && additionalAssertions.has(ind)) {
@@ -245,12 +238,12 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   }
 
   decodeTestCase(
-    testCase: TestCase | TestCase[],
+    testCase: SolidityTestCase | SolidityTestCase[],
     targetName: string,
     addLogs?: boolean,
-    additionalAssertions?: Map<TestCase, { [p: string]: string }>
+    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
   ): string {
-    if (testCase instanceof TestCase) {
+    if (testCase instanceof SolidityTestCase) {
       testCase = [testCase];
     }
 

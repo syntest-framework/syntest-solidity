@@ -31,12 +31,12 @@ import {
   StatisticsCollector,
   StatisticsSearchListener,
   SummaryWriter,
-  TestCase,
   TotalTimeBudget,
   loadTargetFiles,
   TargetFile,
   setUserInterface,
   getUserInterface,
+  AbstractTestCase,
   getSeed,
 } from "syntest-framework";
 
@@ -57,13 +57,19 @@ import {
 } from "./util/fileSystem";
 
 import Messages from "./ui/Messages";
+import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 import { SolidityMonitorCommandLineInterface } from "./ui/SolidityMonitorCommandLineInterface";
 
 import { ImportVisitor } from "./analysis/static/dependency/ImportVisitor";
 import { LibraryVisitor } from "./analysis/static/dependency/LibraryVisitor";
 
 import * as fs from "fs";
-import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
+
+import { ConstantPool } from "./seeding/constant/ConstantPool";
+import { ConstantVisitor } from "./seeding/constant/ConstantVisitor";
+import { SolidityTestCase } from "./testcase/SolidityTestCase";
+import { SolidityTreeCrossover } from "./search/operators/crossover/SolidityTreeCrossover";
+
 import { Target } from "./analysis/static/Target";
 import { TargetPool } from "./analysis/static/TargetPool";
 import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
@@ -302,7 +308,7 @@ export class SolidityLauncher {
       await truffle.contracts.compile(config);
       await api.onCompileComplete(config);
 
-      const finalArchive = new Archive<TestCase>();
+      const finalArchive = new Archive<SolidityTestCase>();
       let finalImportsMap: Map<string, string> = new Map();
       let finalDependencies: Map<string, string[]> = new Map();
 
@@ -327,7 +333,10 @@ export class SolidityLauncher {
         );
 
         for (const key of archive.getObjectives()) {
-          finalArchive.update(key, archive.getEncoding(key));
+          finalArchive.update(
+            key,
+            archive.getEncoding(key) as SolidityTestCase
+          );
         }
 
         // TODO: check if we can prevent recalculating the dependencies
@@ -364,7 +373,7 @@ export class SolidityLauncher {
         config
       );
 
-      await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
+      await suiteBuilder.createSuite(finalArchive as Archive<SolidityTestCase>);
 
       await deleteTempDirectories();
 
@@ -450,8 +459,15 @@ async function testTarget(
 
     const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
 
+    // Parse the contract for extracting constant
+    const pool = ConstantPool.getInstance();
+    const constantVisitor = new ConstantVisitor(pool);
+    SolidityParser.visit(ast, constantVisitor);
+
     const sampler = new SolidityRandomSampler(currentSubject);
-    const algorithm = createAlgorithmFromConfig(sampler, runner);
+
+    const crossover = new SolidityTreeCrossover();
+    const algorithm = createAlgorithmFromConfig(sampler, runner, crossover);
 
     await suiteBuilder.clearDirectory(Properties.temp_test_directory);
 
@@ -476,11 +492,15 @@ async function testTarget(
       RuntimeVariable.CONFIGURATION,
       Properties.configuration
     );
-    collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
+    collector.recordVariable(RuntimeVariable.SEED, getSeed());
     collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
     collector.recordVariable(
       RuntimeVariable.PROBE_ENABLED,
       Properties.probe_objective
+    );
+    collector.recordVariable(
+      RuntimeVariable.CONSTANT_POOL_ENABLED,
+      Properties.constant_pool
     );
     collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
     collector.recordVariable(
