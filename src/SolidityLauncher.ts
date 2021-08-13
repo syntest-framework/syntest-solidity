@@ -464,7 +464,7 @@ async function testTarget(
     const constantVisitor = new ConstantVisitor(pool);
     SolidityParser.visit(ast, constantVisitor);
 
-    const sampler = new SolidityRandomSampler(currentSubject, pool);
+    const sampler = new SolidityRandomSampler(currentSubject);
 
     const crossover = new SolidityTreeCrossover();
     const algorithm = createAlgorithmFromConfig(sampler, runner, crossover);
