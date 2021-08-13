@@ -1,7 +1,7 @@
 import {
   prng,
   Statement,
-  AbstractTreeCrossover,
+  Crossover,
   Properties,
 } from "syntest-framework";
 import { SolidityTestCase } from "../../../testcase/SolidityTestCase";
@@ -21,7 +21,7 @@ import { NumericStatement } from "../../../testcase/statements/primitive/Numeric
  * @author Annibale Panichella
  * @author Dimitri Stallenberg
  */
-export class SolidityTreeCrossover implements AbstractTreeCrossover {
+export class SolidityTreeCrossover implements Crossover {
   public crossOver(
     parentA: SolidityTestCase,
     parentB: SolidityTestCase
