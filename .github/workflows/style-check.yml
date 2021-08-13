@@ -1,4 +1,4 @@
-name: Style Check
+name: Check
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  style:
     runs-on: ubuntu-latest
 
     steps:
