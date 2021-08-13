@@ -498,6 +498,10 @@ async function testTarget(
       RuntimeVariable.PROBE_ENABLED,
       Properties.probe_objective
     );
+    collector.recordVariable(
+      RuntimeVariable.CONSTANT_POOL_ENABLED,
+      Properties.constant_pool
+    );
     collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
     collector.recordVariable(
       RuntimeVariable.TOTAL_OBJECTIVES,
