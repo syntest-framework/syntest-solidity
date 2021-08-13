@@ -1,0 +1,40 @@
+name: Style Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Cloning
+      - uses: actions/checkout@v2
+        with:
+          path: syntest-framework
+
+      # Setup and caching
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: syntest-framework/package-lock.json
+
+      # Dependencies
+      - name: Framework - Install Dependencies
+        run: npm install
+        working-directory: syntest-framework
+
+      # Check format
+      - name: Framework - Run Format Checker
+        run: npm run format:check
+        working-directory: syntest-framework
+
+      # Check linting
+      - name: Framework - Run Linting
+        run: npm run lint
+        working-directory: syntest-framework
