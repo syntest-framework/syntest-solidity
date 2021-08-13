@@ -27,8 +27,8 @@ export class SolidityRandomSampler extends SoliditySampler {
   /**
    * Constructor
    */
-  constructor(subject: SoliditySubject<AbstractTestCase>, pool: ConstantPool) {
-    super(subject, pool);
+  constructor(subject: SoliditySubject<AbstractTestCase>) {
+    super(subject);
   }
 
   sample(): SolidityTestCase {
@@ -170,12 +170,6 @@ export class SolidityRandomSampler extends SoliditySampler {
       } else if (type === "address") {
         return AddressStatement.getRandom();
       } else if (type === "string") {
-        if (prng.nextDouble(0, 1) <= this.POOL_PROB) {
-          const value = this.pool.getString();
-          if (value == null) return StringStatement.getRandom();
-
-          return StringStatement.createWithValue(this.pool.getString());
-        }
         return StringStatement.getRandom();
       } else if (type.includes("string")) {
         return StringStatement.getRandom();
