@@ -1,9 +1,4 @@
-import {
-  prng,
-  Statement,
-  Crossover,
-  Properties,
-} from "syntest-framework";
+import { prng, Statement, Crossover, Properties } from "syntest-framework";
 import { SolidityTestCase } from "../../../testcase/SolidityTestCase";
 import { ConstructorCall } from "../../../testcase/statements/action/ConstructorCall";
 import { NumericStatement } from "../../../testcase/statements/primitive/NumericStatement";

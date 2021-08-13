@@ -12,9 +12,7 @@ import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
 export abstract class SoliditySampler extends TestCaseSampler {
   protected readonly POOL_PROB = 0.5;
 
-  protected constructor(
-    subject: SearchSubject<SolidityTestCase>,
-  ) {
+  protected constructor(subject: SearchSubject<SolidityTestCase>) {
     super(subject);
   }
 

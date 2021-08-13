@@ -12,6 +12,7 @@ export class ConstantPool {
   protected numberPool = new Set<number>();
   protected stringPool = new Set<string>();
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private constructor() {}
 
   /**
@@ -33,8 +34,7 @@ export class ConstantPool {
   }
 
   getAddress(): string {
-    if (this.addressPool.size == 0)
-      return null;
+    if (this.addressPool.size == 0) return null;
 
     return prng.pickOne(Array.from(this.addressPool));
   }
@@ -44,8 +44,7 @@ export class ConstantPool {
   }
 
   getNumber(): number {
-    if (this.numberPool.size == 0)
-      return null;
+    if (this.numberPool.size == 0) return null;
 
     return prng.pickOne(Array.from(this.numberPool));
   }
@@ -55,8 +54,7 @@ export class ConstantPool {
   }
 
   getString(): string {
-    if (this.stringPool.size == 0)
-      return null;
+    if (this.stringPool.size == 0) return null;
 
     return prng.pickOne(Array.from(this.stringPool));
   }

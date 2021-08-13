@@ -13,7 +13,6 @@ import { ConstructorCall } from "./statements/action/ConstructorCall";
  * @author Mitchell Olsthoorn
  */
 export class SolidityTestCase extends AbstractTestCase {
-
   /**
    * Constructor.
    *
