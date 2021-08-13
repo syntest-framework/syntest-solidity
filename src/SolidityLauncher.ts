@@ -492,7 +492,7 @@ async function testTarget(
       RuntimeVariable.CONFIGURATION,
       Properties.configuration
     );
-    collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
+    collector.recordVariable(RuntimeVariable.SEED, getSeed());
     collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
     collector.recordVariable(
       RuntimeVariable.PROBE_ENABLED,
