@@ -1,4 +1,4 @@
-import { SearchSubject, TestCase } from "syntest-framework";
+import { SearchSubject, AbstractTestCase } from "syntest-framework";
 import { TargetPool } from "./TargetPool";
 import * as path from "path";
 import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
@@ -33,7 +33,7 @@ export class Target {
 
   protected _linkingGraph: Graph<string>;
 
-  protected _subject: SearchSubject<TestCase>;
+  protected _subject: SearchSubject<AbstractTestCase>;
 
   constructor(
     targetPath: string,
