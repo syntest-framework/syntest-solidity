@@ -1,19 +1,34 @@
-name: SynTest CI
+name: Build
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/"
+      - "**.md"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "docs/"
+      - "**.md"
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
+      # Keep running other versions when a job fails
+      fail-fast: false
+
       matrix:
-        # Run the pipeline on all the currently supported LTS versions and the latest version
-        node-version: [10.x, 12.x, 14.x, 15.x]
+        # Run the pipeline on all the currently supported OS versions
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+        # Run the pipeline on all the currently supported LTS versions and the upcoming version
+        node-version: [10, 12, 14, 16]
+
+        # Run the pipeline on all the currently supported architectures
+        architecture: [x64]
 
     steps:
       # Cloning
@@ -26,21 +41,16 @@ jobs:
         with:
           path: syntest-solidity
 
-      # Setup
+      # Setup and caching
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-
-      # Caching
-      - name: Cache Node.js modules
-        uses: actions/cache@v2
-        with:
-          path: ~/.npm
-          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.OS }}-node-
-            ${{ runner.OS }}-
+          architecture: ${{ matrix.architecture }}
+          cache: npm
+          cache-dependency-path: |
+            syntest-framework/package-lock.json
+            syntest-solidity/package-lock.json
 
       # SynTest Framework
       - name: Framework - Install Dependencies
