@@ -1,10 +1,6 @@
 import {
   AbstractTestCase,
-  prng,
   TestCaseDecoder,
-  Encoding,
-  ExecutionResult,
-  ObjectiveFunction,
   EncodingSampler,
   getUserInterface,
 } from "syntest-framework";
@@ -17,17 +13,6 @@ import { ConstructorCall } from "./statements/action/ConstructorCall";
  * @author Mitchell Olsthoorn
  */
 export class SolidityTestCase extends AbstractTestCase {
-  /**
-   * Mapping from objective to their distance values for this test case.
-   * @protected
-   */
-  protected _objectives: Map<ObjectiveFunction<SolidityTestCase>, number>;
-
-  /**
-   * The last execution result of this test case.
-   * @protected
-   */
-  protected _executionResult: ExecutionResult;
 
   /**
    * Constructor.
