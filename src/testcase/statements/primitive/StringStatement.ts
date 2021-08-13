@@ -166,7 +166,10 @@ export class StringStatement extends PrimitiveStatement<string> {
     alphabet = Properties.string_alphabet,
     maxlength = Properties.string_maxlength
   ): StringStatement {
-    if (prng.nextDouble(0, 1) <= Properties.constant_pool_probability) {
+    if (
+      Properties.constant_pool &&
+      prng.nextDouble(0, 1) <= Properties.constant_pool_probability
+    ) {
       const value = ConstantPool.getInstance().getString();
       if (value != null) return StringStatement.createWithValue(value);
     }

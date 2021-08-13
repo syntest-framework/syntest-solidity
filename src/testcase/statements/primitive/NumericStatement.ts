@@ -111,7 +111,10 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     const max = BigNumber.min(upper_bound, new BigNumber(Math.pow(2, 11) - 1));
     const min: BigNumber = signed ? max.negated() : this._zero;
 
-    if (prng.nextDouble(0, 1) <= Properties.constant_pool_probability) {
+    if (
+      Properties.constant_pool &&
+      prng.nextDouble(0, 1) <= Properties.constant_pool_probability
+    ) {
       const value = ConstantPool.getInstance().getNumber();
       if (value != null) return NumericStatement.createWithValue(value, signed);
     }

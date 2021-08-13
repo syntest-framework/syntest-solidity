@@ -58,7 +58,10 @@ export class AddressStatement extends PrimitiveStatement<string> {
 
   static getRandom(type = "address") {
     let account = -1;
-    if (prng.nextDouble(0, 1) <= Properties.constant_pool_probability) {
+    if (
+      Properties.constant_pool &&
+      prng.nextDouble(0, 1) <= Properties.constant_pool_probability
+    ) {
       const value = ConstantPool.getInstance().getAddress();
       if (value != null) {
         return new AddressStatement(type, prng.uniqueId(), value, account);
