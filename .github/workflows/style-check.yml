@@ -14,12 +14,14 @@ jobs:
       # Cloning
       - uses: actions/checkout@v2
         with:
-          # Make sure the actual branch is checked out when running on pull requests
-          ref: ${{ github.head_ref }}
-          # This is important to fetch the changes to the previous commit
-          fetch-depth: 0
+          repository: "syntest-framework/syntest-framework"
+          token: ${{ secrets.SYNTEST_CI }}
+          path: syntest-framework
+      - uses: actions/checkout@v2
+        with:
+          path: syntest-solidity
 
-      # Setup and caching
+      # Setup
       - name: Use Node.js
         uses: actions/setup-node@v2
         with:
@@ -33,15 +35,25 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-node-${{ hashFiles('package.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('*/package.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
             ${{ runner.os }}-
 
+      # SynTest Framework
+      - name: Framework - Install Dependencies
+        run: npm install
+        working-directory: syntest-framework
+      - name: Framework - Build framework
+        run: npm run build
+        working-directory: syntest-framework
+
       # Dependencies
       - name: Solidity - Install Dependencies
-        run: npm install --dev
+        run: npm install
+        working-directory: syntest-solidity
 
       # Check format
       - name: Solidity - Run Format Checker
         run: npm run format:check
+        working-directory: syntest-solidity
