@@ -31,13 +31,13 @@ import {
   StatisticsCollector,
   StatisticsSearchListener,
   SummaryWriter,
-  TestCase,
   TotalTimeBudget,
   loadTargetFiles,
   TargetFile,
   CFG,
   setUserInterface,
   getUserInterface,
+  AbstractTestCase,
   getSeed,
 } from "syntest-framework";
 
@@ -60,13 +60,24 @@ import {
 import {getFunctionDescriptions} from "./graph/CFGUtils";
 
 import Messages from "./ui/Messages";
+import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 import { SolidityMonitorCommandLineInterface } from "./ui/SolidityMonitorCommandLineInterface";
 
-import { ImportVisitor } from "./graph/ImportVisitor";
-import { LibraryVisitor } from "./graph/LibraryVisitor";
+import { ImportVisitor } from "./analysis/static/dependency/ImportVisitor";
+import { LibraryVisitor } from "./analysis/static/dependency/LibraryVisitor";
 
 import * as fs from "fs";
-import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
+
+import { ConstantPool } from "./seeding/constant/ConstantPool";
+import { ConstantVisitor } from "./seeding/constant/ConstantVisitor";
+import { SolidityTestCase } from "./testcase/SolidityTestCase";
+import { SolidityTreeCrossover } from "./search/operators/crossover/SolidityTreeCrossover";
+
+import { Target } from "./analysis/static/Target";
+import { TargetPool } from "./analysis/static/TargetPool";
+import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
+import { ASTGenerator } from "./analysis/static/ast/ASTGenerator";
+import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -109,7 +120,7 @@ export class SolidityLauncher {
    * @return {Promise}
    */
   public async run(config: TruffleConfig) {
-    await createTruffleConfig()
+    await createTruffleConfig();
 
     let api, error, failures;
 
@@ -300,9 +311,20 @@ export class SolidityLauncher {
       await truffle.contracts.compile(config);
       await api.onCompileComplete(config);
 
-      const finalArchive = new Archive<TestCase>();
+      const finalArchive = new Archive<SolidityTestCase>();
       let finalImportsMap: Map<string, string> = new Map();
       let finalDependencies: Map<string, string[]> = new Map();
+
+      const sourceGenerator = new SourceGenerator();
+      const astGenerator = new ASTGenerator();
+      const targetMapGenerator = new TargetMapGenerator();
+      const cfgGenerator = new SolidityCFGFactory();
+      const targetPool = new TargetPool(
+        sourceGenerator,
+        astGenerator,
+        targetMapGenerator,
+        cfgGenerator
+      );
 
       for (const target of targets) {
         const {archive, contracts} = await testFile(
@@ -314,9 +336,7 @@ export class SolidityLauncher {
         );
 
         finalArchive.merge(archive)
-
         target.contracts = contracts
-
 
         // TODO: check if we can prevent recalculating the dependencies
         const ast = SolidityParser.parse(target.actualSource, {
@@ -352,7 +372,7 @@ export class SolidityLauncher {
         config
       );
 
-      await suiteBuilder.createSuite(finalArchive);
+      await suiteBuilder.createSuite(finalArchive as Archive<SolidityTestCase>);
 
       await deleteTempDirectories();
 
@@ -417,7 +437,7 @@ async function testFile(
   }
 
   // all contracts in the target file
-  let contracts = cfgFactory.contracts
+  const contracts = cfgFactory.contracts
 
   // filter excluded contracts
   // let includes = Properties.include;
@@ -447,7 +467,7 @@ async function testFile(
   //       return !exclude.includes('->')
   //     })
 
-  const finalArchive = new Archive<TestCase>();
+  const finalArchive = new Archive<SolidityTestCase>();
 
   for (const contractName of contracts) {
     const archive = await testContract(
@@ -512,8 +532,15 @@ async function testContract(
 
     const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
 
+    // Parse the contract for extracting constant
+    const pool = ConstantPool.getInstance();
+    const constantVisitor = new ConstantVisitor(pool);
+    SolidityParser.visit(ast, constantVisitor);
+
     const sampler = new SolidityRandomSampler(currentSubject);
-    const algorithm = createAlgorithmFromConfig(sampler, runner);
+
+    const crossover = new SolidityTreeCrossover();
+    const algorithm = createAlgorithmFromConfig(sampler, runner, crossover);
 
     await suiteBuilder.clearDirectory(Properties.temp_test_directory);
 
@@ -538,11 +565,15 @@ async function testContract(
       RuntimeVariable.CONFIGURATION,
       Properties.configuration
     );
-    collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
+    collector.recordVariable(RuntimeVariable.SEED, getSeed());
     collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
     collector.recordVariable(
       RuntimeVariable.PROBE_ENABLED,
       Properties.probe_objective
+    );
+    collector.recordVariable(
+      RuntimeVariable.CONSTANT_POOL_ENABLED,
+      Properties.constant_pool
     );
     collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
     collector.recordVariable(
@@ -565,6 +596,10 @@ async function testContract(
     collector.recordVariable(
       RuntimeVariable.COVERED_OBJECTIVES,
       archive.getObjectives().length
+    );
+    collector.recordVariable(
+      RuntimeVariable.INITIALIZATION_TIME,
+      totalTimeBudget.getUsedBudget() - searchBudget.getUsedBudget()
     );
     collector.recordVariable(
       RuntimeVariable.SEARCH_TIME,
@@ -635,7 +670,7 @@ function getImportDependencies(ast: any, target: any) {
 
   // For each external import scan the file for libraries with public and external functions
   const libraries: string[] = [];
-  importVisitor.imports.forEach((importPath: string) => {
+  importVisitor.getImports().forEach((importPath: string) => {
     // Full path to the imported file
     const pathLib = path.join(path.dirname(target.canonicalPath), importPath);
 

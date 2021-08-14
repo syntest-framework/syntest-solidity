@@ -6,15 +6,36 @@ import { prng } from "syntest-framework";
  * @author Mitchell Olsthoorn
  */
 export class ConstantPool {
+  private static instance: ConstantPool;
+
   protected addressPool = new Set<string>();
   protected numberPool = new Set<number>();
   protected stringPool = new Set<string>();
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  private constructor() {}
+
+  /**
+   * The static method that controls the access to the singleton instance.
+   *
+   * This implementation let you subclass the Singleton class while keeping
+   * just one instance of each subclass around.
+   */
+  public static getInstance(): ConstantPool {
+    if (!ConstantPool.instance) {
+      ConstantPool.instance = new ConstantPool();
+    }
+
+    return ConstantPool.instance;
+  }
 
   addAddress(value: string): void {
     this.addressPool.add(value);
   }
 
   getAddress(): string {
+    if (this.addressPool.size == 0) return null;
+
     return prng.pickOne(Array.from(this.addressPool));
   }
 
@@ -23,6 +44,8 @@ export class ConstantPool {
   }
 
   getNumber(): number {
+    if (this.numberPool.size == 0) return null;
+
     return prng.pickOne(Array.from(this.numberPool));
   }
 
@@ -30,7 +53,9 @@ export class ConstantPool {
     this.stringPool.add(value);
   }
 
-  getString(): number {
+  getString(): string {
+    if (this.stringPool.size == 0) return null;
+
     return prng.pickOne(Array.from(this.stringPool));
   }
 }

@@ -1,4 +1,4 @@
-import {existsSync, mkdirSync, rmdirSync, writeFileSync} from "fs";
+import { existsSync, mkdirSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
 import { getLogger, getUserInterface } from "syntest-framework";
 const { outputFileSync } = require("fs-extra");
@@ -35,16 +35,19 @@ export async function tearDownTempFolders(
 }
 
 export async function createTruffleConfig() {
-  const filepath = './truffle-config.js'
+  const filepath = "./truffle-config.js";
 
   if (existsSync(filepath)) {
-    return
+    return;
   }
 
-  await writeFileSync(filepath, `module.exports = {
+  await writeFileSync(
+    filepath,
+    `module.exports = {
   test_directory: ".syntest/tests",
   plugins: ["syntest-solidity"]
-};`)
+};`
+  );
 }
 
 /**

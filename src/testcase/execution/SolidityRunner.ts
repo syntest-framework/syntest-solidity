@@ -3,8 +3,8 @@ import {
   getLogger,
   Properties,
   SuiteBuilder,
-  TestCase,
   TestCaseRunner,
+  getUserInterface,
 } from "syntest-framework";
 import * as path from "path";
 import {
@@ -14,7 +14,8 @@ import {
 import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { getTestFilePaths } from "../../util/fileSystem";
-import { getUserInterface } from "../../../../syntest-framework/dist/ui/UserInterface";
+import { SolidityTestCase } from "../SolidityTestCase";
+import { ConstructorCall } from "../statements/action/ConstructorCall";
 
 export class SolidityRunner extends TestCaseRunner {
   protected api: any;
@@ -29,14 +30,14 @@ export class SolidityRunner extends TestCaseRunner {
   }
 
   async execute(
-    subject: SoliditySubject<TestCase>,
-    testCase: TestCase
+    subject: SoliditySubject<SolidityTestCase>,
+    testCase: SolidityTestCase
   ): Promise<ExecutionResult> {
     const testPath = path.join(Properties.temp_test_directory, "tempTest.js");
     await this.suiteBuilder.writeTestCase(
       testPath,
       testCase,
-      testCase.root.constructorName,
+      (testCase.root as ConstructorCall).constructorName
     );
 
     this.config.test_files = await getTestFilePaths(this.config);
@@ -46,9 +47,9 @@ export class SolidityRunner extends TestCaseRunner {
 
 
     // By replacing the global log function we disable the output of the truffle test framework
-    const old = console.log
+    const old = console.log;
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    console.log = () => {}
+    console.log = () => {};
 
     // Run tests
     try {
@@ -58,7 +59,7 @@ export class SolidityRunner extends TestCaseRunner {
       getUserInterface().error(e);
       console.trace(e);
     }
-    console.log = old
+    console.log = old;
 
     // Retrieve execution information from the Mocha runner
     const mochaRunner: Runner = this.truffle.test.mochaRunner;

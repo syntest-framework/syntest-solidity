@@ -1,17 +1,17 @@
 import {
-  ConstructorCall,
   Properties,
-  ObjectFunctionCall,
   PrimitiveStatement,
   Statement,
-  StringStatement,
   TestCaseDecoder,
-  TestCase,
 } from "syntest-framework";
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
 import { AddressStatement } from "../testcase/statements/AddressStatement";
+import { ConstructorCall } from "../testcase/statements/action/ConstructorCall";
+import { StringStatement } from "../testcase/statements/primitive/StringStatement";
+import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunctionCall";
+import { SolidityTestCase } from "../testcase/SolidityTestCase";
 
 /**
  * @author Dimitri Stallenberg
@@ -66,14 +66,14 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       }
     }
     const formattedArgs = args
-        .map((a: PrimitiveStatement<any>) => a.varName)
-        .join(", ");
+      .map((a: PrimitiveStatement<any>) => a.varName)
+      .join(", ");
 
     return (
-        string +
-        `await expect(${
-            (statement as ConstructorCall).constructorName
-        }.new(${formattedArgs})).to.be.rejectedWith(Error);`
+      string +
+      `await expect(${
+        (statement as ConstructorCall).constructorName
+      }.new(${formattedArgs})).to.be.rejectedWith(Error);`
     );
   }
 
@@ -89,14 +89,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = "${primitive.value}"`;
     } else if (statement instanceof AddressStatement) {
-      if (statement.account < 0) {
-        const address = "0x".concat(
-          (-statement.account).toString(16).padStart(40, "0")
-        );
-        return `const ${statement.varName} = "${address}"`;
-      } else {
-        return `const ${statement.varName} = ${primitive.value}`;
-      }
+      return (statement as AddressStatement).toCode();
     } else if (statement instanceof ByteStatement) {
       const bytes = web3_utils.bytesToHex((statement as ByteStatement).value);
       return `const ${statement.varName} = "${bytes}"`;
@@ -133,7 +126,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
       return `await expect(${objectName}.${
-          (statement as ObjectFunctionCall).functionName
+        (statement as ObjectFunctionCall).functionName
       }.call(${formattedArgs})).to.be.rejectedWith(Error);`;
     } else {
       throw new Error(`${statement} is not a function call`);
@@ -152,7 +145,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     )}");`;
   }
 
-  convertToStatementStack(ind: TestCase): Statement[] {
+  convertToStatementStack(ind: SolidityTestCase): Statement[] {
     const stack: Statement[] = [];
     const queue: Statement[] = [ind.root];
     while (queue.length) {
@@ -211,18 +204,16 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   }
 
   generateAssertions(
-    ind: TestCase,
-    additionalAssertions?: Map<TestCase, { [p: string]: string }>
+    ind: SolidityTestCase,
+    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
   ): string[] {
     const assertions: string[] = [];
     if (additionalAssertions && additionalAssertions.has(ind)) {
-      const assertion: { [p: string]: string } = additionalAssertions.get(
-        ind
-      );
+      const assertion: { [p: string]: string } = additionalAssertions.get(ind);
 
       for (const variableName of Object.keys(assertion)) {
-        if (variableName === 'error') {
-          continue
+        if (variableName === "error") {
+          continue;
         }
 
         if (assertion[variableName] === "[object Object]") continue;
@@ -247,12 +238,12 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   }
 
   decodeTestCase(
-    testCase: TestCase | TestCase[],
+    testCase: SolidityTestCase | SolidityTestCase[],
     targetName: string,
     addLogs?: boolean,
-    additionalAssertions?: Map<TestCase, { [p: string]: string }>
+    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
   ): string {
-    if (testCase instanceof TestCase) {
+    if (testCase instanceof SolidityTestCase) {
       testCase = [testCase];
     }
 
@@ -262,9 +253,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
     for (const ind of testCase) {
       // The stopAfter variable makes sure that when one of the function calls has thrown an exception the test case ends there.
-      let stopAfter = -1
-      if (additionalAssertions && additionalAssertions.has(ind) && additionalAssertions.get(ind)['error']) {
-        stopAfter = Object.keys(additionalAssertions.get(ind)).length
+      let stopAfter = -1;
+      if (
+        additionalAssertions &&
+        additionalAssertions.has(ind) &&
+        additionalAssertions.get(ind)["error"]
+      ) {
+        stopAfter = Object.keys(additionalAssertions.get(ind)).length;
       }
 
       const testString = [];
@@ -278,7 +273,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
             ind.id
           )}', { recursive: true })\n`
         );
-        testString.push('try {')
+        testString.push("try {");
       }
 
       const importableGenes: ConstructorCall[] = [];
@@ -286,33 +281,38 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const constructor = ind.root;
       stack.push(constructor);
 
-      let primitiveStatements: string[] = []
-      const functionCalls: string[] = []
-      const assertions: string[] = []
+      let primitiveStatements: string[] = [];
+      const functionCalls: string[] = [];
+      const assertions: string[] = [];
 
-      let count = 1
+      let count = 1;
       while (stack.length) {
         const gene: Statement = stack.pop()!;
 
         if (gene instanceof ConstructorCall) {
           if (count === stopAfter) {
-            assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`)
-            break
+            assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
+            break;
           }
           testString.push(`\t\t${this.decodeConstructor(gene)}`);
           importableGenes.push(<ConstructorCall>gene);
-          count += 1
+          count += 1;
         } else if (gene instanceof PrimitiveStatement) {
           primitiveStatements.push(`\t\t${this.decodeStatement(gene)}`);
         } else if (gene instanceof ObjectFunctionCall) {
           if (count === stopAfter) {
-            assertions.push(`\t\t${this.decodeErroringFunctionCall(gene, constructor.varName)}`)
-            break
+            assertions.push(
+              `\t\t${this.decodeErroringFunctionCall(
+                gene,
+                constructor.varName
+              )}`
+            );
+            break;
           }
           functionCalls.push(
             `\t\t${this.decodeFunctionCall(gene, constructor.varName)}`
           );
-          count += 1
+          count += 1;
         } else {
           throw Error(`The type of gene ${gene} is not recognized`);
         }
@@ -320,19 +320,19 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         if (addLogs) {
           if (gene instanceof ObjectFunctionCall) {
             functionCalls.push(
-                `\t\tawait fs.writeFileSync('${path.join(
-                    Properties.temp_log_directory,
-                    ind.id,
-                    gene.varName
-                )}', '' + ${gene.varName})`
+              `\t\tawait fs.writeFileSync('${path.join(
+                Properties.temp_log_directory,
+                ind.id,
+                gene.varName
+              )}', '' + ${gene.varName})`
             );
           } else if (gene instanceof ConstructorCall) {
             testString.push(
-                `\t\tawait fs.writeFileSync('${path.join(
-                    Properties.temp_log_directory,
-                    ind.id,
-                    gene.varName
-                )}', '' + ${gene.varName})`
+              `\t\tawait fs.writeFileSync('${path.join(
+                Properties.temp_log_directory,
+                ind.id,
+                gene.varName
+              )}', '' + ${gene.varName})`
             );
           }
         }
@@ -340,30 +340,32 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
       // filter non-required statements
       primitiveStatements = primitiveStatements.filter((s) => {
-        const varName = s.split(' ')[1]
-        return functionCalls.find((f) => f.includes(varName))
-      })
+        const varName = s.split(" ")[1];
+        return functionCalls.find((f) => f.includes(varName));
+      });
 
-      testString.push(...primitiveStatements)
-      testString.push(...functionCalls)
+      testString.push(...primitiveStatements);
+      testString.push(...functionCalls);
 
       if (addLogs) {
-        testString.push(`} catch (e) {`)
-        testString.push(`await fs.writeFileSync('${path.join(
+        testString.push(`} catch (e) {`);
+        testString.push(
+          `await fs.writeFileSync('${path.join(
             Properties.temp_log_directory,
             ind.id,
-            'error'
-        )}', '' + e.stack)`)
-        testString.push('}')
+            "error"
+          )}', '' + e.stack)`
+        );
+        testString.push("}");
       }
 
       const [importsOfTest, linkings] = this.gatherImports(importableGenes);
       imports.push(...importsOfTest);
 
       if (additionalAssertions) {
-        imports.push(`const chai = require('chai');`)
-        imports.push(`const expect = chai.expect;`)
-        imports.push(`chai.use(require('chai-as-promised'));`)
+        imports.push(`const chai = require('chai');`);
+        imports.push(`const expect = chai.expect;`);
+        imports.push(`chai.use(require('chai-as-promised'));`);
       }
 
       assertions.unshift(...this.generateAssertions(ind, additionalAssertions));

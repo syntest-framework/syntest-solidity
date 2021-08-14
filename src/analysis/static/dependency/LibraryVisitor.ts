@@ -1,4 +1,4 @@
-import { SolidityVisitor } from "./SolidityVisitor";
+import { SolidityVisitor } from "../SolidityVisitor";
 import {
   ContractDefinition,
   FunctionDefinition,
@@ -10,8 +10,13 @@ import {
  * @author Mitchell Olsthoorn
  */
 export class LibraryVisitor implements SolidityVisitor {
-  public libraries = [];
+  public libraries: string[];
   protected current;
+
+  constructor() {
+    this.libraries = [];
+    this.current = null;
+  }
 
   ContractDefinition(node: ContractDefinition): void {
     if (node.kind == "library") {
