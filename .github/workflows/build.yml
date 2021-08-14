@@ -1,4 +1,4 @@
-name: Build
+name: build
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
       - "**.md"
 
 jobs:
-  nodejs:
+  test:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -36,41 +36,50 @@ jobs:
         with:
           repository: "syntest-framework/syntest-framework"
           token: ${{ secrets.SYNTEST_CI }}
-          path: syntest-framework
+          path: framework
       - uses: actions/checkout@v2
         with:
-          path: syntest-solidity
+          path: solidity
 
-      # Setup and caching
+      # Setup
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
           architecture: ${{ matrix.architecture }}
-          cache: npm
-          cache-dependency-path: |
-            syntest-framework/package-lock.json
-            syntest-solidity/package-lock.json
+
+      # Caching
+      - name: Get NPM cache directory
+        id: npm-cache-dir
+        run: echo "::set-output name=dir::$(npm config get cache)"
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-node-${{ hashFiles('*/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+            ${{ runner.os }}-
 
       # SynTest Framework
       - name: Framework - Install Dependencies
         run: npm install
-        working-directory: syntest-framework
+        working-directory: framework
       - name: Framework - Build framework
         run: npm run build
-        working-directory: syntest-framework
+        working-directory: framework
 
       # Dependencies
       - name: Solidity - Install Dependencies
         run: npm install
-        working-directory: syntest-solidity
+        working-directory: solidity
 
       # Building
       - name: Solidity - Build Solidity
         run: npm run build
-        working-directory: syntest-solidity
+        working-directory: solidity
 
       # Testing
       - name: Solidity - Run Tests
         run: npm test
-        working-directory: syntest-solidity
+        working-directory: solidity
