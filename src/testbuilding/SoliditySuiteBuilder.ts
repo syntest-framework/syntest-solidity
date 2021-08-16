@@ -31,13 +31,11 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     testCase: SolidityTestCase,
     targetName: string,
     addLogs = false,
-    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
   ) {
     const decodedTestCase = this.decoder.decodeTestCase(
       testCase,
       targetName,
-      addLogs,
-      additionalAssertions
+      addLogs
     );
     await writeFileSync(filePath, decodedTestCase);
   }
