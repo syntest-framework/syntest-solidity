@@ -292,7 +292,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         if (gene instanceof ConstructorCall) {
           if (count === stopAfter) {
             assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
-            if (Properties.minimize)
+            if (Properties.test_minimization)
               break;
           }
           testString.push(`\t\t${this.decodeConstructor(gene)}`);
@@ -308,7 +308,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
                 constructor.varName
               )}`
             );
-            if (Properties.minimize)
+            if (Properties.test_minimization)
               break;
           }
           functionCalls.push(
