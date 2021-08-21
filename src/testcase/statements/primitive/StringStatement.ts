@@ -3,6 +3,7 @@ import { TestCaseSampler } from "syntest-framework/dist/testcase/sampling/TestCa
 import { prng } from "syntest-framework/dist/util/prng";
 import { Properties } from "syntest-framework/dist/properties";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
+import { Parameter } from "syntest-framework";
 
 /**
  * @author Dimitri Stallenberg
@@ -12,7 +13,7 @@ export class StringStatement extends PrimitiveStatement<string> {
   private readonly maxlength: number;
 
   constructor(
-    type: string,
+    type: Parameter,
     uniqueId: string,
     value: string,
     alphabet: string,
@@ -128,9 +129,8 @@ export class StringStatement extends PrimitiveStatement<string> {
     const oldChar = this.value[position];
     const indexOldChar = this.alphabet.indexOf(oldChar);
     const delta = prng.pickOne([-2, -1, 1, -2]);
-    const newChar = this.alphabet[
-      (indexOldChar + delta) % this.alphabet.length
-    ];
+    const newChar =
+      this.alphabet[(indexOldChar + delta) % this.alphabet.length];
 
     let newValue = "";
 
@@ -162,7 +162,7 @@ export class StringStatement extends PrimitiveStatement<string> {
   }
 
   static getRandom(
-    type = "string",
+    type: Parameter = { type: "string", name: "noname" },
     alphabet = Properties.string_alphabet,
     maxlength = Properties.string_maxlength
   ): StringStatement {
@@ -171,7 +171,7 @@ export class StringStatement extends PrimitiveStatement<string> {
       prng.nextDouble(0, 1) <= Properties.constant_pool_probability
     ) {
       const value = ConstantPool.getInstance().getString();
-      if (value != null) return StringStatement.createWithValue(value);
+      if (value != null) return StringStatement.createWithValue(type, value);
     }
 
     const valueLength = prng.nextInt(0, maxlength - 1);
@@ -190,9 +190,9 @@ export class StringStatement extends PrimitiveStatement<string> {
     );
   }
 
-  static createWithValue(value: string): StringStatement {
+  static createWithValue(type: Parameter, value: string): StringStatement {
     return new StringStatement(
-      "string",
+      type,
       prng.uniqueId(),
       value,
       Properties.string_alphabet,

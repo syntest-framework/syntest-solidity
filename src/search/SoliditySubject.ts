@@ -1,15 +1,18 @@
 import {
+  BranchNode,
   BranchObjectiveFunction,
   CFG,
   Encoding,
   FunctionDescription,
   FunctionObjectiveFunction,
+  NodeType,
   ObjectiveFunction,
   Parameter,
+  PublicVisibility,
   SearchSubject,
-  Visibility,
 } from "syntest-framework";
-import {RequireObjectiveFunction} from "../criterion/RequireObjectiveFunction";
+import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
+import { ExternalVisibility } from "../analysis/static/map/ContractFunction";
 
 export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   private _functionCalls: FunctionDescription[] | null = null;
@@ -19,16 +22,21 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     return this._contract;
   }
 
-  constructor(contract: string, name: string, cfg: CFG, functionMap: FunctionDescription[]) {
+  constructor(
+    contract: string,
+    name: string,
+    cfg: CFG,
+    functionMap: FunctionDescription[]
+  ) {
     super(name, cfg, functionMap);
-    this._contract = contract
+    this._contract = contract;
   }
 
   protected _extractObjectives(): void {
     // Branch objectives
     this._cfg.nodes
       // Find all branch nodes
-      .filter((node) => node.type === 'branch')
+      .filter((node) => node.type === NodeType.branch)
       .forEach((branchNode) => {
         this._cfg.edges
           // Find all edges from the branch node
@@ -55,7 +63,9 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     // Probe objectives
     this._cfg.nodes
       // Find all probe nodes
-      .filter((node) => node.probe)
+      .filter(
+        (node) => node.type === NodeType.branch && (<BranchNode>node).probe
+      )
       .forEach((probeNode) => {
         this._cfg.edges
           // Find all edges from the probe node
@@ -94,7 +104,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     // Function objectives
     this._cfg.nodes
       // Find all root function nodes
-      .filter((node) => node.type === 'root')
+      .filter((node) => node.type === NodeType.root)
       .forEach((node) => {
         // Add objective
         const functionObjective = new FunctionObjectiveFunction(
@@ -154,17 +164,32 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
 
   getPossibleActions(
     type?: string,
-    returnType?: string
+    returnTypes?: Parameter[]
   ): FunctionDescription[] {
     if (this._functionCalls == null) {
       this.parseActions();
     }
 
     return this._functionCalls!.filter((f) => {
+      // TODO
+      // Currently we require the return parameters to be exactly equal.
+      // However, if the required returnTypes are a superset of the return parameters of the function then it should also work!
+      if (returnTypes) {
+        if (returnTypes.length !== f.returnParameters.length) {
+          return false;
+        }
+
+        for (let i = 0; i < returnTypes.length; i++) {
+          if (returnTypes[i].type !== f.returnParameters[i].type) {
+            return false;
+          }
+        }
+      }
+
       return (
         (type === undefined || f.type === type) &&
-        (returnType === undefined || f.returnType === returnType) &&
-        (f.visibility === Visibility._public || f.visibility === Visibility.external) &&
+        (f.visibility === PublicVisibility ||
+          f.visibility === ExternalVisibility) &&
         f.name !== "" // fallback function has no name
       );
     });
@@ -248,13 +273,15 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     // }
 
     this._functionCalls = this._functionMap.map((actionDescription) => {
-      (<FunctionDescription>actionDescription).parameters = (<FunctionDescription>actionDescription).parameters.map((param): SolidityParameter => {
+      (<FunctionDescription>actionDescription).parameters = (<
+        FunctionDescription
+      >actionDescription).parameters.map((param): SolidityParameter => {
         const newParam = {
           name: param.name,
           type: param.type,
           bits: null,
           decimals: null,
-        }
+        };
 
         if (param.type.includes("int")) {
           const type = param.type.includes("uint") ? "uint" : "int";
@@ -274,9 +301,9 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
           newParam.decimals = parseInt(params[1]) || 18;
         }
 
-        return newParam
-      })
-      return <FunctionDescription>actionDescription
+        return newParam;
+      });
+      return <FunctionDescription>actionDescription;
     });
   }
 }

@@ -77,9 +77,8 @@ export class TargetPool {
       return this._abstractSyntaxTrees.get(absoluteTargetPath);
     } else {
       const targetSource = this.getSource(absoluteTargetPath);
-      const targetAST = this._abstractSyntaxTreeGenerator.generate(
-        targetSource
-      );
+      const targetAST =
+        this._abstractSyntaxTreeGenerator.generate(targetSource);
       this._abstractSyntaxTrees.set(absoluteTargetPath, targetAST);
       return targetAST;
     }
@@ -92,9 +91,8 @@ export class TargetPool {
       return this._targetMap.get(absoluteTargetPath);
     } else {
       const targetAST = this.getAST(absoluteTargetPath);
-      const { targetMap, functionMap } = this._targetMapGenerator.generate(
-        targetAST
-      );
+      const { targetMap, functionMap } =
+        this._targetMapGenerator.generate(targetAST);
       this._targetMap.set(absoluteTargetPath, targetMap);
       this._functionMaps.set(absoluteTargetPath, functionMap);
       return targetMap;
@@ -106,9 +104,8 @@ export class TargetPool {
 
     if (!this._functionMaps.has(absoluteTargetPath)) {
       const targetAST = this.getAST(absoluteTargetPath);
-      const { targetMap, functionMap } = this._targetMapGenerator.generate(
-        targetAST
-      );
+      const { targetMap, functionMap } =
+        this._targetMapGenerator.generate(targetAST);
       this._targetMap.set(absoluteTargetPath, targetMap);
       this._functionMaps.set(absoluteTargetPath, functionMap);
     }

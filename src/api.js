@@ -96,7 +96,7 @@ class API {
           actualSource: target.source,
           source: instrumented.contract,
           instrumented: instrumented,
-          contracts: []
+          contracts: [],
         });
       }
     } catch (err) {

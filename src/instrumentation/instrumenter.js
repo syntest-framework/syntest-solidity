@@ -115,7 +115,7 @@ class Instrumenter {
     retValue.runnableLines = contract.runnableLines;
     retValue.contract = contract.instrumented;
     retValue.contractName = contract.contractName;
-    retValue.contracts = root.length ? root.map((n) => n.name) : null
+    retValue.contracts = root.length ? root.map((n) => n.name) : null;
     return retValue;
   }
 }

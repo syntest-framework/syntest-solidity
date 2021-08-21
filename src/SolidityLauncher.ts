@@ -57,7 +57,7 @@ import {
   tearDownTempFolders,
 } from "./util/fileSystem";
 
-import {getFunctionDescriptions} from "./graph/CFGUtils";
+import { getFunctionDescriptions } from "./graph/CFGUtils";
 
 import Messages from "./ui/Messages";
 import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
@@ -326,8 +326,10 @@ export class SolidityLauncher {
         cfgGenerator
       );
 
+      // targetPool.
+
       for (const target of targets) {
-        const {archive, contracts} = await testFile(
+        const { archive, contracts } = await testFile(
           target,
           excluded,
           api,
@@ -335,8 +337,8 @@ export class SolidityLauncher {
           config
         );
 
-        finalArchive.merge(archive)
-        target.contracts = contracts
+        finalArchive.merge(archive);
+        target.contracts = contracts;
 
         // TODO: check if we can prevent recalculating the dependencies
         const ast = SolidityParser.parse(target.actualSource, {
@@ -382,15 +384,17 @@ export class SolidityLauncher {
 
       // Run tests
       // by replacing the console.log global function we disable the output of the truffle test results
-      const old = console.log;
+      // const old = console.log;
       // eslint-disable-next-line @typescript-eslint/no-empty-function
-      console.log = function () {};
+      // console.log = function () {};
       try {
         await truffle.test.run(config);
       } catch (e) {
         error = e.stack;
+        getUserInterface().error(e);
+        console.trace(e);
       }
-      console.log = old;
+      // console.log = old;
       await api.onTestsComplete(config);
 
       getUserInterface().report("header", ["search results"]);
@@ -415,11 +419,11 @@ export class SolidityLauncher {
 }
 
 async function testFile(
-    target: any,
-    excluded: TargetFile[],
-    api,
-    truffle,
-    config
+  target: any,
+  excluded: TargetFile[],
+  api,
+  truffle,
+  config
 ) {
   await createDirectoryStructure();
 
@@ -433,11 +437,17 @@ async function testFile(
   const cfg = cfgFactory.convertAST(ast, false, false);
   if (Properties.draw_cfg) {
     // TODO dot's in the the name of a file will give issues
-    drawGraph(cfg, path.join(Properties.cfg_directory, `${target.relativePath.split('.')[0]}.svg`));
+    drawGraph(
+      cfg,
+      path.join(
+        Properties.cfg_directory,
+        `${target.relativePath.split(".")[0]}.svg`
+      )
+    );
   }
 
   // all contracts in the target file
-  const contracts = cfgFactory.contracts
+  const contracts = cfgFactory.contracts;
 
   // filter excluded contracts
   // let includes = Properties.include;
@@ -471,22 +481,22 @@ async function testFile(
 
   for (const contractName of contracts) {
     const archive = await testContract(
-        target,
-        excluded,
-        api,
-        truffle,
-        config,
-        cfg,
-        contractName
-    )
+      target,
+      excluded,
+      api,
+      truffle,
+      config,
+      cfg,
+      contractName
+    );
 
-    finalArchive.merge(archive)
+    finalArchive.merge(archive);
   }
 
   return {
     archive: finalArchive,
-    contracts: contracts
-  }
+    contracts: contracts,
+  };
 }
 
 async function testContract(
@@ -511,11 +521,16 @@ async function testContract(
       range: true,
     });
 
-    const functionDescriptions = getFunctionDescriptions(cfg, contractName)
+    const functionDescriptions = getFunctionDescriptions(cfg, contractName);
 
     drawGraph(cfg, path.join(Properties.cfg_directory, `${contractName}.svg`));
 
-    const currentSubject = new SoliditySubject(target.relativePath, contractName, cfg, functionDescriptions);
+    const currentSubject = new SoliditySubject(
+      target.relativePath,
+      contractName,
+      cfg,
+      functionDescriptions
+    );
 
     const { importsMap, dependencyMap } = getImportDependencies(ast, target);
 
@@ -625,8 +640,9 @@ async function testContract(
 
     const numOfExceptions = archive
       .getObjectives()
-      .filter((objective) => objective instanceof ExceptionObjectiveFunction)
-      .length;
+      .filter(
+        (objective) => objective instanceof ExceptionObjectiveFunction
+      ).length;
     collector.recordVariable(
       RuntimeVariable.COVERED_EXCEPTIONS,
       numOfExceptions

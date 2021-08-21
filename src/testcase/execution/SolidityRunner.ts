@@ -45,7 +45,6 @@ export class SolidityRunner extends TestCaseRunner {
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
 
-
     // By replacing the global log function we disable the output of the truffle test framework
     const old = console.log;
     // eslint-disable-next-line @typescript-eslint/no-empty-function

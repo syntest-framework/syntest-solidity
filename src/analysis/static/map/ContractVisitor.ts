@@ -8,9 +8,14 @@ import { ContractMetadata, ContractKind } from "./ContractMetadata";
 import {
   ContractFunction,
   ContractFunctionMutability,
-  ContractFunctionParameter,
-  ContractFunctionVisibility,
+  ExternalVisibility,
+  InternalVisibility,
 } from "./ContractFunction";
+import {
+  Parameter,
+  PrivateVisibility,
+  PublicVisibility,
+} from "syntest-framework";
 
 /**
  * Visits the AST nodes of a contract to find all functions with public or external visibility.
@@ -72,7 +77,7 @@ export class ContractVisitor implements SolidityVisitor {
     const name = node.name;
 
     const parameters = node.parameters.map((param) => {
-      const functionParameter: ContractFunctionParameter = {
+      const functionParameter: Parameter = {
         name: param.name,
         type: this._resolveTypes(param.typeName),
       };
@@ -82,19 +87,19 @@ export class ContractVisitor implements SolidityVisitor {
     let visibility;
     switch (node.visibility) {
       case "default":
-        visibility = ContractFunctionVisibility.Public;
+        visibility = PublicVisibility;
         break;
       case "public":
-        visibility = ContractFunctionVisibility.Public;
+        visibility = PublicVisibility;
         break;
       case "external":
-        visibility = ContractFunctionVisibility.External;
+        visibility = ExternalVisibility;
         break;
       case "internal":
-        visibility = ContractFunctionVisibility.Internal;
+        visibility = InternalVisibility;
         break;
       case "private":
-        visibility = ContractFunctionVisibility.Private;
+        visibility = PrivateVisibility;
         break;
     }
 
@@ -123,14 +128,14 @@ export class ContractVisitor implements SolidityVisitor {
 
     const returnParameters = node.returnParameters
       ? node.returnParameters.map((param) => {
-          const functionParameter: ContractFunctionParameter = {
+          const functionParameter: Parameter = {
             name: param.name,
             type: this._resolveTypes(param.typeName),
           };
           return functionParameter;
         })
       : [
-          <ContractFunctionParameter>{
+          <Parameter>{
             name: "",
             type: "void",
           },
@@ -138,6 +143,7 @@ export class ContractVisitor implements SolidityVisitor {
 
     const contractFunction: ContractFunction = {
       name: name,
+      type: node.isConstructor ? "constructor" : "function",
       isConstructor: node.isConstructor,
       isFallback: !node.name,
       parameters: parameters,

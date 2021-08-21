@@ -24,7 +24,7 @@ export class SolidityTreeCrossover implements Crossover {
     const rootA = parentA.copy().root;
     const rootB = parentB.copy().root;
 
-    let queueA: any = [];
+    const queueA: any = [];
 
     for (
       let i = 0;
@@ -38,10 +38,10 @@ export class SolidityTreeCrossover implements Crossover {
       });
     }
 
-    let crossoverOptions = [];
+    const crossoverOptions = [];
 
     while (queueA.length) {
-      let pair = queueA.shift();
+      const pair = queueA.shift();
 
       if (pair.child.hasChildren()) {
         pair.child.getChildren().forEach((child: Statement, index: number) => {
@@ -55,9 +55,9 @@ export class SolidityTreeCrossover implements Crossover {
 
       if (prng.nextBoolean(Properties.crossover_probability)) {
         // crossover
-        let donorSubtrees = this.findSimilarSubtree(pair.child, rootB);
+        const donorSubtrees = this.findSimilarSubtree(pair.child, rootB);
 
-        for (let donorTree of donorSubtrees) {
+        for (const donorTree of donorSubtrees) {
           crossoverOptions.push({
             p1: pair,
             p2: donorTree,
@@ -67,9 +67,9 @@ export class SolidityTreeCrossover implements Crossover {
     }
 
     if (crossoverOptions.length) {
-      let crossoverChoice = prng.pickOne(crossoverOptions);
-      let pair = crossoverChoice.p1;
-      let donorTree = crossoverChoice.p2;
+      const crossoverChoice = prng.pickOne(crossoverOptions);
+      const pair = crossoverChoice.p1;
+      const donorTree = crossoverChoice.p2;
 
       pair.parent.setChild(pair.childIndex, donorTree.child.copy());
       donorTree.parent.setChild(donorTree.childIndex, pair.child.copy());
@@ -116,7 +116,7 @@ export class SolidityTreeCrossover implements Crossover {
         });
       }
 
-      if (wanted.type === pair.child.type) {
+      if (wanted.types === pair.child.type) {
         if (wanted instanceof NumericStatement) {
           if (
             wanted.upper_bound ==
