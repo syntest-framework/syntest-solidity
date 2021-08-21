@@ -86,7 +86,7 @@ export class Target {
     );
     controlFlowGraphs.set(
       targetName,
-      targetPool.getCFG(absoluteTargetPath, targetName)
+      targetPool.getCFG(absoluteTargetPath)
     );
 
     // Analyze dependencies

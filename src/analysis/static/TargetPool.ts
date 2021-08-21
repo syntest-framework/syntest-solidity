@@ -5,6 +5,7 @@ import { TargetMapGenerator } from "./map/TargetMapGenerator";
 import { SolidityCFGFactory } from "../../graph/SolidityCFGFactory";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { ContractFunction } from "./map/ContractFunction";
+import { CFG } from "syntest-framework";
 
 /**
  * Pool for retrieving and caching expensive processing calls.
@@ -35,7 +36,7 @@ export class TargetPool {
   >;
 
   // Mapping: filepath -> target name -> (function name -> CFG)
-  protected _controlFlowGraphs: Map<string, Map<string, any>>;
+  protected _controlFlowGraphs: Map<string, [CFG, string[]]>;
 
   constructor(
     sourceGenerator: SourceGenerator,
@@ -55,7 +56,7 @@ export class TargetPool {
       string,
       Map<string, Map<string, ContractFunction>>
     >();
-    this._controlFlowGraphs = new Map<string, Map<string, any>>();
+    this._controlFlowGraphs = new Map<string, [CFG, string[]]>();
   }
 
   getSource(targetPath: string): string {
@@ -119,14 +120,11 @@ export class TargetPool {
     }
   }
 
-  getCFG(targetPath: string, targetName: string): any {
+  getCFG(targetPath: string): [CFG, string[]] {
     const absoluteTargetPath = path.resolve(targetPath);
 
-    if (!this._controlFlowGraphs.has(absoluteTargetPath))
-      this._controlFlowGraphs.set(absoluteTargetPath, new Map<string, any>());
-
-    if (this._controlFlowGraphs.get(absoluteTargetPath).has(targetName)) {
-      return this._controlFlowGraphs.get(absoluteTargetPath).get(targetName);
+    if (this._controlFlowGraphs.has(absoluteTargetPath)) {
+      return this._controlFlowGraphs.get(absoluteTargetPath);
     } else {
       const targetAST = this.getAST(absoluteTargetPath);
       const cfg = this._controlFlowGraphGenerator.convertAST(
@@ -134,8 +132,8 @@ export class TargetPool {
         false,
         false
       );
-      this._controlFlowGraphs.get(absoluteTargetPath).set(targetName, cfg);
-      return cfg;
+      this._controlFlowGraphs.set(absoluteTargetPath, [cfg, this._controlFlowGraphGenerator.contracts])
+      return [cfg, this._controlFlowGraphGenerator.contracts];
     }
   }
 }

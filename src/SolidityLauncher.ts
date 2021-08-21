@@ -326,29 +326,15 @@ export class SolidityLauncher {
         cfgGenerator
       );
 
-      // targetPool.
-
       for (const target of targets) {
-        const { archive, contracts } = await testFile(
-          target,
-          excluded,
-          api,
-          truffle,
-          config
-        );
+        const {importsMap, dependencyMap} = await testTarget(
+            targetPool,
+            target,
+            api,
+            truffle,
+            config
+        )
 
-        finalArchive.merge(archive);
-        target.contracts = contracts;
-
-        // TODO: check if we can prevent recalculating the dependencies
-        const ast = SolidityParser.parse(target.actualSource, {
-          loc: true,
-          range: true,
-        });
-        const { importsMap, dependencyMap } = getImportDependencies(
-          ast,
-          target
-        );
         finalImportsMap = new Map([
           ...Array.from(finalImportsMap.entries()),
           ...Array.from(importsMap.entries()),
@@ -418,95 +404,67 @@ export class SolidityLauncher {
   }
 }
 
-async function testFile(
-  target: any,
-  excluded: TargetFile[],
-  api,
-  truffle,
-  config
+async function testTarget(
+    targetPool: TargetPool,
+    target: any,
+    api,
+    truffle,
+    config
 ) {
+  console.log(target)
   await createDirectoryStructure();
 
-  const ast = SolidityParser.parse(target.actualSource, {
-    loc: true,
-    range: true,
-  });
+  const [cfg, contracts] = targetPool.getCFG(target.canonicalPath)
 
-  const cfgFactory = new SolidityCFGFactory();
-
-  const cfg = cfgFactory.convertAST(ast, false, false);
   if (Properties.draw_cfg) {
     // TODO dot's in the the name of a file will give issues
     drawGraph(
-      cfg,
-      path.join(
-        Properties.cfg_directory,
-        `${target.relativePath.split(".")[0]}.svg`
-      )
+        cfg,
+        path.join(
+            Properties.cfg_directory,
+            `${target.relativePath.split(".")[0]}.svg`
+        )
     );
   }
-
-  // all contracts in the target file
-  const contracts = cfgFactory.contracts;
-
-  // filter excluded contracts
-  // let includes = Properties.include;
-  // let excludes = Properties.exclude;
-  //
-  // if (typeof includes === "string") {
-  //   includes = [includes];
-  // }
-  //
-  // if (typeof excludes === "string") {
-  //   excludes = [excludes];
-  // }
-  //
-  // includes.find()
-
-  // includes = includes.map((include) => {
-  //   if (include.includes('->')) {
-  //     return include.split('->')[1]
-  //   }
-  //
-  //   return include
-  // })
-  //
-  // // only exclude files if all contracts are excluded
-  // excludes = excludes
-  //     .filter((exclude) => {
-  //       return !exclude.includes('->')
-  //     })
 
   const finalArchive = new Archive<SolidityTestCase>();
 
   for (const contractName of contracts) {
+
     const archive = await testContract(
-      target,
-      excluded,
-      api,
-      truffle,
-      config,
-      cfg,
-      contractName
+        targetPool,
+        target,
+        contractName,
+        api,
+        truffle,
+        config
     );
 
     finalArchive.merge(archive);
   }
 
-  return {
-    archive: finalArchive,
-    contracts: contracts,
-  };
+  target.contracts = contracts;
+
+  // TODO: check if we can prevent recalculating the dependencies
+  const ast = SolidityParser.parse(target.actualSource, {
+    loc: true,
+    range: true,
+  });
+
+  return getImportDependencies(
+      ast,
+      target
+  );
 }
 
+
 async function testContract(
+  targetPool: TargetPool,
   target: any,
-  excluded: TargetFile[],
+  contractName: string,
   api,
   truffle,
-  config,
-  cfg: CFG,
-  contractName: string
+  config
 ) {
   try {
     await createDirectoryStructure();
@@ -516,14 +474,10 @@ async function testContract(
       `Searching: "${target.relativePath}"`,
     ]);
 
-    const ast = SolidityParser.parse(target.actualSource, {
-      loc: true,
-      range: true,
-    });
+    const ast = targetPool.getAST(target.canonicalPath)
+    const [cfg, contracts] = targetPool.getCFG(target.canonicalPath)
 
     const functionDescriptions = getFunctionDescriptions(cfg, contractName);
-
-    drawGraph(cfg, path.join(Properties.cfg_directory, `${contractName}.svg`));
 
     const currentSubject = new SoliditySubject(
       target.relativePath,
