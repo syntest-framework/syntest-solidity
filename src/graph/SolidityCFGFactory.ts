@@ -314,14 +314,15 @@ export class SolidityCFGFactory implements CFGFactory {
   }
 
   private getVisibility(text: string): Visibility {
-    if (text === "public") {
-      return PublicVisibility;
-    } else if (text === "private") {
-      return PrivateVisibility;
-    } else if (text === "internal") {
-      return InternalVisibility;
-    } else if (text === "external") {
-      return ExternalVisibility;
+    switch (text) {
+      case "public":
+        return PublicVisibility;
+      case "private":
+        return PrivateVisibility;
+      case "internal":
+        return InternalVisibility;
+      case "external":
+        return ExternalVisibility;
     }
 
     throw new Error("Invalid visibility string!");

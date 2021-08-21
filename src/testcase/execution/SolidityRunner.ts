@@ -78,8 +78,6 @@ export class SolidityRunner extends TestCaseRunner {
         traces.push(instrumentationData[key]);
     }
 
-    // console.log(traces)
-
     // Retrieve execution information
     let executionResult: SolidityExecutionResult;
     if (

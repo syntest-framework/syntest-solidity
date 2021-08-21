@@ -4,7 +4,6 @@ import {
   BranchDistance,
   ProbeObjectiveFunction,
   Node,
-  RootNode,
   BranchNode,
   NodeType,
 } from "syntest-framework";
@@ -29,7 +28,6 @@ export class RequireObjectiveFunction<
     }
 
     if (executionResult.coversLine(this._line)) {
-      // console.log(executionResult.getTraces().filter(trace => trace.line === this._line))
       const postCondition = executionResult
         .getTraces()
         .find(

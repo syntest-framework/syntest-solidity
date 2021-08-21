@@ -47,5 +47,3 @@ export function convertRootNodeToFunctionDescription(
     };
   });
 }
-
-// export function

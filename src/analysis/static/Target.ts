@@ -84,10 +84,7 @@ export class Target {
       targetName,
       targetPool.getFunctionMap(absoluteTargetPath, targetName)
     );
-    controlFlowGraphs.set(
-      targetName,
-      targetPool.getCFG(absoluteTargetPath)
-    );
+    controlFlowGraphs.set(targetName, targetPool.getCFG(absoluteTargetPath));
 
     // Analyze dependencies
     const analyzer = new DependencyAnalyzer(targetPool);

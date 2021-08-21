@@ -132,7 +132,10 @@ export class TargetPool {
         false,
         false
       );
-      this._controlFlowGraphs.set(absoluteTargetPath, [cfg, this._controlFlowGraphGenerator.contracts])
+      this._controlFlowGraphs.set(absoluteTargetPath, [
+        cfg,
+        this._controlFlowGraphGenerator.contracts,
+      ]);
       return [cfg, this._controlFlowGraphGenerator.contracts];
     }
   }

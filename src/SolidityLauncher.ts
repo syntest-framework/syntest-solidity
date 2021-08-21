@@ -327,13 +327,13 @@ export class SolidityLauncher {
       );
 
       for (const target of targets) {
-        const {importsMap, dependencyMap} = await testTarget(
-            targetPool,
-            target,
-            api,
-            truffle,
-            config
-        )
+        const { importsMap, dependencyMap } = await testTarget(
+          targetPool,
+          target,
+          api,
+          truffle,
+          config
+        );
 
         finalImportsMap = new Map([
           ...Array.from(finalImportsMap.entries()),
@@ -370,9 +370,9 @@ export class SolidityLauncher {
 
       // Run tests
       // by replacing the console.log global function we disable the output of the truffle test results
-      // const old = console.log;
+      const old = console.log;
       // eslint-disable-next-line @typescript-eslint/no-empty-function
-      // console.log = function () {};
+      console.log = function () {};
       try {
         await truffle.test.run(config);
       } catch (e) {
@@ -380,7 +380,7 @@ export class SolidityLauncher {
         getUserInterface().error(e);
         console.trace(e);
       }
-      // console.log = old;
+      console.log = old;
       await api.onTestsComplete(config);
 
       getUserInterface().report("header", ["search results"]);
@@ -405,39 +405,38 @@ export class SolidityLauncher {
 }
 
 async function testTarget(
-    targetPool: TargetPool,
-    target: any,
-    api,
-    truffle,
-    config
+  targetPool: TargetPool,
+  target: any,
+  api,
+  truffle,
+  config
 ) {
-  console.log(target)
+  console.log(target);
   await createDirectoryStructure();
 
-  const [cfg, contracts] = targetPool.getCFG(target.canonicalPath)
+  const [cfg, contracts] = targetPool.getCFG(target.canonicalPath);
 
   if (Properties.draw_cfg) {
     // TODO dot's in the the name of a file will give issues
     drawGraph(
-        cfg,
-        path.join(
-            Properties.cfg_directory,
-            `${target.relativePath.split(".")[0]}.svg`
-        )
+      cfg,
+      path.join(
+        Properties.cfg_directory,
+        `${target.relativePath.split(".")[0]}.svg`
+      )
     );
   }
 
   const finalArchive = new Archive<SolidityTestCase>();
 
   for (const contractName of contracts) {
-
     const archive = await testContract(
-        targetPool,
-        target,
-        contractName,
-        api,
-        truffle,
-        config
+      targetPool,
+      target,
+      contractName,
+      api,
+      truffle,
+      config
     );
 
     finalArchive.merge(archive);
@@ -451,12 +450,8 @@ async function testTarget(
     range: true,
   });
 
-  return getImportDependencies(
-      ast,
-      target
-  );
+  return getImportDependencies(ast, target);
 }
-
 
 async function testContract(
   targetPool: TargetPool,
@@ -474,8 +469,8 @@ async function testContract(
       `Searching: "${target.relativePath}"`,
     ]);
 
-    const ast = targetPool.getAST(target.canonicalPath)
-    const [cfg, contracts] = targetPool.getCFG(target.canonicalPath)
+    const ast = targetPool.getAST(target.canonicalPath);
+    const [cfg, contracts] = targetPool.getCFG(target.canonicalPath);
 
     const functionDescriptions = getFunctionDescriptions(cfg, contractName);
 
