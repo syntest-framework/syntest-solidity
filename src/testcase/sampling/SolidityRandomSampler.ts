@@ -61,7 +61,8 @@ export class SolidityRandomSampler extends SoliditySampler {
       uniqueID,
       root,
       action.name,
-      args
+      args,
+      AddressStatement.getRandom()
     );
     return call;
   }
@@ -84,7 +85,8 @@ export class SolidityRandomSampler extends SoliditySampler {
         prng.uniqueId(),
         `${action.name}`,
         args,
-        []
+        [],
+        AddressStatement.getRandom()
       );
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
@@ -93,7 +95,8 @@ export class SolidityRandomSampler extends SoliditySampler {
         prng.uniqueId(),
         `${this._subject.name}`,
         [],
-        []
+        [],
+        AddressStatement.getRandom()
       );
     }
   }
@@ -220,7 +223,8 @@ export class SolidityRandomSampler extends SoliditySampler {
       prng.uniqueId(),
       constructor,
       action.name,
-      args
+      args,
+      AddressStatement.getRandom()
     );
   }
 }
