@@ -304,6 +304,8 @@ export class SolidityCFGFactory implements CFGFactory {
       "NumberLiteral",
       "IndexAccess",
       "MemberAccess",
+      "TypeNameExpression", // Is used in the benchmark
+      "EnumDefinition", // Is used in the framework
     ];
 
     if (skipable.includes(child.type)) {
