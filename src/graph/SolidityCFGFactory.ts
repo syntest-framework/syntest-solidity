@@ -1069,7 +1069,7 @@ export class SolidityCFGFactory implements CFGFactory {
     const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
     this.connectParents(cfg, parents, [node]);
 
-    this.visitChild(cfg, AST.expression, [node]);
+    // this.visitChild(cfg, AST.expression, [node]);
 
     return {
       childNodes: [],
