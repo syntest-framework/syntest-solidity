@@ -174,7 +174,7 @@ class SyntestInjector extends Injector {
       .createHash("md5")
       .update(injection.condition)
       .digest("hex");
-    contract.instrumented = `${start}if(${injection.condition}){int temp${varName}=1;}${injectable}${end}`;
+    contract.instrumented = `${start}if(${injection.condition}){}${injectable}${end}`;
   }
 
   injectRequirePost(
