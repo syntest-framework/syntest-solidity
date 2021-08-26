@@ -46,7 +46,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       .join(", ");
 
     const sender = (statement as ConstructorCall).getSender().getValue();
-    const senderString = formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+    const senderString =
+      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
     return (
       string +
       `const ${statement.varName} = await ${
@@ -72,7 +73,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       .join(", ");
 
     const sender = (statement as ConstructorCall).getSender().getValue();
-    const senderString = formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+    const senderString =
+      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
     return (
       string +
@@ -109,7 +111,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
       const sender = (statement as ObjectFunctionCall).getSender().getValue();
-      const senderString = formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+      const senderString =
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
       if (
         statement.type !== "none" &&
@@ -134,7 +137,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
       const sender = (statement as ObjectFunctionCall).getSender().getValue();
-      const senderString = formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+      const senderString =
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
       return `await expect(${objectName}.${
         (statement as ObjectFunctionCall).functionName
