@@ -4,12 +4,14 @@ import { ConstructorCall } from "./ConstructorCall";
 import { TestCaseSampler } from "syntest-framework/dist/testcase/sampling/TestCaseSampler";
 import { prng } from "syntest-framework/dist/util/prng";
 import { Properties } from "syntest-framework/dist/properties";
+import { AddressStatement } from "../AddressStatement";
 
 /**
  * @author Dimitri Stallenberg
  */
 export class ObjectFunctionCall extends ActionStatement {
   private _functionName: string;
+  private _sender: AddressStatement;
 
   private _parent: ConstructorCall;
 
@@ -26,11 +28,13 @@ export class ObjectFunctionCall extends ActionStatement {
     uniqueId: string,
     instance: ConstructorCall,
     functionName: string,
-    args: Statement[]
+    args: Statement[],
+    sender: AddressStatement
   ) {
     super(type, uniqueId, [...args]);
     this._parent = instance;
     this._functionName = functionName;
+    this._sender = sender;
   }
 
   mutate(sampler: TestCaseSampler, depth: number): ObjectFunctionCall {
@@ -52,7 +56,8 @@ export class ObjectFunctionCall extends ActionStatement {
         this.id,
         instance,
         this.functionName,
-        args
+        args,
+        this._sender.copy()
       );
     }
   }
@@ -65,7 +70,8 @@ export class ObjectFunctionCall extends ActionStatement {
       this.id,
       this._parent,
       this.functionName,
-      deepCopyArgs
+      deepCopyArgs,
+      this._sender.copy()
     );
   }
 
@@ -84,5 +90,13 @@ export class ObjectFunctionCall extends ActionStatement {
 
   get functionName(): string {
     return this._functionName;
+  }
+
+  setSender(sender: AddressStatement) {
+    this._sender = sender;
+  }
+
+  getSender(): AddressStatement {
+    return this._sender;
   }
 }
