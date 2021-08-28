@@ -41,10 +41,7 @@ export class SolidityCFGFactory implements CFGFactory {
     this.count = 0;
     this._contracts = [];
 
-    const cfg: CFG = {
-      edges: [],
-      nodes: [],
-    };
+    const cfg = new CFG()
 
     this.visitChild(cfg, AST, []);
 
@@ -64,7 +61,7 @@ export class SolidityCFGFactory implements CFGFactory {
     const removableNodes = [];
     cfg.nodes
       // Find all placeholder nodes
-      .filter((n) => n.type === NodeType.placeholder)
+      .filter((n) => n.type === NodeType.Placeholder)
       .forEach((placeholderNode) => {
         cfg.edges
           // Find all placeholder nodes that are not end nodes
@@ -124,7 +121,7 @@ export class SolidityCFGFactory implements CFGFactory {
   // }
 
   compress(cfg: CFG): void {
-    const roots = cfg.nodes.filter((n) => n.type === NodeType.root);
+    const roots = cfg.nodes.filter((n) => n.type === NodeType.Root);
 
     // create  node map for easy lookup
     const nodeMap = new Map<string, Node>();
@@ -264,7 +261,7 @@ export class SolidityCFGFactory implements CFGFactory {
    */
   private createNode(cfg: CFG, lines: number[], statements: string[]): Node {
     const node: Node = {
-      type: NodeType.intermediary,
+      type: NodeType.Intermediary,
       id: `${this.count++}`,
       lines: lines,
       statements: statements,
@@ -281,7 +278,7 @@ export class SolidityCFGFactory implements CFGFactory {
     statements: string[]
   ): PlaceholderNode {
     const node: PlaceholderNode = {
-      type: NodeType.placeholder,
+      type: NodeType.Placeholder,
       id: `${this.count++}`,
       lines: lines,
       statements: statements,
@@ -304,7 +301,7 @@ export class SolidityCFGFactory implements CFGFactory {
       id: `${this.count++}`,
       lines: lines,
       statements: statements,
-      type: NodeType.branch,
+      type: NodeType.Branch,
       probe: probe,
     };
 
@@ -346,7 +343,7 @@ export class SolidityCFGFactory implements CFGFactory {
       isConstructor: isConstructor,
       lines: lines,
       statements: statements,
-      type: NodeType.root,
+      type: NodeType.Root,
 
       parameters: parameters,
       returnParameters: returnParameters,

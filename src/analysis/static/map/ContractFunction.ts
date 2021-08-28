@@ -32,10 +32,16 @@ export interface ContractFunction extends FunctionDescription {
   modifiers: string[];
 }
 
+/**
+ * Function can only be called from within the contract where it is defined and all contracts that inherit from it.
+ */
 export const InternalVisibility: Visibility = {
   name: "internal",
 };
 
+/**
+ * Function can only be called from outside the contract.
+ */
 export const ExternalVisibility: Visibility = {
   name: "external",
 };

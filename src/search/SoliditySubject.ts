@@ -36,7 +36,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     // Branch objectives
     this._cfg.nodes
       // Find all branch nodes
-      .filter((node) => node.type === NodeType.branch)
+      .filter((node) => node.type === NodeType.Branch)
       .forEach((branchNode) => {
         this._cfg.edges
           // Find all edges from the branch node
@@ -64,7 +64,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     this._cfg.nodes
       // Find all probe nodes
       .filter(
-        (node) => node.type === NodeType.branch && (<BranchNode>node).probe
+        (node) => node.type === NodeType.Branch && (<BranchNode>node).probe
       )
       .forEach((probeNode) => {
         this._cfg.edges
@@ -104,7 +104,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     // Function objectives
     this._cfg.nodes
       // Find all root function nodes
-      .filter((node) => node.type === NodeType.root)
+      .filter((node) => node.type === NodeType.Root)
       .forEach((node) => {
         // Add objective
         const functionObjective = new FunctionObjectiveFunction(
@@ -196,7 +196,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   }
 
   parseActions(): void {
-    this._functionCalls = this._functionMap.map((actionDescription) => {
+    this._functionCalls = this.functions.map((actionDescription) => {
       (<FunctionDescription>actionDescription).parameters = (<
         FunctionDescription
       >actionDescription).parameters.map((param): SolidityParameter => {

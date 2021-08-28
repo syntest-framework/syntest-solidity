@@ -65,7 +65,7 @@ export class RequireObjectiveFunction<
     // find the corresponding branch node inside the cfg
     const branchNode = this._subject.cfg.nodes.find((n: Node) => {
       return (
-        n.type === NodeType.branch &&
+        n.type === NodeType.Branch &&
         (<BranchNode>n).probe &&
         n.lines.includes(this._line)
       );

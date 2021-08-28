@@ -57,8 +57,6 @@ import {
   tearDownTempFolders,
 } from "./util/fileSystem";
 
-import { getFunctionDescriptions } from "./graph/CFGUtils";
-
 import Messages from "./ui/Messages";
 import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
 import { SolidityMonitorCommandLineInterface } from "./ui/SolidityMonitorCommandLineInterface";
@@ -288,11 +286,11 @@ export class SolidityLauncher {
       ]);
 
       // Instrument
-      const targets = api.instrument(included);
+      const instrumented = api.instrument(included);
       const skipped = excluded;
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir);
-      await save(targets, config.contracts_directory, tempContractsDir);
+      await save(instrumented, config.contracts_directory, tempContractsDir);
       await save(skipped, config.contracts_directory, tempContractsDir);
 
       config.contracts_directory = tempContractsDir;
@@ -326,23 +324,34 @@ export class SolidityLauncher {
         cfgGenerator
       );
 
-      for (const target of targets) {
-        const { importsMap, dependencyMap } = await testTarget(
-          targetPool,
-          target,
-          api,
-          truffle,
-          config
-        );
+      for (const targetFile of included) {
+        const targetMap = targetPool.getTargetMap(targetFile.canonicalPath)
+        for (const target of targetMap.keys()) {
+          // TODO check if included
 
-        finalImportsMap = new Map([
-          ...Array.from(finalImportsMap.entries()),
-          ...Array.from(importsMap.entries()),
-        ]);
-        finalDependencies = new Map([
-          ...Array.from(finalDependencies.entries()),
-          ...Array.from(dependencyMap.entries()),
-        ]);
+          const instrumentedTarget = instrumented.find((x) => x.source === targetFile.source)
+          const archive = await testTarget(
+              targetPool,
+              targetFile,
+              target,
+              instrumentedTarget,
+              api,
+              truffle,
+              config
+          );
+          const [importsMap, dependencyMap]  = targetPool.getImportDependencies(targetFile.canonicalPath, target);
+
+          finalArchive.merge(archive)
+
+          finalImportsMap = new Map([
+            ...Array.from(finalImportsMap.entries()),
+            ...Array.from(importsMap.entries()),
+          ]);
+          finalDependencies = new Map([
+            ...Array.from(finalDependencies.entries()),
+            ...Array.from(dependencyMap.entries()),
+          ]);
+        }
       }
 
       await createDirectoryStructure();
@@ -406,15 +415,16 @@ export class SolidityLauncher {
 
 async function testTarget(
   targetPool: TargetPool,
-  target: any,
+  targetFile: TargetFile,
+  target: string,
+  instrumentedTarget: any,
   api,
   truffle,
   config
 ) {
-  console.log(target);
   await createDirectoryStructure();
 
-  const [cfg, contracts] = targetPool.getCFG(target.canonicalPath);
+  const cfg = targetPool.getCFG(targetFile.canonicalPath, target);
 
   if (Properties.draw_cfg) {
     // TODO dot's in the the name of a file will give issues
@@ -422,76 +432,42 @@ async function testTarget(
       cfg,
       path.join(
         Properties.cfg_directory,
-        `${target.relativePath.split(".")[0]}.svg`
+        `${targetFile.relativePath.split(".")[0]}.svg`
       )
     );
   }
 
-  const finalArchive = new Archive<SolidityTestCase>();
-
-  for (const contractName of contracts) {
-    const archive = await testContract(
-      targetPool,
-      target,
-      contractName,
-      api,
-      truffle,
-      config
-    );
-
-    finalArchive.merge(archive);
-  }
-
-  target.contracts = contracts;
-
-  // TODO: check if we can prevent recalculating the dependencies
-  const ast = SolidityParser.parse(target.actualSource, {
-    loc: true,
-    range: true,
-  });
-
-  return getImportDependencies(ast, target);
-}
-
-async function testContract(
-  targetPool: TargetPool,
-  target: any,
-  contractName: string,
-  api,
-  truffle,
-  config
-) {
   try {
     await createDirectoryStructure();
     await createTempDirectoryStructure();
 
     getUserInterface().report("header", [
-      `Searching: "${target.relativePath}"`,
+      `Searching: "${targetFile.relativePath}"`,
     ]);
 
-    const ast = targetPool.getAST(target.canonicalPath);
-    const [cfg, contracts] = targetPool.getCFG(target.canonicalPath);
+    const ast = targetPool.getAST(targetFile.canonicalPath);
+    const cfg = targetPool.getCFG(targetFile.canonicalPath, target);
 
-    const functionDescriptions = getFunctionDescriptions(cfg, contractName);
+    const functionDescriptions = cfg.getFunctionDescriptions(target);
 
     const currentSubject = new SoliditySubject(
-      target.relativePath,
-      contractName,
-      cfg,
-      functionDescriptions
+        targetFile.relativePath,
+        target,
+        cfg,
+        functionDescriptions
     );
 
-    const { importsMap, dependencyMap } = getImportDependencies(ast, target);
+    const [importsMap, dependencyMap] = targetPool.getImportDependencies(targetFile.canonicalPath, target);
 
     const stringifier = new SolidityTruffleStringifier(
-      importsMap,
-      dependencyMap
+        importsMap,
+        dependencyMap
     );
     const suiteBuilder = new SoliditySuiteBuilder(
-      stringifier,
-      api,
-      truffle,
-      config
+        stringifier,
+        api,
+        truffle,
+        config
     );
 
     const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
@@ -526,23 +502,23 @@ async function testContract(
     const collector = new StatisticsCollector(totalTimeBudget);
     collector.recordVariable(RuntimeVariable.VERSION, 1);
     collector.recordVariable(
-      RuntimeVariable.CONFIGURATION,
-      Properties.configuration
+        RuntimeVariable.CONFIGURATION,
+        Properties.configuration
     );
     collector.recordVariable(RuntimeVariable.SEED, getSeed());
-    collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
+    collector.recordVariable(RuntimeVariable.SUBJECT, targetFile.relativePath);
     collector.recordVariable(
-      RuntimeVariable.PROBE_ENABLED,
-      Properties.probe_objective
+        RuntimeVariable.PROBE_ENABLED,
+        Properties.probe_objective
     );
     collector.recordVariable(
-      RuntimeVariable.CONSTANT_POOL_ENABLED,
-      Properties.constant_pool
+        RuntimeVariable.CONSTANT_POOL_ENABLED,
+        Properties.constant_pool
     );
     collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
     collector.recordVariable(
-      RuntimeVariable.TOTAL_OBJECTIVES,
-      currentSubject.getObjectives().length
+        RuntimeVariable.TOTAL_OBJECTIVES,
+        currentSubject.getObjectives().length
     );
 
     // Statistics listener
@@ -551,35 +527,35 @@ async function testContract(
 
     // This searches for a covering population
     const archive = await algorithm.search(
-      currentSubject,
-      budgetManager,
-      terminationManager
+        currentSubject,
+        budgetManager,
+        terminationManager
     );
 
     // Gather statistics after the search
     collector.recordVariable(
-      RuntimeVariable.COVERED_OBJECTIVES,
-      archive.getObjectives().length
+        RuntimeVariable.COVERED_OBJECTIVES,
+        archive.getObjectives().length
     );
     collector.recordVariable(
-      RuntimeVariable.INITIALIZATION_TIME,
-      totalTimeBudget.getUsedBudget() - searchBudget.getUsedBudget()
+        RuntimeVariable.INITIALIZATION_TIME,
+        totalTimeBudget.getUsedBudget() - searchBudget.getUsedBudget()
     );
     collector.recordVariable(
-      RuntimeVariable.SEARCH_TIME,
-      searchBudget.getUsedBudget()
+        RuntimeVariable.SEARCH_TIME,
+        searchBudget.getUsedBudget()
     );
     collector.recordVariable(
-      RuntimeVariable.TOTAL_TIME,
-      totalTimeBudget.getUsedBudget()
+        RuntimeVariable.TOTAL_TIME,
+        totalTimeBudget.getUsedBudget()
     );
     collector.recordVariable(
-      RuntimeVariable.ITERATIONS,
-      iterationBudget.getUsedBudget()
+        RuntimeVariable.ITERATIONS,
+        iterationBudget.getUsedBudget()
     );
     collector.recordVariable(
-      RuntimeVariable.EVALUATIONS,
-      evaluationBudget.getUsedBudget()
+        RuntimeVariable.EVALUATIONS,
+        evaluationBudget.getUsedBudget()
     );
 
     collectCoverageData(collector, archive, "branch");
@@ -588,18 +564,18 @@ async function testContract(
     collectCoverageData(collector, archive, "probe");
 
     const numOfExceptions = archive
-      .getObjectives()
-      .filter(
-        (objective) => objective instanceof ExceptionObjectiveFunction
-      ).length;
+        .getObjectives()
+        .filter(
+            (objective) => objective instanceof ExceptionObjectiveFunction
+        ).length;
     collector.recordVariable(
-      RuntimeVariable.COVERED_EXCEPTIONS,
-      numOfExceptions
+        RuntimeVariable.COVERED_EXCEPTIONS,
+        numOfExceptions
     );
 
     collector.recordVariable(
-      RuntimeVariable.COVERAGE,
-      (archive.getObjectives().length - numOfExceptions) /
+        RuntimeVariable.COVERAGE,
+        (archive.getObjectives().length - numOfExceptions) /
         currentSubject.getObjectives().length
     );
 
@@ -613,61 +589,13 @@ async function testContract(
 
     await deleteTempDirectories();
 
-    return archive;
+    return archive
   } catch (e) {
     if (e instanceof SolidityParser.ParserError) {
       console.error(e.errors);
     }
     throw e;
   }
-}
-
-function getImportDependencies(ast: any, target: any) {
-  const contractName = target.instrumented.contractName;
-
-  // Import the contract under test
-  const importsMap = new Map<string, string>();
-  importsMap.set(contractName, contractName);
-
-  // Find all external imports in the contract under test
-  const importVisitor = new ImportVisitor();
-  SolidityParser.visit(ast, importVisitor);
-
-  // For each external import scan the file for libraries with public and external functions
-  const libraries: string[] = [];
-  importVisitor.getImports().forEach((importPath: string) => {
-    // Full path to the imported file
-    const pathLib = path.join(path.dirname(target.canonicalPath), importPath);
-
-    // Read the imported file
-    // TODO: use the already parsed excluded information to prevent duplicate file reading
-    const source = fs.readFileSync(pathLib).toString();
-
-    // Parse the imported file
-    const astLib = SolidityParser.parse(source, {
-      loc: true,
-      range: true,
-    });
-
-    // Scan for libraries with public or external functions
-    const libraryVisitor = new LibraryVisitor();
-    SolidityParser.visit(astLib, libraryVisitor);
-
-    // Import the external file in the test
-    importsMap.set(
-      path.basename(importPath).split(".")[0],
-      path.basename(importPath).split(".")[0]
-    );
-
-    // Import the found libraries
-    // TODO: check for duplicates in libraries
-    libraries.push(...libraryVisitor.libraries);
-  });
-
-  // Return the library dependency information
-  const dependencyMap = new Map<string, string[]>();
-  dependencyMap.set(contractName, libraries);
-  return { importsMap, dependencyMap };
 }
 
 function collectCoverageData(
