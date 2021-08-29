@@ -16,20 +16,14 @@ import { ExternalVisibility } from "../analysis/static/map/ContractFunction";
 
 export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
   private _functionCalls: FunctionDescription[] | null = null;
-  private _contract: string;
-
-  get contract(): string {
-    return this._contract;
-  }
 
   constructor(
-    contract: string,
+    path: string,
     name: string,
     cfg: CFG,
     functionMap: FunctionDescription[]
   ) {
-    super(name, cfg, functionMap);
-    this._contract = contract;
+    super(path, name, cfg, functionMap);
   }
 
   protected _extractObjectives(): void {

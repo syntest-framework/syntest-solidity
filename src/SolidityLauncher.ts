@@ -38,6 +38,7 @@ import {
   getUserInterface,
   AbstractTestCase,
   getSeed,
+  clearDirectory,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -400,6 +401,9 @@ export class SolidityLauncher {
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
+      const testDir = path.resolve(Properties.final_suite_directory)
+      await clearDirectory(testDir)
+
       const stringifier = new SolidityTruffleStringifier(
         finalImportsMap,
         finalDependencies
@@ -417,7 +421,7 @@ export class SolidityLauncher {
       await deleteTempDirectories();
 
       config.test_files = await getTestFilePaths({
-        testDir: path.resolve(Properties.final_suite_directory),
+        testDir: testDir,
       });
 
       // Run tests
@@ -494,7 +498,7 @@ async function testTarget(
     const functionDescriptions = cfg.getFunctionDescriptions(target);
 
     const currentSubject = new SoliditySubject(
-      path.basename(targetPath), // TODO WHAT???
+      path.basename(targetPath),
       target,
       cfg,
       functionDescriptions
@@ -555,7 +559,7 @@ async function testTarget(
     collector.recordVariable(
       RuntimeVariable.SUBJECT,
       path.basename(targetPath)
-    ); // TODO what????
+    );
     collector.recordVariable(
       RuntimeVariable.PROBE_ENABLED,
       Properties.probe_objective
