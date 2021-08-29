@@ -401,8 +401,8 @@ export class SolidityLauncher {
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
-      const testDir = path.resolve(Properties.final_suite_directory)
-      await clearDirectory(testDir)
+      const testDir = path.resolve(Properties.final_suite_directory);
+      await clearDirectory(testDir);
 
       const stringifier = new SolidityTruffleStringifier(
         finalImportsMap,
