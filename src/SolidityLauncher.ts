@@ -33,10 +33,8 @@ import {
   SummaryWriter,
   TotalTimeBudget,
   loadTargets,
-  CFG,
   setUserInterface,
   getUserInterface,
-  AbstractTestCase,
   getSeed,
   clearDirectory,
 } from "syntest-framework";
