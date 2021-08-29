@@ -75,7 +75,7 @@ import { TargetPool } from "./analysis/static/TargetPool";
 import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
 import { ASTGenerator } from "./analysis/static/ast/ASTGenerator";
 import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
-import {readFileSync} from "fs";
+import { readFileSync } from "fs";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -232,19 +232,17 @@ export class SolidityLauncher {
         process.exit(1);
       }
 
-      let names = []
+      let names = [];
 
-      included.forEach((value, key, map) => names.push(`${path.basename(key)} -> ${value.join(", ")}`))
-      getUserInterface().report(
-        "targets",
-          names
+      included.forEach((value, key, map) =>
+        names.push(`${path.basename(key)} -> ${value.join(", ")}`)
       );
-      names = []
-      excluded.forEach((value, key, map) => names.push(`${path.basename(key)} -> ${value.join(", ")}`))
-      getUserInterface().report(
-        "skip-files",
-          names
+      getUserInterface().report("targets", names);
+      names = [];
+      excluded.forEach((value, key, map) =>
+        names.push(`${path.basename(key)} -> ${value.join(", ")}`)
       );
+      getUserInterface().report("skip-files", names);
 
       getUserInterface().report("header", ["configuration"]);
 
@@ -293,29 +291,29 @@ export class SolidityLauncher {
       const targetMapGenerator = new TargetMapGenerator();
       const cfgGenerator = new SolidityCFGFactory();
       const targetPool = new TargetPool(
-          sourceGenerator,
-          astGenerator,
-          targetMapGenerator,
-          cfgGenerator
+        sourceGenerator,
+        astGenerator,
+        targetMapGenerator,
+        cfgGenerator
       );
 
-      const targets: TargetFile[] = []
-      const skipped: TargetFile[] = []
+      const targets: TargetFile[] = [];
+      const skipped: TargetFile[] = [];
 
       for (const _path of included.keys()) {
         targets.push({
           source: targetPool.getSource(_path),
           canonicalPath: _path,
-          relativePath: path.basename(_path)
-        })
+          relativePath: path.basename(_path),
+        });
       }
 
       for (const _path of excluded.keys()) {
         targets.push({
           source: targetPool.getSource(_path),
           canonicalPath: _path,
-          relativePath: path.basename(_path)
-        })
+          relativePath: path.basename(_path),
+        });
       }
 
       // Instrument
@@ -346,24 +344,32 @@ export class SolidityLauncher {
       let finalDependencies: Map<string, string[]> = new Map();
 
       for (const targetPath of included.keys()) {
-        const includedTargets = included.get(targetPath)
+        const includedTargets = included.get(targetPath);
 
         const targetMap = targetPool.getTargetMap(targetPath);
         for (const target of targetMap.keys()) {
           // check if included
-          if (!includedTargets.includes("*") && !includedTargets.includes(target)) {
-            continue
+          if (
+            !includedTargets.includes("*") &&
+            !includedTargets.includes(target)
+          ) {
+            continue;
           }
 
           // check if excluded
           if (excluded.has(targetPath)) {
-            const excludedTargets = excluded.get(targetPath)
-            if (excludedTargets.includes("*") || excludedTargets.includes(target)) {
-              continue
+            const excludedTargets = excluded.get(targetPath);
+            if (
+              excludedTargets.includes("*") ||
+              excludedTargets.includes(target)
+            ) {
+              continue;
             }
           }
 
-          const instrumentedTarget = instrumented.find((x) => x.canonicalPath === targetPath);
+          const instrumentedTarget = instrumented.find(
+            (x) => x.canonicalPath === targetPath
+          );
           const archive = await testTarget(
             targetPool,
             targetPath,
@@ -488,7 +494,7 @@ async function testTarget(
     const functionDescriptions = cfg.getFunctionDescriptions(target);
 
     const currentSubject = new SoliditySubject(
-        path.basename(targetPath), // TODO WHAT???
+      path.basename(targetPath), // TODO WHAT???
       target,
       cfg,
       functionDescriptions
@@ -546,7 +552,10 @@ async function testTarget(
       Properties.configuration
     );
     collector.recordVariable(RuntimeVariable.SEED, getSeed());
-    collector.recordVariable(RuntimeVariable.SUBJECT, path.basename(targetPath)); // TODO what????
+    collector.recordVariable(
+      RuntimeVariable.SUBJECT,
+      path.basename(targetPath)
+    ); // TODO what????
     collector.recordVariable(
       RuntimeVariable.PROBE_ENABLED,
       Properties.probe_objective
@@ -741,7 +750,7 @@ function collectCoverageData(
 }
 
 interface TargetFile {
-  source: string,
-  canonicalPath: string,
-  relativePath: string
+  source: string;
+  canonicalPath: string;
+  relativePath: string;
 }
