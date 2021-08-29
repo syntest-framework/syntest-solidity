@@ -32,8 +32,7 @@ import {
   StatisticsSearchListener,
   SummaryWriter,
   TotalTimeBudget,
-  loadTargetFiles,
-  TargetFile,
+  loadTargets,
   CFG,
   setUserInterface,
   getUserInterface,
@@ -76,6 +75,7 @@ import { TargetPool } from "./analysis/static/TargetPool";
 import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
 import { ASTGenerator } from "./analysis/static/ast/ASTGenerator";
 import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
+import {readFileSync} from "fs";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -218,11 +218,9 @@ export class SolidityLauncher {
       // Run post-launch server hook;
       await api.onServerReady(config);
 
-      const obj = await loadTargetFiles();
-      const included = obj["included"];
-      const excluded = obj["excluded"];
+      const [included, excluded] = await loadTargets();
 
-      if (!included.length) {
+      if (!included.size) {
         // Finish
         await tearDownTempFolders(tempContractsDir, tempArtifactsDir);
 
@@ -234,13 +232,18 @@ export class SolidityLauncher {
         process.exit(1);
       }
 
+      let names = []
+
+      included.forEach((value, key, map) => names.push(`${path.basename(key)} -> ${value.join(", ")}`))
       getUserInterface().report(
         "targets",
-        included.map((t) => t.relativePath)
+          names
       );
+      names = []
+      excluded.forEach((value, key, map) => names.push(`${path.basename(key)} -> ${value.join(", ")}`))
       getUserInterface().report(
         "skip-files",
-        excluded.map((s) => s.relativePath)
+          names
       );
 
       getUserInterface().report("header", ["configuration"]);
@@ -285,9 +288,38 @@ export class SolidityLauncher {
         ],
       ]);
 
+      const sourceGenerator = new SourceGenerator();
+      const astGenerator = new ASTGenerator();
+      const targetMapGenerator = new TargetMapGenerator();
+      const cfgGenerator = new SolidityCFGFactory();
+      const targetPool = new TargetPool(
+          sourceGenerator,
+          astGenerator,
+          targetMapGenerator,
+          cfgGenerator
+      );
+
+      const targets: TargetFile[] = []
+      const skipped: TargetFile[] = []
+
+      for (const _path of included.keys()) {
+        targets.push({
+          source: targetPool.getSource(_path),
+          canonicalPath: _path,
+          relativePath: path.basename(_path)
+        })
+      }
+
+      for (const _path of excluded.keys()) {
+        targets.push({
+          source: targetPool.getSource(_path),
+          canonicalPath: _path,
+          relativePath: path.basename(_path)
+        })
+      }
+
       // Instrument
-      const instrumented = api.instrument(included);
-      const skipped = excluded;
+      const instrumented = api.instrument(targets);
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir);
       await save(instrumented, config.contracts_directory, tempContractsDir);
@@ -313,35 +345,40 @@ export class SolidityLauncher {
       let finalImportsMap: Map<string, string> = new Map();
       let finalDependencies: Map<string, string[]> = new Map();
 
-      const sourceGenerator = new SourceGenerator();
-      const astGenerator = new ASTGenerator();
-      const targetMapGenerator = new TargetMapGenerator();
-      const cfgGenerator = new SolidityCFGFactory();
-      const targetPool = new TargetPool(
-        sourceGenerator,
-        astGenerator,
-        targetMapGenerator,
-        cfgGenerator
-      );
+      for (const targetPath of included.keys()) {
+        const includedTargets = included.get(targetPath)
 
-      for (const targetFile of included) {
-        const targetMap = targetPool.getTargetMap(targetFile.canonicalPath)
+        const targetMap = targetPool.getTargetMap(targetPath);
         for (const target of targetMap.keys()) {
-          // TODO check if included
+          // check if included
+          if (!includedTargets.includes("*") && !includedTargets.includes(target)) {
+            continue
+          }
 
-          const instrumentedTarget = instrumented.find((x) => x.source === targetFile.source)
+          // check if excluded
+          if (excluded.has(targetPath)) {
+            const excludedTargets = excluded.get(targetPath)
+            if (excludedTargets.includes("*") || excludedTargets.includes(target)) {
+              continue
+            }
+          }
+
+          const instrumentedTarget = instrumented.find((x) => x.canonicalPath === targetPath);
           const archive = await testTarget(
-              targetPool,
-              targetFile,
-              target,
-              instrumentedTarget,
-              api,
-              truffle,
-              config
+            targetPool,
+            targetPath,
+            target,
+            instrumentedTarget,
+            api,
+            truffle,
+            config
           );
-          const [importsMap, dependencyMap]  = targetPool.getImportDependencies(targetFile.canonicalPath, target);
+          const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+            targetPath,
+            target
+          );
 
-          finalArchive.merge(archive)
+          finalArchive.merge(archive);
 
           finalImportsMap = new Map([
             ...Array.from(finalImportsMap.entries()),
@@ -415,7 +452,7 @@ export class SolidityLauncher {
 
 async function testTarget(
   targetPool: TargetPool,
-  targetFile: TargetFile,
+  targetPath: string,
   target: string,
   instrumentedTarget: any,
   api,
@@ -424,7 +461,7 @@ async function testTarget(
 ) {
   await createDirectoryStructure();
 
-  const cfg = targetPool.getCFG(targetFile.canonicalPath, target);
+  const cfg = targetPool.getCFG(targetPath, target);
 
   if (Properties.draw_cfg) {
     // TODO dot's in the the name of a file will give issues
@@ -432,7 +469,7 @@ async function testTarget(
       cfg,
       path.join(
         Properties.cfg_directory,
-        `${targetFile.relativePath.split(".")[0]}.svg`
+        `${path.basename(targetPath).split(".")[0]}.svg`
       )
     );
   }
@@ -442,32 +479,35 @@ async function testTarget(
     await createTempDirectoryStructure();
 
     getUserInterface().report("header", [
-      `Searching: "${targetFile.relativePath}"`,
+      `Searching: "${path.basename(targetPath)}"`,
     ]);
 
-    const ast = targetPool.getAST(targetFile.canonicalPath);
-    const cfg = targetPool.getCFG(targetFile.canonicalPath, target);
+    const ast = targetPool.getAST(targetPath);
+    const cfg = targetPool.getCFG(targetPath, target);
 
     const functionDescriptions = cfg.getFunctionDescriptions(target);
 
     const currentSubject = new SoliditySubject(
-        targetFile.relativePath,
-        target,
-        cfg,
-        functionDescriptions
+        path.basename(targetPath), // TODO WHAT???
+      target,
+      cfg,
+      functionDescriptions
     );
 
-    const [importsMap, dependencyMap] = targetPool.getImportDependencies(targetFile.canonicalPath, target);
+    const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+      targetPath,
+      target
+    );
 
     const stringifier = new SolidityTruffleStringifier(
-        importsMap,
-        dependencyMap
+      importsMap,
+      dependencyMap
     );
     const suiteBuilder = new SoliditySuiteBuilder(
-        stringifier,
-        api,
-        truffle,
-        config
+      stringifier,
+      api,
+      truffle,
+      config
     );
 
     const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
@@ -502,23 +542,23 @@ async function testTarget(
     const collector = new StatisticsCollector(totalTimeBudget);
     collector.recordVariable(RuntimeVariable.VERSION, 1);
     collector.recordVariable(
-        RuntimeVariable.CONFIGURATION,
-        Properties.configuration
+      RuntimeVariable.CONFIGURATION,
+      Properties.configuration
     );
     collector.recordVariable(RuntimeVariable.SEED, getSeed());
-    collector.recordVariable(RuntimeVariable.SUBJECT, targetFile.relativePath);
+    collector.recordVariable(RuntimeVariable.SUBJECT, path.basename(targetPath)); // TODO what????
     collector.recordVariable(
-        RuntimeVariable.PROBE_ENABLED,
-        Properties.probe_objective
+      RuntimeVariable.PROBE_ENABLED,
+      Properties.probe_objective
     );
     collector.recordVariable(
-        RuntimeVariable.CONSTANT_POOL_ENABLED,
-        Properties.constant_pool
+      RuntimeVariable.CONSTANT_POOL_ENABLED,
+      Properties.constant_pool
     );
     collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
     collector.recordVariable(
-        RuntimeVariable.TOTAL_OBJECTIVES,
-        currentSubject.getObjectives().length
+      RuntimeVariable.TOTAL_OBJECTIVES,
+      currentSubject.getObjectives().length
     );
 
     // Statistics listener
@@ -527,35 +567,35 @@ async function testTarget(
 
     // This searches for a covering population
     const archive = await algorithm.search(
-        currentSubject,
-        budgetManager,
-        terminationManager
+      currentSubject,
+      budgetManager,
+      terminationManager
     );
 
     // Gather statistics after the search
     collector.recordVariable(
-        RuntimeVariable.COVERED_OBJECTIVES,
-        archive.getObjectives().length
+      RuntimeVariable.COVERED_OBJECTIVES,
+      archive.getObjectives().length
     );
     collector.recordVariable(
-        RuntimeVariable.INITIALIZATION_TIME,
-        totalTimeBudget.getUsedBudget() - searchBudget.getUsedBudget()
+      RuntimeVariable.INITIALIZATION_TIME,
+      totalTimeBudget.getUsedBudget() - searchBudget.getUsedBudget()
     );
     collector.recordVariable(
-        RuntimeVariable.SEARCH_TIME,
-        searchBudget.getUsedBudget()
+      RuntimeVariable.SEARCH_TIME,
+      searchBudget.getUsedBudget()
     );
     collector.recordVariable(
-        RuntimeVariable.TOTAL_TIME,
-        totalTimeBudget.getUsedBudget()
+      RuntimeVariable.TOTAL_TIME,
+      totalTimeBudget.getUsedBudget()
     );
     collector.recordVariable(
-        RuntimeVariable.ITERATIONS,
-        iterationBudget.getUsedBudget()
+      RuntimeVariable.ITERATIONS,
+      iterationBudget.getUsedBudget()
     );
     collector.recordVariable(
-        RuntimeVariable.EVALUATIONS,
-        evaluationBudget.getUsedBudget()
+      RuntimeVariable.EVALUATIONS,
+      evaluationBudget.getUsedBudget()
     );
 
     collectCoverageData(collector, archive, "branch");
@@ -564,18 +604,18 @@ async function testTarget(
     collectCoverageData(collector, archive, "probe");
 
     const numOfExceptions = archive
-        .getObjectives()
-        .filter(
-            (objective) => objective instanceof ExceptionObjectiveFunction
-        ).length;
+      .getObjectives()
+      .filter(
+        (objective) => objective instanceof ExceptionObjectiveFunction
+      ).length;
     collector.recordVariable(
-        RuntimeVariable.COVERED_EXCEPTIONS,
-        numOfExceptions
+      RuntimeVariable.COVERED_EXCEPTIONS,
+      numOfExceptions
     );
 
     collector.recordVariable(
-        RuntimeVariable.COVERAGE,
-        (archive.getObjectives().length - numOfExceptions) /
+      RuntimeVariable.COVERAGE,
+      (archive.getObjectives().length - numOfExceptions) /
         currentSubject.getObjectives().length
     );
 
@@ -589,7 +629,7 @@ async function testTarget(
 
     await deleteTempDirectories();
 
-    return archive
+    return archive;
   } catch (e) {
     if (e instanceof SolidityParser.ParserError) {
       console.error(e.errors);
@@ -698,4 +738,10 @@ function collectCoverageData(
       }
       break;
   }
+}
+
+interface TargetFile {
+  source: string,
+  canonicalPath: string,
+  relativePath: string
 }

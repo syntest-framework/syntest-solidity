@@ -41,7 +41,7 @@ export class SolidityCFGFactory implements CFGFactory {
     this.count = 0;
     this._contracts = [];
 
-    const cfg = new CFG()
+    const cfg = new CFG();
 
     this.visitChild(cfg, AST, []);
 

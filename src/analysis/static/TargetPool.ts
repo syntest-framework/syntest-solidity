@@ -6,9 +6,9 @@ import { SolidityCFGFactory } from "../../graph/SolidityCFGFactory";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { ContractFunction } from "./map/ContractFunction";
 import { CFG } from "syntest-framework";
-import {ImportVisitor} from "./dependency/ImportVisitor";
+import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
-import {LibraryVisitor} from "./dependency/LibraryVisitor";
+import { LibraryVisitor } from "./dependency/LibraryVisitor";
 const SolidityParser = require("@solidity-parser/parser");
 
 /**
@@ -35,21 +35,24 @@ export class TargetPool {
 
   // Mapping: filepath -> target name -> function name -> function
   protected _functionMaps: Map<
-      string,
-      Map<string, Map<string, ContractFunction>>
-      >;
+    string,
+    Map<string, Map<string, ContractFunction>>
+  >;
 
   // Mapping: filepath -> target name -> (function name -> CFG)
   protected _controlFlowGraphs: Map<string, Map<string, CFG>>;
 
   // Mapping: filepath -> target name -> [importsMap, dependencyMap]
-  protected _dependencyMaps: Map<string, Map<string, [Map<string, string>, Map<string, string[]>]>>
+  protected _dependencyMaps: Map<
+    string,
+    Map<string, [Map<string, string>, Map<string, string[]>]>
+  >;
 
   constructor(
-      sourceGenerator: SourceGenerator,
-      abtractSyntaxTreeGenerator: ASTGenerator,
-      targetMapGenerator: TargetMapGenerator,
-      controlFlowGraphGenerator: SolidityCFGFactory
+    sourceGenerator: SourceGenerator,
+    abtractSyntaxTreeGenerator: ASTGenerator,
+    targetMapGenerator: TargetMapGenerator,
+    controlFlowGraphGenerator: SolidityCFGFactory
   ) {
     this._sourceGenerator = sourceGenerator;
     this._abstractSyntaxTreeGenerator = abtractSyntaxTreeGenerator;
@@ -60,12 +63,12 @@ export class TargetPool {
     this._abstractSyntaxTrees = new Map<string, any>();
     this._targetMap = new Map<string, Map<string, ContractMetadata>>();
     this._functionMaps = new Map<
-        string,
-        Map<string, Map<string, ContractFunction>>
-        >();
+      string,
+      Map<string, Map<string, ContractFunction>>
+    >();
     this._controlFlowGraphs = new Map<string, Map<string, CFG>>();
 
-    this._dependencyMaps = new Map()
+    this._dependencyMaps = new Map();
   }
 
   getSource(targetPath: string): string {
@@ -88,7 +91,7 @@ export class TargetPool {
     } else {
       const targetSource = this.getSource(absoluteTargetPath);
       const targetAST =
-          this._abstractSyntaxTreeGenerator.generate(targetSource);
+        this._abstractSyntaxTreeGenerator.generate(targetSource);
       this._abstractSyntaxTrees.set(absoluteTargetPath, targetAST);
       return targetAST;
     }
@@ -102,7 +105,7 @@ export class TargetPool {
     } else {
       const targetAST = this.getAST(absoluteTargetPath);
       const { targetMap, functionMap } =
-          this._targetMapGenerator.generate(targetAST);
+        this._targetMapGenerator.generate(targetAST);
       this._targetMap.set(absoluteTargetPath, targetMap);
       this._functionMaps.set(absoluteTargetPath, functionMap);
       return targetMap;
@@ -115,7 +118,7 @@ export class TargetPool {
     if (!this._functionMaps.has(absoluteTargetPath)) {
       const targetAST = this.getAST(absoluteTargetPath);
       const { targetMap, functionMap } =
-          this._targetMapGenerator.generate(targetAST);
+        this._targetMapGenerator.generate(targetAST);
       this._targetMap.set(absoluteTargetPath, targetMap);
       this._functionMaps.set(absoluteTargetPath, functionMap);
     }
@@ -124,7 +127,7 @@ export class TargetPool {
       return this._functionMaps.get(absoluteTargetPath).get(targetName);
     } else {
       throw new Error(
-          `Target ${targetName} could not be found at ${targetPath}`
+        `Target ${targetName} could not be found at ${targetPath}`
       );
     }
   }
@@ -140,17 +143,19 @@ export class TargetPool {
     } else {
       const targetAST = this.getAST(absoluteTargetPath);
       const cfg = this._controlFlowGraphGenerator.convertAST(
-          targetAST,
-          false,
-          false
+        targetAST,
+        false,
+        false
       );
       this._controlFlowGraphs.get(absoluteTargetPath).set(targetName, cfg);
       return cfg;
     }
   }
 
-
-  getImportDependencies(targetPath: string, targetName: string): [Map<string, string>, Map<string, string[]>] {
+  getImportDependencies(
+    targetPath: string,
+    targetName: string
+  ): [Map<string, string>, Map<string, string[]>] {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (!this._dependencyMaps.has(absoluteTargetPath))
@@ -189,8 +194,8 @@ export class TargetPool {
 
         // Import the external file in the test
         importsMap.set(
-            path.basename(importPath).split(".")[0],
-            path.basename(importPath).split(".")[0]
+          path.basename(importPath).split(".")[0],
+          path.basename(importPath).split(".")[0]
         );
 
         // Import the found libraries
@@ -202,7 +207,9 @@ export class TargetPool {
       const dependencyMap = new Map<string, string[]>();
       dependencyMap.set(targetName, libraries);
 
-      this._dependencyMaps.get(targetPath).set(targetName, [importsMap, dependencyMap])
+      this._dependencyMaps
+        .get(targetPath)
+        .set(targetName, [importsMap, dependencyMap]);
       return [importsMap, dependencyMap];
     }
   }
