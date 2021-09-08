@@ -3,8 +3,6 @@ import {
   TestCaseDecoder,
   SuiteBuilder,
   Archive,
-  ExceptionObjectiveFunction,
-  getLogger,
   getUserInterface,
 } from "syntest-framework";
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
@@ -18,7 +16,7 @@ import { SolidityTestCase } from "../testcase/SolidityTestCase";
 export class SoliditySuiteBuilder extends SuiteBuilder {
   private api: any;
   private truffle: any;
-  private config: any;
+  private readonly config: any;
 
   constructor(decoder: TestCaseDecoder, api: any, truffle: any, config: any) {
     super(decoder);

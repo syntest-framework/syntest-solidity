@@ -43,7 +43,7 @@ class API {
     this.port = config.port || this.defaultPort;
     this.host = config.host || "127.0.0.1";
     this.providerOptions = config.providerOptions || {};
-    this.autoLaunchServer = config.autoLaunchServer === false ? false : true;
+    this.autoLaunchServer = config.autoLaunchServer !== false;
 
     this.skipFiles = config.skipFiles || [];
 
@@ -77,13 +77,8 @@ class API {
    * }]
    */
   instrument(targets = []) {
-    let currentFile; // Keep track of filename in case we crash...
     let outputs = [];
-
-    try {
-      for (let target of targets) {
-        currentFile = target.relativePath || target.canonicalPath;
-
+     for (let target of targets) {
         const instrumented = this.instrumenter.instrument(
           target.source,
           target.canonicalPath
@@ -99,10 +94,6 @@ class API {
           contracts: [],
         });
       }
-    } catch (err) {
-      throw err;
-    }
-
     return outputs;
   }
 
@@ -179,8 +170,8 @@ class API {
     }
 
     await pify(this.server.listen)(this.port);
-    const address = `http://${this.host}:${this.port}`;
-    return address;
+
+    return `http://${this.host}:${this.port}`;
   }
 
   /**

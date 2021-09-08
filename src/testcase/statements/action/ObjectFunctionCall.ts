@@ -10,9 +10,9 @@ import { Parameter } from "syntest-framework/dist/graph/parsing/Parameter";
  * @author Dimitri Stallenberg
  */
 export class ObjectFunctionCall extends ActionStatement {
-  private _functionName: string;
+  private readonly _functionName: string;
 
-  private _parent: ConstructorCall;
+  private readonly _parent: ConstructorCall;
 
   /**
    * Constructor

@@ -46,7 +46,8 @@ import { setNetwork, setNetworkFrom } from "./util/network";
 
 import {
   createTruffleConfig,
-  getTestFilePaths, loadLibrary,
+  getTestFilePaths,
+  loadLibrary,
   save,
   setupTempFolders,
   tearDownTempFolders,
@@ -66,45 +67,55 @@ import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
 import { ASTGenerator } from "./analysis/static/ast/ASTGenerator";
 import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
 import TargetFile from "./targetting/TargetFile";
-import { collectCoverageData, collectInitialVariables, collectStatistics } from "./util/collection";
+import {
+  collectCoverageData,
+  collectInitialVariables,
+  collectStatistics,
+} from "./util/collection";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
 
-
 export class SolidityLauncher {
   private readonly _program = "syntest-solidity";
-  private readonly tempContractsDir = path.join(process.cwd(), ".syntest_coverage");
-  private readonly tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
+  private readonly tempContractsDir = path.join(
+    process.cwd(),
+    ".syntest_coverage"
+  );
+  private readonly tempArtifactsDir = path.join(
+    process.cwd(),
+    ".syntest_artifacts"
+  );
 
-  private api: any
-  private config: any
-  private truffle: any
+  private api;
+  private config;
+  private truffle;
 
-  private targetPool: TargetPool
-
+  private targetPool: TargetPool;
 
   /**
    * Truffle Plugin: `truffle run coverage [options]`
    * @param  {Object}   config   @truffle/config config
    * @return {Promise}
    */
-  public async run(config: TruffleConfig) {
+  public async run(config: TruffleConfig): Promise<void> {
     await createTruffleConfig();
 
     try {
       this.config = normalizeConfig(config);
 
       await guessCWD(this.config.workingDir);
-      const [included, excluded] = await this.setup()
-      const [archive, imports, dependencies] = await this.search(included, excluded)
-      await this.finalize(archive, imports, dependencies)
-
+      const [included, excluded] = await this.setup();
+      const [archive, imports, dependencies] = await this.search(
+        included,
+        excluded
+      );
+      await this.finalize(archive, imports, dependencies);
     } catch (e) {
       console.trace(e);
     }
 
-    await this.exit()
+    await this.exit();
   }
 
   async exit(): Promise<void> {
@@ -114,13 +125,10 @@ export class SolidityLauncher {
     // Shut server down
     await this.api.finish();
 
-
-    process.exit(0)
+    process.exit(0);
   }
 
-  async setup(): Promise<
-      [Map<string, string[]>, Map<string, string[]>]
-      > {
+  async setup(): Promise<[Map<string, string[]>, Map<string, string[]>]> {
     // Filesystem & Compiler Re-configuration
     const additionalOptions = {}; // TODO
     setupOptions(this._program, additionalOptions);
@@ -135,33 +143,34 @@ export class SolidityLauncher {
 
     if (Properties.user_interface === "regular") {
       setUserInterface(
-          new SolidityCommandLineInterface(
-              Properties.console_log_level === "silent",
-              Properties.console_log_level === "verbose",
-              messages
-          )
+        new SolidityCommandLineInterface(
+          Properties.console_log_level === "silent",
+          Properties.console_log_level === "verbose",
+          messages
+        )
       );
     } else if (Properties.user_interface === "monitor") {
       setUserInterface(
-          new SolidityMonitorCommandLineInterface(
-              Properties.console_log_level === "silent",
-              Properties.console_log_level === "verbose",
-              messages
-          )
+        new SolidityMonitorCommandLineInterface(
+          Properties.console_log_level === "silent",
+          Properties.console_log_level === "verbose",
+          messages
+        )
       );
     }
 
-    this.config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
+    this.config.testDir = path.join(
+      process.cwd(),
+      Properties.temp_test_directory
+    );
 
     getUserInterface().report("clear", []);
     getUserInterface().report("asciiArt", ["Syntest"]);
-    getUserInterface().report("version", [
-      require("../package.json").version,
-    ]);
+    getUserInterface().report("version", [require("../package.json").version]);
 
     if (this.config.help) {
       getUserInterface().report("help", []);
-      await this.exit()
+      await this.exit();
     } // Exit if --help
 
     this.truffle = loadLibrary(this.config);
@@ -193,7 +202,7 @@ export class SolidityLauncher {
 
       // Shut server down
       await this.api.finish();
-      await this.exit()
+      await this.exit();
     }
 
     getUserInterface().report("header", ["General info"]);
@@ -221,20 +230,20 @@ export class SolidityLauncher {
       // Shut server down
       await this.api.finish();
       getUserInterface().error(
-          `No targets where selected! Try changing the 'include' parameter`
+        `No targets where selected! Try changing the 'include' parameter`
       );
       process.exit(1);
     }
 
     let names = [];
 
-    included.forEach((value, key, map) =>
-        names.push(`${path.basename(key)} -> ${value.join(", ")}`)
+    included.forEach((value, key) =>
+      names.push(`${path.basename(key)} -> ${value.join(", ")}`)
     );
     getUserInterface().report("targets", names);
     names = [];
-    excluded.forEach((value, key, map) =>
-        names.push(`${path.basename(key)} -> ${value.join(", ")}`)
+    excluded.forEach((value, key) =>
+      names.push(`${path.basename(key)} -> ${value.join(", ")}`)
     );
     getUserInterface().report("skip-files", names);
 
@@ -285,16 +294,21 @@ export class SolidityLauncher {
     const targetMapGenerator = new TargetMapGenerator();
     const cfgGenerator = new SolidityCFGFactory();
     this.targetPool = new TargetPool(
-        sourceGenerator,
-        astGenerator,
-        targetMapGenerator,
-        cfgGenerator
+      sourceGenerator,
+      astGenerator,
+      targetMapGenerator,
+      cfgGenerator
     );
 
-    return [included, excluded]
+    return [included, excluded];
   }
 
-  async search(included: Map<string, string[]>, excluded: Map<string, string[]>): Promise<[Archive<SolidityTestCase>, Map<string, string>, Map<string, string[]>]> {
+  async search(
+    included: Map<string, string[]>,
+    excluded: Map<string, string[]>
+  ): Promise<
+    [Archive<SolidityTestCase>, Map<string, string>, Map<string, string[]>]
+  > {
     const targets: TargetFile[] = [];
     const skipped: TargetFile[] = [];
 
@@ -318,15 +332,19 @@ export class SolidityLauncher {
     const instrumented = this.api.instrument(targets);
 
     await setupTempFolders(this.tempContractsDir, this.tempArtifactsDir);
-    await save(instrumented, this.config.contracts_directory, this.tempContractsDir);
+    await save(
+      instrumented,
+      this.config.contracts_directory,
+      this.tempContractsDir
+    );
     await save(skipped, this.config.contracts_directory, this.tempContractsDir);
 
     this.config.contracts_directory = this.tempContractsDir;
     this.config.build_directory = this.tempArtifactsDir;
 
     this.config.contracts_build_directory = path.join(
-        this.tempArtifactsDir,
-        path.basename(this.config.contracts_build_directory)
+      this.tempArtifactsDir,
+      path.basename(this.config.contracts_build_directory)
     );
 
     this.config.all = true;
@@ -348,8 +366,8 @@ export class SolidityLauncher {
       for (const target of targetMap.keys()) {
         // check if included
         if (
-            !includedTargets.includes("*") &&
-            !includedTargets.includes(target)
+          !includedTargets.includes("*") &&
+          !includedTargets.includes(target)
         ) {
           continue;
         }
@@ -358,22 +376,20 @@ export class SolidityLauncher {
         if (excluded.has(targetPath)) {
           const excludedTargets = excluded.get(targetPath);
           if (
-              excludedTargets.includes("*") ||
-              excludedTargets.includes(target)
+            excludedTargets.includes("*") ||
+            excludedTargets.includes(target)
           ) {
             continue;
           }
         }
 
         const archive = await this.testTarget(
-            this.targetPool,
-            targetPath,
-            target
+          this.targetPool,
+          targetPath,
+          target
         );
-        const [importsMap, dependencyMap] = this.targetPool.getImportDependencies(
-            targetPath,
-            target
-        );
+        const [importsMap, dependencyMap] =
+          this.targetPool.getImportDependencies(targetPath, target);
 
         finalArchive.merge(archive);
 
@@ -388,15 +404,14 @@ export class SolidityLauncher {
       }
     }
 
-    return [finalArchive, finalImportsMap, finalDependencies]
+    return [finalArchive, finalImportsMap, finalDependencies];
   }
 
   async finalize(
-      finalArchive: Archive<SolidityTestCase>,
-      finalImportsMap: Map<string, string>,
-      finalDependencies: Map<string, string[]>
+    finalArchive: Archive<SolidityTestCase>,
+    finalImportsMap: Map<string, string>,
+    finalDependencies: Map<string, string[]>
   ): Promise<void> {
-
     await createDirectoryStructure();
     await createTempDirectoryStructure();
 
@@ -404,15 +419,15 @@ export class SolidityLauncher {
     await clearDirectory(testDir);
 
     const stringifier = new SolidityTruffleStringifier(
-        finalImportsMap,
-        finalDependencies
+      finalImportsMap,
+      finalDependencies
     );
 
     const suiteBuilder = new SoliditySuiteBuilder(
-        stringifier,
-        this.api,
-        this.truffle,
-        this.config
+      stringifier,
+      this.api,
+      this.truffle,
+      this.config
     );
 
     await suiteBuilder.createSuite(finalArchive as Archive<SolidityTestCase>);
@@ -444,11 +459,7 @@ export class SolidityLauncher {
     await this.api.onIstanbulComplete(this.config);
   }
 
-  async testTarget(
-      targetPool: TargetPool,
-      targetPath: string,
-      target: string
-  ) {
+  async testTarget(targetPool: TargetPool, targetPath: string, target: string): Promise<Archive<SolidityTestCase>> {
     await createDirectoryStructure();
 
     const cfg = targetPool.getCFG(targetPath, target);
@@ -456,11 +467,11 @@ export class SolidityLauncher {
     if (Properties.draw_cfg) {
       // TODO dot's in the the name of a file will give issues
       drawGraph(
-          cfg,
-          path.join(
-              Properties.cfg_directory,
-              `${path.basename(targetPath).split(".")[0]}.svg`
-          )
+        cfg,
+        path.join(
+          Properties.cfg_directory,
+          `${path.basename(targetPath).split(".")[0]}.svg`
+        )
       );
     }
 
@@ -478,29 +489,34 @@ export class SolidityLauncher {
       const functionDescriptions = cfg.getFunctionDescriptions(target);
 
       const currentSubject = new SoliditySubject(
-          path.basename(targetPath),
-          target,
-          cfg,
-          functionDescriptions
+        path.basename(targetPath),
+        target,
+        cfg,
+        functionDescriptions
       );
 
       const [importsMap, dependencyMap] = targetPool.getImportDependencies(
-          targetPath,
-          target
+        targetPath,
+        target
       );
 
       const stringifier = new SolidityTruffleStringifier(
-          importsMap,
-          dependencyMap
+        importsMap,
+        dependencyMap
       );
       const suiteBuilder = new SoliditySuiteBuilder(
-          stringifier,
-          this.api,
-          this.truffle,
-          this.config
+        stringifier,
+        this.api,
+        this.truffle,
+        this.config
       );
 
-      const runner = new SolidityRunner(suiteBuilder, this.api, this.truffle, this.config);
+      const runner = new SolidityRunner(
+        suiteBuilder,
+        this.api,
+        this.truffle,
+        this.config
+      );
 
       // Parse the contract for extracting constant
       const pool = ConstantPool.getInstance();
@@ -530,7 +546,7 @@ export class SolidityLauncher {
 
       // Collector
       const collector = new StatisticsCollector(totalTimeBudget);
-      collectInitialVariables(collector, currentSubject, targetPath)
+      collectInitialVariables(collector, currentSubject, targetPath);
 
       // Statistics listener
       const statisticsSearchListener = new StatisticsSearchListener(collector);
@@ -538,21 +554,21 @@ export class SolidityLauncher {
 
       // This searches for a covering population
       const archive = await algorithm.search(
-          currentSubject,
-          budgetManager,
-          terminationManager
+        currentSubject,
+        budgetManager,
+        terminationManager
       );
 
       // Gather statistics after the search
       collectStatistics(
-          collector,
-          currentSubject,
-          archive,
-          totalTimeBudget,
-          searchBudget,
-          iterationBudget,
-          evaluationBudget,
-      )
+        collector,
+        currentSubject,
+        archive,
+        totalTimeBudget,
+        searchBudget,
+        iterationBudget,
+        evaluationBudget
+      );
 
       collectCoverageData(collector, archive, "branch");
       collectCoverageData(collector, archive, "statement");
@@ -578,5 +594,3 @@ export class SolidityLauncher {
     }
   }
 }
-
-

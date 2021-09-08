@@ -1,6 +1,5 @@
 import {
   ExecutionResult,
-  getLogger,
   Properties,
   SuiteBuilder,
   TestCaseRunner,

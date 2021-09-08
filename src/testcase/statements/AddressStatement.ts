@@ -12,7 +12,7 @@ import { ConstantPool } from "../../seeding/constant/ConstantPool";
  * @author Dimitri Stallenberg
  */
 export class AddressStatement extends PrimitiveStatement<string> {
-  private _account: number;
+  private readonly _account: number;
 
   constructor(
     type: Parameter,

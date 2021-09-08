@@ -2,7 +2,6 @@
  * Copied from Soldity Coverage to override one of the imports
  */
 const SolidityParser = require("@solidity-parser/parser");
-const path = require("path");
 
 const Injector = require("./injector"); // Local copy
 const preprocess = require("solidity-coverage/lib/preprocessor");
@@ -18,9 +17,9 @@ class Instrumenter {
     this.instrumentationData = {};
     this.injector = new Injector();
     this.measureStatementCoverage =
-      config.measureStatementCoverage === false ? false : true;
+      config.measureStatementCoverage !== false;
     this.measureFunctionCoverage =
-      config.measureFunctionCoverage === false ? false : true;
+      config.measureFunctionCoverage !== false;
   }
 
   _isRootNode(node) {

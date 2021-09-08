@@ -1,11 +1,11 @@
 import {
-  Encoding,
-  SearchSubject,
   BranchDistance,
-  ProbeObjectiveFunction,
-  Node,
   BranchNode,
+  Encoding,
+  Node,
   NodeType,
+  ProbeObjectiveFunction,
+  SearchSubject,
 } from "syntest-framework";
 
 export class RequireObjectiveFunction<
@@ -112,8 +112,7 @@ export class RequireObjectiveFunction<
     else branchDistance = this.computeBranchDistance(closestHitNode);
 
     // add the distances
-    const distance = approachLevel + branchDistance;
-    return distance;
+    return approachLevel + branchDistance;
   }
 
   getIdentifier(): string {
