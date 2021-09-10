@@ -459,7 +459,11 @@ export class SolidityLauncher {
     await this.api.onIstanbulComplete(this.config);
   }
 
-  async testTarget(targetPool: TargetPool, targetPath: string, target: string): Promise<Archive<SolidityTestCase>> {
+  async testTarget(
+    targetPool: TargetPool,
+    targetPath: string,
+    target: string
+  ): Promise<Archive<SolidityTestCase>> {
     await createDirectoryStructure();
 
     const cfg = targetPool.getCFG(targetPath, target);

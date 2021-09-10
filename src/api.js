@@ -78,22 +78,22 @@ class API {
    */
   instrument(targets = []) {
     let outputs = [];
-     for (let target of targets) {
-        const instrumented = this.instrumenter.instrument(
-          target.source,
-          target.canonicalPath
-        );
-        this.coverage.addContract(instrumented, target.canonicalPath);
+    for (let target of targets) {
+      const instrumented = this.instrumenter.instrument(
+        target.source,
+        target.canonicalPath
+      );
+      this.coverage.addContract(instrumented, target.canonicalPath);
 
-        outputs.push({
-          canonicalPath: target.canonicalPath,
-          relativePath: target.relativePath,
-          actualSource: target.source,
-          source: instrumented.contract,
-          instrumented: instrumented,
-          contracts: [],
-        });
-      }
+      outputs.push({
+        canonicalPath: target.canonicalPath,
+        relativePath: target.relativePath,
+        actualSource: target.source,
+        source: instrumented.contract,
+        instrumented: instrumented,
+        contracts: [],
+      });
+    }
     return outputs;
   }
 

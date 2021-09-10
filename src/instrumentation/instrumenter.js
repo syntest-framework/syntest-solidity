@@ -16,10 +16,8 @@ class Instrumenter {
   constructor(config = {}) {
     this.instrumentationData = {};
     this.injector = new Injector();
-    this.measureStatementCoverage =
-      config.measureStatementCoverage !== false;
-    this.measureFunctionCoverage =
-      config.measureFunctionCoverage !== false;
+    this.measureStatementCoverage = config.measureStatementCoverage !== false;
+    this.measureFunctionCoverage = config.measureFunctionCoverage !== false;
   }
 
   _isRootNode(node) {

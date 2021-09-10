@@ -7,17 +7,20 @@ import {
   Properties,
   Statement,
 } from "syntest-framework";
-import {SoliditySampler} from "./SoliditySampler";
-import {AddressStatement} from "../statements/AddressStatement";
+import { SoliditySampler } from "./SoliditySampler";
+import { AddressStatement } from "../statements/AddressStatement";
 import BigNumber from "bignumber.js";
-import {ByteStatement} from "../statements/ByteStatement";
-import {SolidityParameter, SoliditySubject,} from "../../search/SoliditySubject";
-import {SolidityTestCase} from "../SolidityTestCase";
-import {ConstructorCall} from "../statements/action/ConstructorCall";
-import {ObjectFunctionCall} from "../statements/action/ObjectFunctionCall";
-import {NumericStatement} from "../statements/primitive/NumericStatement";
-import {BoolStatement} from "../statements/primitive/BoolStatement";
-import {StringStatement} from "../statements/primitive/StringStatement";
+import { ByteStatement } from "../statements/ByteStatement";
+import {
+  SolidityParameter,
+  SoliditySubject,
+} from "../../search/SoliditySubject";
+import { SolidityTestCase } from "../SolidityTestCase";
+import { ConstructorCall } from "../statements/action/ConstructorCall";
+import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
+import { NumericStatement } from "../statements/primitive/NumericStatement";
+import { BoolStatement } from "../statements/primitive/BoolStatement";
+import { StringStatement } from "../statements/primitive/StringStatement";
 
 /**
  * SolidityRandomSampler class
@@ -62,11 +65,11 @@ export class SolidityRandomSampler extends SoliditySampler {
     // if (action.returnType == "") uniqueID = "var" + uniqueID;
 
     return new ObjectFunctionCall(
-        action.returnParameters,
-        uniqueID,
-        root,
-        action.name,
-        args
+      action.returnParameters,
+      uniqueID,
+      root,
+      action.name,
+      args
     );
   }
 
