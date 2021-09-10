@@ -1,13 +1,11 @@
 import { TargetPool } from "../TargetPool";
 import { ContractMetadata, ContractKind } from "../map/ContractMetadata";
-import {
-  ContractFunction,
-  ContractFunctionVisibility,
-} from "../map/ContractFunction";
+import { ContractFunction, ExternalVisibility } from "../map/ContractFunction";
 import * as path from "path";
 import { TargetContext } from "./TargetContext";
 import { ImportVisitor } from "./ImportVisitor";
 import { Graph } from "../Graph";
+import { PublicVisibility } from "syntest-framework";
 
 const SolidityParser = require("@solidity-parser/parser");
 
@@ -174,10 +172,8 @@ export class DependencyAnalyzer {
             functions.forEach((contractFunction: ContractFunction) => {
               // Add library if it has public or external functions
               if (
-                contractFunction.visibility ===
-                  ContractFunctionVisibility.Public ||
-                contractFunction.visibility ===
-                  ContractFunctionVisibility.External
+                contractFunction.visibility === PublicVisibility ||
+                contractFunction.visibility === ExternalVisibility
               ) {
                 linkedContracts.add(contractMetadata.name);
               }

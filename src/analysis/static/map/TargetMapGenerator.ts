@@ -13,9 +13,7 @@ export class TargetMapGenerator {
    *
    * @param targetAST The AST of the target
    */
-  generate(
-    targetAST: any
-  ): {
+  generate(targetAST: any): {
     targetMap: Map<string, any>;
     functionMap: Map<string, Map<string, any>>;
   } {

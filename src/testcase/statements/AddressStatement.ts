@@ -3,6 +3,7 @@ import {
   PrimitiveStatement,
   prng,
   TestCaseSampler,
+  Parameter,
 } from "syntest-framework";
 import { ConstantPool } from "../../seeding/constant/ConstantPool";
 
@@ -11,9 +12,14 @@ import { ConstantPool } from "../../seeding/constant/ConstantPool";
  * @author Dimitri Stallenberg
  */
 export class AddressStatement extends PrimitiveStatement<string> {
-  private _account: number;
+  private readonly _account: number;
 
-  constructor(type: string, uniqueId: string, value: string, account: number) {
+  constructor(
+    type: Parameter,
+    uniqueId: string,
+    value: string,
+    account: number
+  ) {
     super(type, uniqueId, value);
     this._account = account;
   }
@@ -21,13 +27,13 @@ export class AddressStatement extends PrimitiveStatement<string> {
   mutate(sampler: TestCaseSampler, depth: number): AddressStatement {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       return <AddressStatement>(
-        sampler.sampleStatement(depth, this.type, "primitive")
+        sampler.sampleStatement(depth, this.types, "primitive")
       );
     }
 
     if (this.value.startsWith("0x")) {
       return <AddressStatement>(
-        sampler.sampleStatement(depth, this.type, "primitive")
+        sampler.sampleStatement(depth, this.types, "primitive")
       );
     }
 
@@ -56,7 +62,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
     );
   }
 
-  static getRandom(type = "address") {
+  static getRandom(type: Parameter = { type: "address", name: "noname" }) {
     let account = -1;
     if (
       Properties.constant_pool &&

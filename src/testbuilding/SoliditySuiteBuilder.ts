@@ -3,8 +3,7 @@ import {
   TestCaseDecoder,
   SuiteBuilder,
   Archive,
-  ExceptionObjectiveFunction,
-  getLogger,
+  getUserInterface,
 } from "syntest-framework";
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
@@ -17,7 +16,7 @@ import { SolidityTestCase } from "../testcase/SolidityTestCase";
 export class SoliditySuiteBuilder extends SuiteBuilder {
   private api: any;
   private truffle: any;
-  private config: any;
+  private readonly config: any;
 
   constructor(decoder: TestCaseDecoder, api: any, truffle: any, config: any) {
     super(decoder);
@@ -95,7 +94,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
-      getLogger().error(e);
+      getUserInterface().error(e);
       console.trace(e);
     }
     console.log = old;

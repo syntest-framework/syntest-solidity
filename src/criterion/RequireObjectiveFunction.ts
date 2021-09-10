@@ -1,9 +1,11 @@
 import {
-  Encoding,
-  SearchSubject,
   BranchDistance,
-  ProbeObjectiveFunction,
+  BranchNode,
+  Encoding,
   Node,
+  NodeType,
+  ProbeObjectiveFunction,
+  SearchSubject,
 } from "syntest-framework";
 
 export class RequireObjectiveFunction<
@@ -62,7 +64,11 @@ export class RequireObjectiveFunction<
 
     // find the corresponding branch node inside the cfg
     const branchNode = this._subject.cfg.nodes.find((n: Node) => {
-      return n.probe && n.lines.includes(this._line);
+      return (
+        n.type === NodeType.Branch &&
+        (<BranchNode>n).probe &&
+        n.lines.includes(this._line)
+      );
     });
     const childEdge = this._subject.cfg.edges.find((edge) => {
       return edge.from === branchNode.id && edge.branchType === this._type;
@@ -106,8 +112,7 @@ export class RequireObjectiveFunction<
     else branchDistance = this.computeBranchDistance(closestHitNode);
 
     // add the distances
-    const distance = approachLevel + branchDistance;
-    return distance;
+    return approachLevel + branchDistance;
   }
 
   getIdentifier(): string {

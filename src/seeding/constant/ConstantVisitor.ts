@@ -1,20 +1,7 @@
 import { SolidityVisitor } from "../../analysis/static/SolidityVisitor";
 import {
-  PragmaDirective,
-  ImportDirective,
-  ContractDefinition,
-  UsingForDeclaration,
-  StructDefinition,
-  ModifierDefinition,
-  ModifierInvocation,
-  FunctionDefinition,
-  EventDefinition,
   EnumValue,
-  EnumDefinition,
   VariableDeclaration,
-  UserDefinedTypeName,
-  FunctionTypeName,
-  ElementaryTypeName,
   StringLiteral,
   NumberLiteral,
   Identifier,
@@ -91,8 +78,6 @@ export class ConstantVisitor implements SolidityVisitor {
   protected _isAddress(value: string): boolean {
     if (value === "0x0") return true;
 
-    if (value.startsWith("0x") && value.length == 42) return true;
-
-    return false;
+    return value.startsWith("0x") && value.length == 42;
   }
 }

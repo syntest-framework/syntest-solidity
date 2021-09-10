@@ -1,6 +1,5 @@
 import {
   ExecutionResult,
-  getLogger,
   Properties,
   SuiteBuilder,
   TestCaseRunner,
@@ -74,7 +73,7 @@ export class SolidityRunner extends TestCaseRunner {
 
     const traces = [];
     for (const key of Object.keys(instrumentationData)) {
-      if (instrumentationData[key].contractPath.includes(subject.name + ".sol"))
+      if (instrumentationData[key].contractPath.includes(subject.name))
         traces.push(instrumentationData[key]);
     }
 

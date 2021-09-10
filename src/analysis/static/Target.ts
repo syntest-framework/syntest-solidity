@@ -1,4 +1,4 @@
-import { SearchSubject, AbstractTestCase } from "syntest-framework";
+import { SearchSubject, AbstractTestCase, CFG } from "syntest-framework";
 import { TargetPool } from "./TargetPool";
 import * as path from "path";
 import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
@@ -29,7 +29,7 @@ export class Target {
   protected _functions: Map<string, Map<string, any>>;
 
   // Mapping: target name -> (function name -> CFG)
-  protected _controlFlowGraphs: Map<string, any>;
+  protected _controlFlowGraphs: Map<string, CFG>;
 
   protected _linkingGraph: Graph<string>;
 
@@ -94,7 +94,7 @@ export class Target {
 
     const importGraph = analyzer.analyzeImports(targetPath);
     const context = analyzer.analyzeContext(importGraph);
-    const inheritanceGraph = analyzer.analyzeInheritance(context, targetName);
+    // const inheritanceGraph = analyzer.analyzeInheritance(context, targetName);
 
     const nodes = importGraph.getNodes();
     nodes.forEach((filePath) => {
@@ -151,7 +151,7 @@ export class Target {
     return this._functions.get(targetName);
   }
 
-  getCFG(targetName: string): any {
+  getCFG(targetName: string): CFG {
     return this._controlFlowGraphs.get(targetName);
   }
 
