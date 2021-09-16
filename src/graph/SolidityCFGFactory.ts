@@ -178,9 +178,8 @@ export class SolidityCFGFactory implements CFGFactory {
               currentNode.description = description.join(", ");
             } else {
               // change the current node to be the compressed version of all previous nodes
-              possibleCompression[
-                possibleCompression.length - 1
-              ].description = description.join(", ");
+              possibleCompression[possibleCompression.length - 1].description =
+                description.join(", ");
               nodeId = possibleCompression[possibleCompression.length - 1].id;
             }
 

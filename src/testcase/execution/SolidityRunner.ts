@@ -18,8 +18,8 @@ import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
 
 // import * as Mocha from 'mocha';
-import Suite from 'mocha/lib/suite.js';
-import { mRequire } from '../../memfs';
+import Suite from "mocha/lib/suite.js";
+import { mRequire } from "../../memfs";
 
 export class SolidityRunner extends TestCaseRunner {
   protected api: any;
@@ -32,7 +32,7 @@ export class SolidityRunner extends TestCaseRunner {
     this.truffle = truffle;
 
     this.truffle.test.createMocha = function (config) {
-      console.log('custom create mocha');
+      console.log("custom create mocha");
 
       // Allow people to specify config.mocha in their config.
       const mochaConfig = config.mocha || {};
@@ -59,21 +59,36 @@ export class SolidityRunner extends TestCaseRunner {
 
       // @ts-ignore
       console.log(mocha);
-      mocha.loadFiles = function(fn) {
+      mocha.loadFiles = function (fn) {
         var self = this;
         var suite = this.suite;
-        this.files.forEach(function(file) {
+        this.files.forEach(function (file) {
           file = path.resolve(file);
-          suite.emit(Suite.constants.EVENT_FILE_PRE_REQUIRE, global, file, self);
-          suite.emit(Suite.constants.EVENT_FILE_REQUIRE, mRequire(file), file, self);
+          suite.emit(
+            Suite.constants.EVENT_FILE_PRE_REQUIRE,
+            global,
+            file,
+            self
+          );
+          suite.emit(
+            Suite.constants.EVENT_FILE_REQUIRE,
+            mRequire(file),
+            file,
+            self
+          );
           // suite.emit(Suite.constants.EVENT_FILE_REQUIRE, require(file), file, self);
-          suite.emit(Suite.constants.EVENT_FILE_POST_REQUIRE, global, file, self);
+          suite.emit(
+            Suite.constants.EVENT_FILE_POST_REQUIRE,
+            global,
+            file,
+            self
+          );
         });
         fn && fn();
       };
 
       return mocha;
-    }
+    };
 
     this.config = config;
   }

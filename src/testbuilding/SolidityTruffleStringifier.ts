@@ -82,7 +82,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       throw new Error(`${statement} is not a primitive statement`);
     }
 
-    const primitive: PrimitiveStatement<any> = statement as PrimitiveStatement<any>;
+    const primitive: PrimitiveStatement<any> =
+      statement as PrimitiveStatement<any>;
     if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
       const value = primitive.value.toFixed();
       return `const ${statement.varName} = BigInt("${value}")`;

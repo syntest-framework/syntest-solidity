@@ -1,12 +1,12 @@
-import * as Module from 'module';
-import * as path from 'path';
-import { createFsFromVolume, Volume } from 'memfs';
-import sourceMapSupport from 'source-map-support';
+import * as Module from "module";
+import * as path from "path";
+import { createFsFromVolume, Volume } from "memfs";
+import sourceMapSupport from "source-map-support";
 
 class NodeModule extends Module {
-    static _load: (request: string, parent: Module) => any;
+  static _load: (request: string, parent: Module) => any;
 
-    _compile: (moduleString: string, path: string) => void;
+  _compile: (moduleString: string, path: string) => void;
 }
 
 export const mfs = createFsFromVolume(new Volume());
@@ -26,22 +26,22 @@ export const mfs = createFsFromVolume(new Volume());
 // Patch to support require() calls within test chunks (eg. dynamic-imports)
 const { _load } = Module as typeof NodeModule;
 (Module as typeof NodeModule)._load = function _memoryLoad(request, parent) {
+  try {
+    return Reflect.apply(_load, this, [request, parent]);
+  } catch (error) {
     try {
-        return Reflect.apply(_load, this, [request, parent]);
-    } catch (error) {
-        try {
-            return mRequire(path.resolve(parent.path, request));
-        } catch {
-            throw error;
-        }
+      return mRequire(path.resolve(parent.path, request));
+    } catch {
+      throw error;
     }
+  }
 };
 
 export const mRequire = (modulePath: string): any => {
-    const virtualModule = new Module(modulePath, module);
-    const moduleSource = mfs.readFileSync(modulePath).toString();
+  const virtualModule = new Module(modulePath, module);
+  const moduleSource = mfs.readFileSync(modulePath).toString();
 
-    (virtualModule as NodeModule)._compile(moduleSource, modulePath);
+  (virtualModule as NodeModule)._compile(moduleSource, modulePath);
 
-    return virtualModule.exports;
+  return virtualModule.exports;
 };

@@ -8,10 +8,10 @@ import {
 } from "syntest-framework";
 import * as path from "path";
 import { getTestFilePaths } from "../util/fileSystem";
-import {mfs}  from '../memfs'
+import { mfs } from "../memfs";
 
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
-import {readdirSync, readFileSync, rmdirSync} from "fs";
+import { readdirSync, readFileSync, rmdirSync } from "fs";
 
 /**
  * @author Dimitri Stallenberg
@@ -41,8 +41,8 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       addLogs,
       additionalAssertions
     );
-    mfs.mkdirSync(Properties.temp_test_directory, { recursive: true } );
-    mfs.mkdirSync(Properties.temp_log_directory, { recursive: true } );
+    mfs.mkdirSync(Properties.temp_test_directory, { recursive: true });
+    mfs.mkdirSync(Properties.temp_log_directory, { recursive: true });
 
     await mfs.writeFileSync(filePath, decodedTestCase);
   }
@@ -77,7 +77,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
 
     for (const key of reducedArchive.keys()) {
       for (const testCase of reducedArchive.get(key)!) {
-        const testPath = `test${key}${testCase.id}.js`
+        const testPath = `test${key}${testCase.id}.js`;
         await this.writeTestCase(testPath, testCase, "", true);
       }
     }

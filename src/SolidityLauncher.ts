@@ -6,9 +6,9 @@ import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler
 import { SolidityCFGFactory } from "./graph/SolidityCFGFactory";
 const SolidityParser = require("@solidity-parser/parser");
 
-import * as Mocha from 'mocha';
-import Suite from 'mocha/lib/suite.js';
-import { mRequire } from './memfs';
+import * as Mocha from "mocha";
+import Suite from "mocha/lib/suite.js";
+import { mRequire } from "./memfs";
 
 import {
   Archive,
@@ -128,13 +128,18 @@ export class SolidityLauncher {
     const tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
 
     // @ts-ignore
-    Mocha.prototype.loadFiles = function(fn) {
+    Mocha.prototype.loadFiles = function (fn) {
       var self = this;
       var suite = this.suite;
-      this.files.forEach(function(file) {
+      this.files.forEach(function (file) {
         file = path.resolve(file);
         suite.emit(Suite.constants.EVENT_FILE_PRE_REQUIRE, global, file, self);
-        suite.emit(Suite.constants.EVENT_FILE_REQUIRE, mRequire(file), file, self);
+        suite.emit(
+          Suite.constants.EVENT_FILE_REQUIRE,
+          mRequire(file),
+          file,
+          self
+        );
         // suite.emit(Suite.constants.EVENT_FILE_REQUIRE, require(file), file, self);
         suite.emit(Suite.constants.EVENT_FILE_POST_REQUIRE, global, file, self);
       });
@@ -569,8 +574,9 @@ async function testTarget(
 
     const numOfExceptions = archive
       .getObjectives()
-      .filter((objective) => objective instanceof ExceptionObjectiveFunction)
-      .length;
+      .filter(
+        (objective) => objective instanceof ExceptionObjectiveFunction
+      ).length;
     collector.recordVariable(
       RuntimeVariable.COVERED_EXCEPTIONS,
       numOfExceptions
