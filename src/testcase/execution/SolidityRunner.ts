@@ -59,32 +59,37 @@ export class SolidityRunner extends TestCaseRunner {
 
       // @ts-ignore
       console.log(mocha);
-      mocha.loadFiles = function (fn) {
-        var self = this;
-        var suite = this.suite;
-        this.files.forEach(function (file) {
+      mocha.loadFiles = function (callback) {
+        const {
+          suite,
+            files
+        } = this as Mocha
+
+        for (let file of files) {
           file = path.resolve(file);
+
           suite.emit(
-            Suite.constants.EVENT_FILE_PRE_REQUIRE,
-            global,
-            file,
-            self
+              Suite.constants.EVENT_FILE_PRE_REQUIRE,
+              global,
+              file,
+              this,
           );
           suite.emit(
-            Suite.constants.EVENT_FILE_REQUIRE,
-            mRequire(file),
-            file,
-            self
+              Suite.constants.EVENT_FILE_REQUIRE,
+              mRequire(file),
+              file,
+              this,
           );
-          // suite.emit(Suite.constants.EVENT_FILE_REQUIRE, require(file), file, self);
           suite.emit(
-            Suite.constants.EVENT_FILE_POST_REQUIRE,
-            global,
-            file,
-            self
+              Suite.constants.EVENT_FILE_POST_REQUIRE,
+              global,
+              file,
+              this,
           );
-        });
-        fn && fn();
+        }
+        if (typeof callback === 'function') {
+          callback();
+        }
       };
 
       return mocha;
@@ -94,14 +99,14 @@ export class SolidityRunner extends TestCaseRunner {
   }
 
   async execute(
-    subject: SoliditySubject<SolidityTestCase>,
-    testCase: SolidityTestCase
+      subject: SoliditySubject<SolidityTestCase>,
+      testCase: SolidityTestCase
   ): Promise<ExecutionResult> {
     const testPath = path.join(Properties.temp_test_directory, "tempTest.js");
     await this.suiteBuilder.writeTestCase(
-      testPath,
-      testCase,
-      (testCase.root as ConstructorCall).constructorName
+        testPath,
+        testCase,
+        (testCase.root as ConstructorCall).constructorName
     );
 
     this.config.test_files = await getTestFilePaths(this.config);
@@ -114,6 +119,7 @@ export class SolidityRunner extends TestCaseRunner {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     console.log = () => {};
 
+    const time = Date.now()
     // Run tests
     try {
       await this.truffle.test.run(this.config);
@@ -123,7 +129,7 @@ export class SolidityRunner extends TestCaseRunner {
       console.trace(e);
     }
     console.log = old;
-
+    // console.log(`#TIMING: ${Date.now() - time} ms`)
     // Retrieve execution information from the Mocha runner
     const mochaRunner: Runner = this.truffle.test.mochaRunner;
     const stats = mochaRunner.stats;
@@ -145,8 +151,8 @@ export class SolidityRunner extends TestCaseRunner {
     // Retrieve execution information
     let executionResult: SolidityExecutionResult;
     if (
-      mochaRunner.suite.suites.length > 0 &&
-      mochaRunner.suite.suites[0].tests.length > 0
+        mochaRunner.suite.suites.length > 0 &&
+        mochaRunner.suite.suites[0].tests.length > 0
     ) {
       const test = mochaRunner.suite.suites[0].tests[0];
 
@@ -165,16 +171,16 @@ export class SolidityRunner extends TestCaseRunner {
       const duration = test.duration;
 
       executionResult = new SolidityExecutionResult(
-        status,
-        traces,
-        duration,
-        exception
+          status,
+          traces,
+          duration,
+          exception
       );
     } else {
       executionResult = new SolidityExecutionResult(
-        SolidityExecutionStatus.FAILED,
-        traces,
-        stats.duration
+          SolidityExecutionStatus.FAILED,
+          traces,
+          stats.duration
       );
     }
 

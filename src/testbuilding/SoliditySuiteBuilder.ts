@@ -11,7 +11,7 @@ import { getTestFilePaths } from "../util/fileSystem";
 import { mfs } from "../memfs";
 
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
-import { readdirSync, readFileSync, rmdirSync } from "fs";
+import {readdirSync, readFileSync, rmdirSync, writeFileSync} from "fs";
 
 /**
  * @author Dimitri Stallenberg
@@ -107,7 +107,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         Properties.final_suite_directory,
         `test-${key}.js`
       );
-      await mfs.writeFileSync(
+      writeFileSync(
         testPath,
         this.decoder.decodeTestCase(
           reducedArchive.get(key)!,

@@ -1,7 +1,7 @@
-import * as Module from "module";
-import * as path from "path";
-import { createFsFromVolume, Volume } from "memfs";
-import sourceMapSupport from "source-map-support";
+import * as Module from 'module';
+import * as path from 'path';
+import { createFsFromVolume, Volume } from 'memfs';
+import sourceMapSupport from 'source-map-support';
 
 class NodeModule extends Module {
   static _load: (request: string, parent: Module) => any;
