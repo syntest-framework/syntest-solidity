@@ -224,9 +224,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     return [imports, linkings];
   }
 
-  generateAssertions(
-    ind: SolidityTestCase
-  ): string[] {
+  generateAssertions(ind: SolidityTestCase): string[] {
     const assertions: string[] = [];
     if (ind.assertions.size !== 0) {
       for (const variableName of ind.assertions.keys()) {
@@ -238,15 +236,21 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
         if (variableName.includes("string")) {
           assertions.push(
-            `\t\tassert.equal(${variableName}, "${ind.assertions.get(variableName)}")`
+            `\t\tassert.equal(${variableName}, "${ind.assertions.get(
+              variableName
+            )}")`
           );
         } else if (variableName.includes("int")) {
           assertions.push(
-            `\t\tassert.equal(${variableName}, BigInt("${ind.assertions.get(variableName)}"))`
+            `\t\tassert.equal(${variableName}, BigInt("${ind.assertions.get(
+              variableName
+            )}"))`
           );
         } else {
           assertions.push(
-            `\t\tassert.equal(${variableName}, ${ind.assertions.get(variableName)})`
+            `\t\tassert.equal(${variableName}, ${ind.assertions.get(
+              variableName
+            )})`
           );
         }
       }
@@ -271,9 +275,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     for (const ind of testCase) {
       // The stopAfter variable makes sure that when one of the function calls has thrown an exception the test case ends there.
       let stopAfter = -1;
-      if (
-        ind.assertions.size !== 0 && ind.assertions.has("error")
-      ) {
+      if (ind.assertions.size !== 0 && ind.assertions.has("error")) {
         stopAfter = ind.assertions.size;
       }
 

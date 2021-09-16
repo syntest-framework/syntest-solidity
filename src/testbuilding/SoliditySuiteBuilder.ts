@@ -29,7 +29,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     filePath: string,
     testCase: SolidityTestCase,
     targetName: string,
-    addLogs = false,
+    addLogs = false
   ) {
     const decodedTestCase = this.decoder.decodeTestCase(
       testCase,
@@ -39,35 +39,37 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     await writeFileSync(filePath, decodedTestCase);
   }
 
-  reduceArchive(archive: Archive<SolidityTestCase>): Map<string, SolidityTestCase[]> {
+  reduceArchive(
+    archive: Archive<SolidityTestCase>
+  ): Map<string, SolidityTestCase[]> {
     const reducedArchive = new Map<string, SolidityTestCase[]>();
 
     for (const objective of archive.getObjectives()) {
       const targetName = objective
-          .getSubject()
-          .name.split("/")
-          .pop()!
-          .split(".")[0]!;
+        .getSubject()
+        .name.split("/")
+        .pop()!
+        .split(".")[0]!;
 
       if (!reducedArchive.has(targetName)) {
         reducedArchive.set(targetName, []);
       }
 
       if (
-          reducedArchive
-              .get(targetName)
-              .includes(archive.getEncoding(objective) as SolidityTestCase)
+        reducedArchive
+          .get(targetName)
+          .includes(archive.getEncoding(objective) as SolidityTestCase)
       ) {
         // skip duplicate individuals (i.e. individuals which cover multiple objectives
         continue;
       }
 
       reducedArchive
-          .get(targetName)
-          .push(archive.getEncoding(objective) as SolidityTestCase);
+        .get(targetName)
+        .push(archive.getEncoding(objective) as SolidityTestCase);
     }
 
-    return reducedArchive
+    return reducedArchive;
   }
 
   async createSuite(archive: Archive<SolidityTestCase>): Promise<void> {
@@ -110,33 +112,26 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       );
       await writeFileSync(
         testPath,
-        this.decoder.decodeTestCase(
-          reducedArchive.get(key),
-          `${key}`,
-          false
-        )
+        this.decoder.decodeTestCase(reducedArchive.get(key), `${key}`, false)
       );
     }
 
     this.api.resetInstrumentationData();
   }
 
-  async gatherAssertions(
-    testCases: SolidityTestCase[]
-  ): Promise<void> {
-
+  async gatherAssertions(testCases: SolidityTestCase[]): Promise<void> {
     for (const testCase of testCases) {
       const assertions = new Map<string, string>();
       try {
         // extract the log statements
         const dir = await readdirSync(
-            path.join(Properties.temp_log_directory, testCase.id)
+          path.join(Properties.temp_log_directory, testCase.id)
         );
 
         for (const file of dir) {
           assertions[file] = await readFileSync(
-              path.join(Properties.temp_log_directory, testCase.id, file),
-              "utf8"
+            path.join(Properties.temp_log_directory, testCase.id, file),
+            "utf8"
           );
         }
       } catch (error) {
@@ -144,12 +139,12 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       }
 
       await this.clearDirectory(
-          path.join(Properties.temp_log_directory, testCase.id),
-          /.*/g
+        path.join(Properties.temp_log_directory, testCase.id),
+        /.*/g
       );
       await rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
 
-      testCase.assertions = assertions
+      testCase.assertions = assertions;
     }
   }
 }
