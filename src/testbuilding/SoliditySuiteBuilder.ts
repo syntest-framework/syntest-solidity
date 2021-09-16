@@ -2,14 +2,16 @@ import {
   Properties,
   TestCaseDecoder,
   SuiteBuilder,
-  TestCase,
   Archive,
   ExceptionObjectiveFunction,
+  getLogger,
 } from "syntest-framework";
 import * as path from "path";
 import { getTestFilePaths } from "../util/fileSystem";
-import {mfs}  from '../memfs';
-// import {fs, vol} from 'memfs'
+import {mfs}  from '../memfs'
+
+import { SolidityTestCase } from "../testcase/SolidityTestCase";
+import {readdirSync, readFileSync, rmdirSync} from "fs";
 
 /**
  * @author Dimitri Stallenberg
@@ -28,10 +30,10 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
 
   async writeTestCase(
     filePath: string,
-    testCase: TestCase,
+    testCase: SolidityTestCase,
     targetName: string,
     addLogs = false,
-    additionalAssertions?: Map<TestCase, { [p: string]: string }>
+    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
   ) {
     const decodedTestCase = this.decoder.decodeTestCase(
       testCase,
@@ -45,8 +47,8 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     await mfs.writeFileSync(filePath, decodedTestCase);
   }
 
-  async createSuite(archive: Archive<TestCase>) {
-    const reducedArchive = new Map<string, TestCase[]>();
+  async createSuite(archive: Archive<SolidityTestCase>) {
+    const reducedArchive = new Map<string, SolidityTestCase[]>();
 
     for (const objective of archive.getObjectives()) {
       const targetName = objective
@@ -62,7 +64,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       if (
         reducedArchive
           .get(targetName)!
-          .includes(archive.getEncoding(objective) as TestCase)
+          .includes(archive.getEncoding(objective) as SolidityTestCase)
       ) {
         // skip duplicate individuals (i.e. individuals which cover multiple objectives
         continue;
@@ -70,7 +72,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
 
       reducedArchive
         .get(targetName)!
-        .push(archive.getEncoding(objective) as TestCase);
+        .push(archive.getEncoding(objective) as SolidityTestCase);
     }
 
     for (const key of reducedArchive.keys()) {
@@ -90,6 +92,8 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
+      getLogger().error(e);
+      console.trace(e);
     }
     console.log = old;
 
@@ -97,33 +101,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     await this.clearDirectory(Properties.temp_test_directory);
 
     for (const key of reducedArchive.keys()) {
-      const assertions = new Map();
-
-      for (const testCase of reducedArchive.get(key)!) {
-        const additionalAssertions: { [key: string]: string } = {};
-
-        try {
-          // extract the log statements
-          const dir = await mfs.readdirSync(
-            path.join(Properties.temp_log_directory, testCase.id)
-          );
-
-          for (const file of dir) {
-            additionalAssertions[file] = await mfs.readFileSync(
-              path.join(Properties.temp_log_directory, testCase.id, file),
-              "utf8"
-            );
-          }
-        } catch (error) {
-          continue;
-        }
-
-        await this.clearDirectory(
-          path.join(Properties.temp_log_directory, testCase.id),
-          /.*/g
-        );
-        await mfs.rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
-      }
+      const assertions = await this.gatherAssertions(reducedArchive, key);
 
       const testPath = path.join(
         Properties.final_suite_directory,
@@ -141,5 +119,42 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     }
 
     this.api.resetInstrumentationData();
+  }
+
+  async gatherAssertions(
+    archive: Map<string, SolidityTestCase[]>,
+    key: string
+  ): Promise<Map<SolidityTestCase, { [p: string]: string }>> {
+    const assertions = new Map();
+
+    for (const testCase of archive.get(key)!) {
+      const additionalAssertions: { [key: string]: string } = {};
+
+      try {
+        // extract the log statements
+        const dir = await readdirSync(
+          path.join(Properties.temp_log_directory, testCase.id)
+        );
+
+        for (const file of dir) {
+          additionalAssertions[file] = await readFileSync(
+            path.join(Properties.temp_log_directory, testCase.id, file),
+            "utf8"
+          );
+        }
+      } catch (error) {
+        continue;
+      }
+
+      await this.clearDirectory(
+        path.join(Properties.temp_log_directory, testCase.id),
+        /.*/g
+      );
+      await rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
+
+      assertions.set(testCase, additionalAssertions);
+    }
+
+    return assertions;
   }
 }

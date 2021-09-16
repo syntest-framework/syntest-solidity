@@ -1,20 +1,22 @@
 import {
-  BoolStatement,
-  ConstructorCall,
   Properties,
-  NumericStatement,
-  ObjectFunctionCall,
   ActionStatement,
+  AbstractTestCase,
   prng,
   Statement,
-  StringStatement,
-  TestCase,
 } from "syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/AddressStatement";
 import BigNumber from "bignumber.js";
 import { ByteStatement } from "../statements/ByteStatement";
 import { SoliditySubject } from "../../search/SoliditySubject";
+import { ConstantPool } from "../../seeding/constant/ConstantPool";
+import { SolidityTestCase } from "../SolidityTestCase";
+import { ConstructorCall } from "../statements/action/ConstructorCall";
+import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
+import { NumericStatement } from "../statements/primitive/NumericStatement";
+import { BoolStatement } from "../statements/primitive/BoolStatement";
+import { StringStatement } from "../statements/primitive/StringStatement";
 
 /**
  * SolidityRandomSampler class
@@ -25,11 +27,11 @@ export class SolidityRandomSampler extends SoliditySampler {
   /**
    * Constructor
    */
-  constructor(subject: SoliditySubject<TestCase>) {
+  constructor(subject: SoliditySubject<AbstractTestCase>) {
     super(subject);
   }
 
-  sample(): TestCase {
+  sample(): SolidityTestCase {
     const root = this.sampleConstructor(0);
 
     const nCalls = prng.nextInt(1, 5);
@@ -37,7 +39,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       const call = this.sampleMethodCall(root);
       root.setMethodCall(index, call as ActionStatement);
     }
-    return new TestCase(root);
+    return new SolidityTestCase(root);
   }
 
   sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {

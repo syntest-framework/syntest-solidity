@@ -14,6 +14,7 @@ import {
   Archive,
   BudgetManager,
   configureTermination,
+  CoverageWriter,
   createAlgorithmFromConfig,
   createDirectoryStructure,
   createTempDirectoryStructure,
@@ -22,7 +23,6 @@ import {
   EvaluationBudget,
   ExceptionObjectiveFunction,
   ExecutionResult,
-  getLogger,
   Properties,
   guessCWD,
   IterationBudget,
@@ -33,11 +33,15 @@ import {
   setupLogger,
   setupOptions,
   StatisticsCollector,
+  StatisticsSearchListener,
   SummaryWriter,
-  TestCase,
   TotalTimeBudget,
   loadTargetFiles,
   TargetFile,
+  setUserInterface,
+  getUserInterface,
+  AbstractTestCase,
+  getSeed,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -49,12 +53,31 @@ import { normalizeConfig } from "./util/config";
 import { setNetwork, setNetworkFrom } from "./util/network";
 
 import {
+  createTruffleConfig,
   getTestFilePaths,
   save,
   setupTempFolders,
   tearDownTempFolders,
 } from "./util/fileSystem";
-import CLI from "./ui/CLI";
+
+import Messages from "./ui/Messages";
+import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
+import { SolidityMonitorCommandLineInterface } from "./ui/SolidityMonitorCommandLineInterface";
+
+import { ImportVisitor } from "./analysis/static/dependency/ImportVisitor";
+import { LibraryVisitor } from "./analysis/static/dependency/LibraryVisitor";
+
+import * as fs from "fs";
+
+import { ConstantPool } from "./seeding/constant/ConstantPool";
+import { ConstantVisitor } from "./seeding/constant/ConstantVisitor";
+import { SolidityTestCase } from "./testcase/SolidityTestCase";
+import { SolidityTreeCrossover } from "./search/operators/crossover/SolidityTreeCrossover";
+
+import { TargetPool } from "./analysis/static/TargetPool";
+import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
+import { ASTGenerator } from "./analysis/static/ast/ASTGenerator";
+import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -76,10 +99,7 @@ function loadLibrary(config) {
   // Local
   try {
     if (config.useGlobalTruffle || config.usePluginTruffle) throw null;
-
-    const lib = require("truffle");
-    getLogger().info("lib-local");
-    return lib;
+    return require("truffle");
   } catch (err) {}
 
   // Global
@@ -87,9 +107,7 @@ function loadLibrary(config) {
     if (config.usePluginTruffle) throw null;
 
     const globalTruffle = path.join(globalModules, "truffle");
-    const lib = require(globalTruffle);
-    getLogger().info("lib-global");
-    return lib;
+    return require(globalTruffle);
   } catch (err) {}
 }
 
@@ -102,13 +120,10 @@ export class SolidityLauncher {
    * @return {Promise}
    */
   public async run(config: TruffleConfig) {
+    await createTruffleConfig();
+
     let api, error, failures;
 
-    // Filesystem & Compiler Re-configuration
-    config = normalizeConfig(config);
-
-    // const tempContractsDir = path.join(config.workingDir, '.coverage_contracts')
-    // const tempArtifactsDir = path.join(config.workingDir, '.coverage_artifacts')
     const tempContractsDir = path.join(process.cwd(), ".syntest_coverage");
     const tempArtifactsDir = path.join(process.cwd(), ".syntest_artifacts");
 
@@ -127,8 +142,7 @@ export class SolidityLauncher {
     };
 
     try {
-      const ui = new CLI(true);
-
+      // Filesystem & Compiler Re-configuration
       config = normalizeConfig(config);
 
       await guessCWD(config.workingDir);
@@ -142,9 +156,35 @@ export class SolidityLauncher {
       processConfig(myConfig, args);
       setupLogger();
 
+      const messages = new Messages();
+
+      if (Properties.user_interface === "regular") {
+        setUserInterface(
+          new SolidityCommandLineInterface(
+            Properties.console_log_level === "silent",
+            Properties.console_log_level === "verbose",
+            messages
+          )
+        );
+      } else if (Properties.user_interface === "monitor") {
+        setUserInterface(
+          new SolidityMonitorCommandLineInterface(
+            Properties.console_log_level === "silent",
+            Properties.console_log_level === "verbose",
+            messages
+          )
+        );
+      }
+
       config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
 
-      if (config.help) return ui.report("help"); // Exit if --help
+      getUserInterface().report("clear", []);
+      getUserInterface().report("asciiArt", ["Syntest"]);
+      getUserInterface().report("version", [
+        require("../package.json").version,
+      ]);
+
+      if (config.help) return getUserInterface().report("help", []); // Exit if --help
 
       const truffle = loadLibrary(config);
       api = new API(myConfig);
@@ -162,25 +202,34 @@ export class SolidityLauncher {
 
       setNetworkFrom(config, accounts);
 
-      // Version Info
-      ui.report("versions", [truffle.version, ganacheVersion, pkg.version]);
-
       // Exit if --version
       if (config.version) {
+        getUserInterface().report("versions", [
+          truffle.version,
+          ganacheVersion,
+          pkg.version,
+        ]); // Exit if --help
+
         // Finish
         await tearDownTempFolders(tempContractsDir, tempArtifactsDir);
 
         // Shut server down
         await api.finish();
-        getLogger().info(`Version: `);
-        process.exit(0);
+        return;
       }
 
-      ui.report("network", [
-        config.network,
-        config.networks[config.network].network_id,
-        config.networks[config.network].port,
+      getUserInterface().report("header", ["General info"]);
+
+      getUserInterface().report("property-set", [
+        "Network Info",
+        [
+          ["id", config.network],
+          ["port", config.networks[config.network].network_id],
+          ["network", config.networks[config.network].port],
+        ],
       ]);
+
+      getUserInterface().report("header", ["Targets"]);
 
       // Run post-launch server hook;
       await api.onServerReady(config);
@@ -195,17 +244,66 @@ export class SolidityLauncher {
 
         // Shut server down
         await api.finish();
-        getLogger().error(
+        getUserInterface().error(
           `No targets where selected! Try changing the 'include' parameter`
         );
         process.exit(1);
       }
 
+      getUserInterface().report(
+        "targets",
+        included.map((t) => t.relativePath)
+      );
+      getUserInterface().report(
+        "skip-files",
+        excluded.map((s) => s.relativePath)
+      );
+
+      getUserInterface().report("header", ["configuration"]);
+
+      getUserInterface().report("single-property", ["Seed", getSeed()]);
+      getUserInterface().report("property-set", [
+        "Budgets",
+        [
+          ["Iteration Budget", `${Properties.iteration_budget} iterations`],
+          ["Evaluation Budget", `${Properties.evaluation_budget} evaluations`],
+          ["Search Time Budget", `${Properties.search_time} seconds`],
+          ["Total Time Budget", `${Properties.total_time} seconds`],
+        ],
+      ]);
+      getUserInterface().report("property-set", [
+        "Algorithm",
+        [
+          ["Algorithm", Properties.algorithm],
+          ["Population Size", Properties.population_size],
+        ],
+      ]);
+      getUserInterface().report("property-set", [
+        "Variation Probabilities",
+        [
+          ["Resampling", Properties.resample_gene_probability],
+          ["Delta mutation", Properties.delta_mutation_probability],
+          [
+            "Re-sampling from chromosome",
+            Properties.sample_existing_value_probability,
+          ],
+          ["Crossover", Properties.crossover_probability],
+        ],
+      ]);
+
+      getUserInterface().report("property-set", [
+        "Sampling",
+        [
+          ["Max Depth", Properties.max_depth],
+          ["Explore Illegal Values", Properties.explore_illegal_values],
+          ["Sample Function Result as Argument", Properties.sample_func_as_arg],
+          ["Crossover", Properties.crossover_probability],
+        ],
+      ]);
+
       // Instrument
       const targets = api.instrument(included);
       const skipped = excluded;
-
-      ui.reportSkipped(config, skipped);
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir);
       await save(targets, config.contracts_directory, tempContractsDir);
@@ -227,7 +325,20 @@ export class SolidityLauncher {
       await truffle.contracts.compile(config);
       await api.onCompileComplete(config);
 
-      const finalArchive = new Archive<TestCase>();
+      const finalArchive = new Archive<SolidityTestCase>();
+      let finalImportsMap: Map<string, string> = new Map();
+      let finalDependencies: Map<string, string[]> = new Map();
+
+      const sourceGenerator = new SourceGenerator();
+      const astGenerator = new ASTGenerator();
+      const targetMapGenerator = new TargetMapGenerator();
+      const cfgGenerator = new SolidityCFGFactory();
+      const targetPool = new TargetPool(
+        sourceGenerator,
+        astGenerator,
+        targetMapGenerator,
+        cfgGenerator
+      );
 
       for (const target of targets) {
         const archive = await testTarget(
@@ -239,14 +350,39 @@ export class SolidityLauncher {
         );
 
         for (const key of archive.getObjectives()) {
-          finalArchive.update(key, archive.getEncoding(key));
+          finalArchive.update(
+            key,
+            archive.getEncoding(key) as SolidityTestCase
+          );
         }
+
+        // TODO: check if we can prevent recalculating the dependencies
+        const ast = SolidityParser.parse(target.actualSource, {
+          loc: true,
+          range: true,
+        });
+        const { importsMap, dependencyMap } = getImportDependencies(
+          ast,
+          target
+        );
+        finalImportsMap = new Map([
+          ...Array.from(finalImportsMap.entries()),
+          ...Array.from(importsMap.entries()),
+        ]);
+        finalDependencies = new Map([
+          ...Array.from(finalDependencies.entries()),
+          ...Array.from(dependencyMap.entries()),
+        ]);
       }
 
       await createDirectoryStructure();
       await createTempDirectoryStructure();
 
-      const stringifier = new SolidityTruffleStringifier();
+      const stringifier = new SolidityTruffleStringifier(
+        finalImportsMap,
+        finalDependencies
+      );
+
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
         api,
@@ -254,7 +390,7 @@ export class SolidityLauncher {
         config
       );
 
-      await suiteBuilder.createSuite(finalArchive as Archive<TestCase>);
+      await suiteBuilder.createSuite(finalArchive as Archive<SolidityTestCase>);
 
       await deleteTempDirectories();
 
@@ -263,12 +399,19 @@ export class SolidityLauncher {
       });
 
       // Run tests
+      // by replacing the console.log global function we disable the output of the truffle test results
+      const old = console.log;
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      console.log = function () {};
       try {
-        failures = await truffle.test.run(config);
+        await truffle.test.run(config);
       } catch (e) {
         error = e.stack;
       }
+      console.log = old;
       await api.onTestsComplete(config);
+
+      getUserInterface().report("header", ["search results"]);
 
       // Run Istanbul
       await api.report();
@@ -300,7 +443,9 @@ async function testTarget(
     await createDirectoryStructure();
     await createTempDirectoryStructure();
 
-    getLogger().info(`Testing target: ${target.relativePath}`);
+    getUserInterface().report("header", [
+      `Searching: "${target.relativePath}"`,
+    ]);
 
     const ast = SolidityParser.parse(target.actualSource, {
       loc: true,
@@ -316,7 +461,12 @@ async function testTarget(
 
     const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
 
-    const stringifier = new SolidityTruffleStringifier();
+    const { importsMap, dependencyMap } = getImportDependencies(ast, target);
+
+    const stringifier = new SolidityTruffleStringifier(
+      importsMap,
+      dependencyMap
+    );
     const suiteBuilder = new SoliditySuiteBuilder(
       stringifier,
       api,
@@ -326,8 +476,15 @@ async function testTarget(
 
     const runner = new SolidityRunner(suiteBuilder, api, truffle, config);
 
+    // Parse the contract for extracting constant
+    const pool = ConstantPool.getInstance();
+    const constantVisitor = new ConstantVisitor(pool);
+    SolidityParser.visit(ast, constantVisitor);
+
     const sampler = new SolidityRandomSampler(currentSubject);
-    const algorithm = createAlgorithmFromConfig(sampler, runner);
+
+    const crossover = new SolidityTreeCrossover();
+    const algorithm = createAlgorithmFromConfig(sampler, runner, crossover);
 
     await suiteBuilder.clearDirectory(Properties.temp_test_directory);
 
@@ -342,7 +499,35 @@ async function testTarget(
     budgetManager.addBudget(searchBudget);
     budgetManager.addBudget(totalTimeBudget);
 
+    // Termination
     const terminationManager = configureTermination();
+
+    // Collector
+    const collector = new StatisticsCollector(totalTimeBudget);
+    collector.recordVariable(RuntimeVariable.VERSION, 1);
+    collector.recordVariable(
+      RuntimeVariable.CONFIGURATION,
+      Properties.configuration
+    );
+    collector.recordVariable(RuntimeVariable.SEED, getSeed());
+    collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
+    collector.recordVariable(
+      RuntimeVariable.PROBE_ENABLED,
+      Properties.probe_objective
+    );
+    collector.recordVariable(
+      RuntimeVariable.CONSTANT_POOL_ENABLED,
+      Properties.constant_pool
+    );
+    collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
+    collector.recordVariable(
+      RuntimeVariable.TOTAL_OBJECTIVES,
+      currentSubject.getObjectives().length
+    );
+
+    // Statistics listener
+    const statisticsSearchListener = new StatisticsSearchListener(collector);
+    algorithm.addListener(statisticsSearchListener);
 
     // This searches for a covering population
     const archive = await algorithm.search(
@@ -351,47 +536,30 @@ async function testTarget(
       terminationManager
     );
 
-    const collector = new StatisticsCollector(totalTimeBudget);
-    collector.recordVariable(RuntimeVariable.VERSION, 1);
-    collector.recordVariable(
-      RuntimeVariable.CONFIGURATION,
-      Properties.configuration
-    );
-    collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
-    collector.recordVariable(
-      RuntimeVariable.PROBE_ENABLED,
-      Properties.probe_objective
-    );
-    collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
-    collector.recordVariable(
-      RuntimeVariable.TOTAL_OBJECTIVES,
-      currentSubject.getObjectives().length
-    );
-
+    // Gather statistics after the search
     collector.recordVariable(
       RuntimeVariable.COVERED_OBJECTIVES,
       archive.getObjectives().length
     );
-
-    collector.recordVariable(RuntimeVariable.SEED, Properties.seed);
+    collector.recordVariable(
+      RuntimeVariable.INITIALIZATION_TIME,
+      totalTimeBudget.getUsedBudget() - searchBudget.getUsedBudget()
+    );
     collector.recordVariable(
       RuntimeVariable.SEARCH_TIME,
-      searchBudget.getCurrentBudget()
+      searchBudget.getUsedBudget()
     );
-
     collector.recordVariable(
       RuntimeVariable.TOTAL_TIME,
-      totalTimeBudget.getCurrentBudget()
+      totalTimeBudget.getUsedBudget()
     );
-
     collector.recordVariable(
       RuntimeVariable.ITERATIONS,
-      iterationBudget.getCurrentBudget()
+      iterationBudget.getUsedBudget()
     );
-
     collector.recordVariable(
       RuntimeVariable.EVALUATIONS,
-      evaluationBudget.getCurrentBudget()
+      evaluationBudget.getUsedBudget()
     );
 
     collectCoverageData(collector, archive, "branch");
@@ -414,10 +582,13 @@ async function testTarget(
         currentSubject.getObjectives().length
     );
 
-    const statisticFile = path.resolve(Properties.statistics_directory);
+    const statisticsDirectory = path.resolve(Properties.statistics_directory);
 
-    const writer = new SummaryWriter();
-    writer.write(collector, statisticFile + "/statistics.csv");
+    const summaryWriter = new SummaryWriter();
+    summaryWriter.write(collector, statisticsDirectory + "/statistics.csv");
+
+    const coverageWriter = new CoverageWriter();
+    coverageWriter.write(collector, statisticsDirectory + "/coverage.csv");
 
     await deleteTempDirectories();
 
@@ -428,6 +599,54 @@ async function testTarget(
     }
     throw e;
   }
+}
+
+function getImportDependencies(ast: any, target: any) {
+  const contractName = target.instrumented.contractName;
+
+  // Import the contract under test
+  const importsMap = new Map<string, string>();
+  importsMap.set(contractName, contractName);
+
+  // Find all external imports in the contract under test
+  const importVisitor = new ImportVisitor();
+  SolidityParser.visit(ast, importVisitor);
+
+  // For each external import scan the file for libraries with public and external functions
+  const libraries: string[] = [];
+  importVisitor.getImports().forEach((importPath: string) => {
+    // Full path to the imported file
+    const pathLib = path.join(path.dirname(target.canonicalPath), importPath);
+
+    // Read the imported file
+    // TODO: use the already parsed excluded information to prevent duplicate file reading
+    const source = fs.readFileSync(pathLib).toString();
+
+    // Parse the imported file
+    const astLib = SolidityParser.parse(source, {
+      loc: true,
+      range: true,
+    });
+
+    // Scan for libraries with public or external functions
+    const libraryVisitor = new LibraryVisitor();
+    SolidityParser.visit(astLib, libraryVisitor);
+
+    // Import the external file in the test
+    importsMap.set(
+      path.basename(importPath).split(".")[0],
+      path.basename(importPath).split(".")[0]
+    );
+
+    // Import the found libraries
+    // TODO: check for duplicates in libraries
+    libraries.push(...libraryVisitor.libraries);
+  });
+
+  // Return the library dependency information
+  const dependencyMap = new Map<string, string[]>();
+  dependencyMap.set(contractName, libraries);
+  return { importsMap, dependencyMap };
 }
 
 function collectCoverageData(
