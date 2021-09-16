@@ -26,8 +26,15 @@ export class AddressStatement extends PrimitiveStatement<string> {
     }
 
     if (this.value.startsWith("0x")) {
-      return <AddressStatement>(
-        sampler.sampleStatement(depth, this.type, "primitive")
+      const newAccount = prng.nextBoolean(0.5)
+        ? this.account + 1
+        : this.account - 1;
+      const value = "0x".concat((-newAccount).toString(16).padStart(40, "0"));
+      return new AddressStatement(
+        this.type,
+        prng.uniqueId(),
+        value,
+        newAccount
       );
     }
 
@@ -70,7 +77,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
 
     account = prng.nextInt(-1, 5);
     if (account < 0) {
-      const value = "0x".concat(account.toString(16).padStart(40, "0"));
+      const value = "0x".concat((-account).toString(16).padStart(40, "0"));
       return new AddressStatement(type, prng.uniqueId(), value, account);
     }
 
@@ -83,6 +90,15 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   public toCode(): string {
+    if (this.value.startsWith("0x"))
+      return `const ${this.varName} = "${this.value}"`;
+
     return `const ${this.varName} = ${this.value}`;
+  }
+
+  public getValue(): string {
+    if (this.value.startsWith("0x")) return `"${this.value}"`;
+
+    return `${this.value}`;
   }
 }

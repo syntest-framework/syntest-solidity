@@ -45,11 +45,14 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
+    const sender = (statement as ConstructorCall).getSender().getValue();
+    const senderString =
+      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
     return (
       string +
       `const ${statement.varName} = await ${
         (statement as ConstructorCall).constructorName
-      }.new(${formattedArgs});`
+      }.new(${formattedArgs}${senderString});`
     );
   }
 
@@ -69,11 +72,15 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
+    const sender = (statement as ConstructorCall).getSender().getValue();
+    const senderString =
+      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+
     return (
       string +
       `await expect(${
         (statement as ConstructorCall).constructorName
-      }.new(${formattedArgs})).to.be.rejectedWith(Error);`
+      }.new(${formattedArgs}${senderString}).to.be.rejectedWith(Error);`
     );
   }
 
@@ -104,6 +111,10 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const args = (statement as ObjectFunctionCall).getChildren();
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
+      const sender = (statement as ObjectFunctionCall).getSender().getValue();
+      const senderString =
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+
       if (
         statement.type !== "none" &&
         statement.type !== "" &&
@@ -111,11 +122,11 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       ) {
         return `const ${statement.varName} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
-        }.call(${formattedArgs});`;
+        }.call(${formattedArgs}${senderString});`;
       }
       return `await ${objectName}.${
         (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs});`;
+      }.call(${formattedArgs}${senderString});`;
     } else {
       throw new Error(`${statement} is not a function call`);
     }
@@ -126,9 +137,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const args = (statement as ObjectFunctionCall).getChildren();
       const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
 
+      const sender = (statement as ObjectFunctionCall).getSender().getValue();
+      const senderString =
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+
       return `await expect(${objectName}.${
         (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs})).to.be.rejectedWith(Error);`;
+      }.call(${formattedArgs}${senderString})).to.be.rejectedWith(Error);`;
     } else {
       throw new Error(`${statement} is not a function call`);
     }
@@ -292,8 +307,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
         if (gene instanceof ConstructorCall) {
           if (count === stopAfter) {
-            assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
-            break;
+            // assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
+            if (Properties.test_minimization) break;
           }
           testString.push(`\t\t${this.decodeConstructor(gene)}`);
           importableGenes.push(<ConstructorCall>gene);
@@ -308,7 +323,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
                 constructor.varName
               )}`
             );
-            break;
+            if (Properties.test_minimization) break;
           }
           functionCalls.push(
             `\t\t${this.decodeFunctionCall(gene, constructor.varName)}`

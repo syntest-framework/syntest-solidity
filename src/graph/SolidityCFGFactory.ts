@@ -303,6 +303,8 @@ export class SolidityCFGFactory implements CFGFactory {
       "NumberLiteral",
       "IndexAccess",
       "MemberAccess",
+      "TypeNameExpression", // Is used in the benchmark
+      "EnumDefinition", // Is used in the framework
     ];
 
     if (skipable.includes(child.type)) {
@@ -1066,7 +1068,7 @@ export class SolidityCFGFactory implements CFGFactory {
     const node: Node = this.createNode(cfg, [AST.loc.start.line], []);
     this.connectParents(cfg, parents, [node]);
 
-    this.visitChild(cfg, AST.expression, [node]);
+    // this.visitChild(cfg, AST.expression, [node]);
 
     return {
       childNodes: [],
