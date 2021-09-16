@@ -115,7 +115,6 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     if (statement instanceof ObjectFunctionCall) {
       const args = (statement as ObjectFunctionCall).getChildren();
 
-
       // TODO the difficulty now is to select the correct var from the statements....
       // TODO now assuming its always the first one
       const formattedArgs = args
@@ -127,7 +126,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
       const sender = (statement as ObjectFunctionCall).getSender().getValue();
       const senderString =
-          formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
       if (
         statement.types.length &&

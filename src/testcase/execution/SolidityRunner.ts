@@ -43,7 +43,7 @@ export class SolidityRunner extends TestCaseRunner {
       (testCase.root as ConstructorCall).constructorName
     );
 
-    this.config.test_files = [testPath]
+    this.config.test_files = [testPath];
 
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
@@ -53,7 +53,7 @@ export class SolidityRunner extends TestCaseRunner {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     console.log = () => {};
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    global.console.log = () => {}
+    global.console.log = () => {};
 
     const time = Date.now();
     // Run tests

@@ -76,7 +76,7 @@ import {
   collectInitialVariables,
   collectStatistics,
 } from "./util/collection";
-import {createCustomMocha} from "./customMocha";
+import { createCustomMocha } from "./customMocha";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -181,9 +181,9 @@ export class SolidityLauncher {
     } // Exit if --help
 
     this.truffle = loadLibrary(this.config);
-    this.originalCreateMocha = this.truffle.test.createMocha
-    this.truffle.test.createMocha({mocha: {package: require('mocha')}})
-    this.truffle.test.createMocha = createCustomMocha
+    this.originalCreateMocha = this.truffle.test.createMocha;
+    this.truffle.test.createMocha({ mocha: { package: require("mocha") } });
+    this.truffle.test.createMocha = createCustomMocha;
     this.api = new API(myConfig);
 
     setNetwork(this.config, this.api);
@@ -448,7 +448,7 @@ export class SolidityLauncher {
       testDir: testDir,
     });
 
-    this.truffle.test.createMocha = this.originalCreateMocha
+    this.truffle.test.createMocha = this.originalCreateMocha;
     // Run tests
     // by replacing the console.log global function we disable the output of the truffle test results
     const old = console.log;
