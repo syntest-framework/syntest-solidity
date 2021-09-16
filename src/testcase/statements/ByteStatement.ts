@@ -3,6 +3,7 @@ import {
   PrimitiveStatement,
   prng,
   TestCaseSampler,
+  Parameter,
 } from "syntest-framework";
 
 /**
@@ -13,7 +14,7 @@ export class ByteStatement extends PrimitiveStatement<number[]> {
   private static _upper_bound = 32;
   private static _lower_bound = 0;
 
-  constructor(type: string, uniqueId: string, bytes: number[]) {
+  constructor(type: Parameter, uniqueId: string, bytes: number[]) {
     super(type, uniqueId, bytes);
   }
 
@@ -38,7 +39,10 @@ export class ByteStatement extends PrimitiveStatement<number[]> {
     return ByteStatement.getRandom(this.type, this.value.length);
   }
 
-  static getRandom(type = "byte", nBytes = 1) {
+  static getRandom(
+    type: Parameter = { type: "byte", name: "noname" },
+    nBytes = 1
+  ) {
     const bytes: number[] = [];
     for (let index = 0; index < nBytes; index++) {
       bytes[index] = prng.nextInt(

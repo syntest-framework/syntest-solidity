@@ -1,6 +1,5 @@
 import {
   ExecutionResult,
-  getLogger,
   Properties,
   SuiteBuilder,
   TestCaseRunner,
@@ -30,68 +29,6 @@ export class SolidityRunner extends TestCaseRunner {
     super(suiteBuilder);
     this.api = api;
     this.truffle = truffle;
-
-    this.truffle.test.createMocha = function (config) {
-      console.log("custom create mocha");
-
-      // Allow people to specify config.mocha in their config.
-      const mochaConfig = config.mocha || {};
-
-      // Propagate --bail option to mocha
-      mochaConfig.bail = config.bail;
-
-      // If the command line overrides color usage, use that.
-      if (config.color != null) {
-        mochaConfig.color = config.color;
-      } else if (config.colors != null) {
-        // --colors is a mocha alias for --color
-        mochaConfig.color = config.colors;
-      }
-
-      // Default to true if configuration isn't set anywhere.
-      if (mochaConfig.color == null) {
-        mochaConfig.color = true;
-      }
-
-      let Mocha = mochaConfig.package || require("mocha");
-      delete mochaConfig.package;
-      const mocha = new Mocha(mochaConfig);
-
-      // @ts-ignore
-      console.log(mocha);
-      mocha.loadFiles = function (callback) {
-        const { suite, files } = this as Mocha;
-
-        for (let file of files) {
-          file = path.resolve(file);
-
-          suite.emit(
-            Suite.constants.EVENT_FILE_PRE_REQUIRE,
-            global,
-            file,
-            this
-          );
-          suite.emit(
-            Suite.constants.EVENT_FILE_REQUIRE,
-            mRequire(file),
-            file,
-            this
-          );
-          suite.emit(
-            Suite.constants.EVENT_FILE_POST_REQUIRE,
-            global,
-            file,
-            this
-          );
-        }
-        if (typeof callback === "function") {
-          callback();
-        }
-      };
-
-      return mocha;
-    };
-
     this.config = config;
   }
 
@@ -106,7 +43,7 @@ export class SolidityRunner extends TestCaseRunner {
       (testCase.root as ConstructorCall).constructorName
     );
 
-    this.config.test_files = await getTestFilePaths(this.config);
+    this.config.test_files = [testPath]
 
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
@@ -115,6 +52,8 @@ export class SolidityRunner extends TestCaseRunner {
     const old = console.log;
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     console.log = () => {};
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    global.console.log = () => {}
 
     const time = Date.now();
     // Run tests
@@ -141,7 +80,7 @@ export class SolidityRunner extends TestCaseRunner {
 
     const traces = [];
     for (const key of Object.keys(instrumentationData)) {
-      if (instrumentationData[key].contractPath.includes(subject.name + ".sol"))
+      if (instrumentationData[key].contractPath.includes(subject.name))
         traces.push(instrumentationData[key]);
     }
 

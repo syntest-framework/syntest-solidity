@@ -3,31 +3,13 @@
  *
  * @author Mitchell Olsthoorn
  */
-export interface ContractFunction {
-  /**
-   * Name of the function
-   */
-  name: string;
+import { FunctionDescription, Visibility } from "syntest-framework";
 
-  /**
-   * If the function is a constructor.
-   */
-  isConstructor: boolean;
-
+export interface ContractFunction extends FunctionDescription {
   /**
    * If the function is the fallback function.
    */
   isFallback: boolean;
-
-  /**
-   * Parameters of the function.
-   */
-  parameters: ContractFunctionParameter[];
-
-  /**
-   * Visibility of the function.
-   */
-  visibility: ContractFunctionVisibility;
 
   /**
    * Mutability of the function.
@@ -48,46 +30,21 @@ export interface ContractFunction {
    * Modifiers of the function.
    */
   modifiers: string[];
-
-  /**
-   * Return parameters of the function
-   */
-  returnParameters: ContractFunctionParameter[];
 }
 
-export interface ContractFunctionParameter {
-  /**
-   * Name of the parameter.
-   */
-  name: string;
+/**
+ * Function can only be called from within the contract where it is defined and all contracts that inherit from it.
+ */
+export const InternalVisibility: Visibility = {
+  name: "internal",
+};
 
-  /**
-   * Type of the parameter.
-   */
-  type: string;
-}
-
-export enum ContractFunctionVisibility {
-  /**
-   * Function can only be called from within the contract where it is defined.
-   */
-  Private = "private",
-
-  /**
-   * Function can only be called from within the contract where it is defined and all contracts that inherit from it.
-   */
-  Internal = "internal",
-
-  /**
-   * Function can only be called from outside the contract.
-   */
-  External = "external",
-
-  /**
-   * Function can be called from both inside and outside the contract.
-   */
-  Public = "public",
-}
+/**
+ * Function can only be called from outside the contract.
+ */
+export const ExternalVisibility: Visibility = {
+  name: "external",
+};
 
 export enum ContractFunctionMutability {
   /**

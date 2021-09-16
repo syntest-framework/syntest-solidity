@@ -5,6 +5,11 @@ import { TargetMapGenerator } from "./map/TargetMapGenerator";
 import { SolidityCFGFactory } from "../../graph/SolidityCFGFactory";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { ContractFunction } from "./map/ContractFunction";
+import { CFG } from "syntest-framework";
+import { ImportVisitor } from "./dependency/ImportVisitor";
+import * as fs from "fs";
+import { LibraryVisitor } from "./dependency/LibraryVisitor";
+const SolidityParser = require("@solidity-parser/parser");
 
 /**
  * Pool for retrieving and caching expensive processing calls.
@@ -35,7 +40,13 @@ export class TargetPool {
   >;
 
   // Mapping: filepath -> target name -> (function name -> CFG)
-  protected _controlFlowGraphs: Map<string, Map<string, any>>;
+  protected _controlFlowGraphs: Map<string, Map<string, CFG>>;
+
+  // Mapping: filepath -> target name -> [importsMap, dependencyMap]
+  protected _dependencyMaps: Map<
+    string,
+    Map<string, [Map<string, string>, Map<string, string[]>]>
+  >;
 
   constructor(
     sourceGenerator: SourceGenerator,
@@ -55,7 +66,9 @@ export class TargetPool {
       string,
       Map<string, Map<string, ContractFunction>>
     >();
-    this._controlFlowGraphs = new Map<string, Map<string, any>>();
+    this._controlFlowGraphs = new Map<string, Map<string, CFG>>();
+
+    this._dependencyMaps = new Map();
   }
 
   getSource(targetPath: string): string {
@@ -119,11 +132,11 @@ export class TargetPool {
     }
   }
 
-  getCFG(targetPath: string, targetName: string): any {
+  getCFG(targetPath: string, targetName: string): CFG {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (!this._controlFlowGraphs.has(absoluteTargetPath))
-      this._controlFlowGraphs.set(absoluteTargetPath, new Map<string, any>());
+      this._controlFlowGraphs.set(absoluteTargetPath, new Map<string, CFG>());
 
     if (this._controlFlowGraphs.get(absoluteTargetPath).has(targetName)) {
       return this._controlFlowGraphs.get(absoluteTargetPath).get(targetName);
@@ -136,6 +149,68 @@ export class TargetPool {
       );
       this._controlFlowGraphs.get(absoluteTargetPath).set(targetName, cfg);
       return cfg;
+    }
+  }
+
+  getImportDependencies(
+    targetPath: string,
+    targetName: string
+  ): [Map<string, string>, Map<string, string[]>] {
+    const absoluteTargetPath = path.resolve(targetPath);
+
+    if (!this._dependencyMaps.has(absoluteTargetPath))
+      this._dependencyMaps.set(absoluteTargetPath, new Map());
+
+    if (this._dependencyMaps.get(absoluteTargetPath).has(targetName)) {
+      return this._dependencyMaps.get(absoluteTargetPath).get(targetName);
+    } else {
+      // Import the contract under test
+      const importsMap = new Map<string, string>();
+      importsMap.set(targetName, targetName);
+
+      // Find all external imports in the contract under test
+      const importVisitor = new ImportVisitor();
+      SolidityParser.visit(this.getAST(targetPath), importVisitor);
+
+      // For each external import scan the file for libraries with public and external functions
+      const libraries: string[] = [];
+      importVisitor.getImports().forEach((importPath: string) => {
+        // Full path to the imported file
+        const pathLib = path.join(path.dirname(targetPath), importPath);
+
+        // Read the imported file
+        // TODO: use the already parsed excluded information to prevent duplicate file reading
+        const source = fs.readFileSync(pathLib).toString();
+
+        // Parse the imported file
+        const astLib = SolidityParser.parse(source, {
+          loc: true,
+          range: true,
+        });
+
+        // Scan for libraries with public or external functions
+        const libraryVisitor = new LibraryVisitor();
+        SolidityParser.visit(astLib, libraryVisitor);
+
+        // Import the external file in the test
+        importsMap.set(
+          path.basename(importPath).split(".")[0],
+          path.basename(importPath).split(".")[0]
+        );
+
+        // Import the found libraries
+        // TODO: check for duplicates in libraries
+        libraries.push(...libraryVisitor.libraries);
+      });
+
+      // Return the library dependency information
+      const dependencyMap = new Map<string, string[]>();
+      dependencyMap.set(targetName, libraries);
+
+      this._dependencyMaps
+        .get(targetPath)
+        .set(targetName, [importsMap, dependencyMap]);
+      return [importsMap, dependencyMap];
     }
   }
 }

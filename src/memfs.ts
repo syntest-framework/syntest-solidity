@@ -40,7 +40,8 @@ const { _load } = Module as typeof NodeModule;
 export const mRequire = (modulePath: string): any => {
   const virtualModule = new Module(modulePath, module);
   const moduleSource = mfs.readFileSync(modulePath).toString();
-
+  // console.log(modulePath);
+  // console.log(moduleSource);
   (virtualModule as NodeModule)._compile(moduleSource, modulePath);
 
   return virtualModule.exports;

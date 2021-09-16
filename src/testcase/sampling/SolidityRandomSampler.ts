@@ -1,16 +1,20 @@
 import {
-  Properties,
-  ActionStatement,
   AbstractTestCase,
+  ActionStatement,
+  FunctionDescription,
+  Parameter,
   prng,
+  Properties,
   Statement,
 } from "syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/AddressStatement";
 import BigNumber from "bignumber.js";
 import { ByteStatement } from "../statements/ByteStatement";
-import { SoliditySubject } from "../../search/SoliditySubject";
-import { ConstantPool } from "../../seeding/constant/ConstantPool";
+import {
+  SolidityParameter,
+  SoliditySubject,
+} from "../../search/SoliditySubject";
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
 import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
@@ -45,43 +49,49 @@ export class SolidityRandomSampler extends SoliditySampler {
   sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
     const actions = this._subject.getPossibleActions("function");
 
-    const action = prng.pickOne(actions);
+    const action = <FunctionDescription>prng.pickOne(actions);
 
     const args: Statement[] = [];
 
-    for (const arg of action.args) {
-      if (arg.type != "") args.push(this.sampleArgument(1, arg.type, arg.bits));
+    for (const param of action.parameters) {
+      if (param.type != "")
+        args.push(
+          this.sampleArgument(1, param, (<SolidityParameter>param).bits)
+        );
     }
 
-    let uniqueID = prng.uniqueId();
-    if (action.returnType == "") uniqueID = "var" + uniqueID;
+    const uniqueID = prng.uniqueId();
+    // TODO not sure why this is needed
+    // if (action.returnType == "") uniqueID = "var" + uniqueID;
 
-    const call = new ObjectFunctionCall(
-      action.returnType,
+    return new ObjectFunctionCall(
+      action.returnParameters,
       uniqueID,
       root,
       action.name,
       args,
       AddressStatement.getRandom()
     );
-    return call;
   }
 
   sampleConstructor(depth: number): ConstructorCall {
     const constructors = this._subject.getPossibleActions("constructor");
     if (constructors.length > 0) {
-      const action = prng.pickOne(
-        this._subject.getPossibleActions("constructor")
+      const action = <FunctionDescription>(
+        prng.pickOne(this._subject.getPossibleActions("constructor"))
       );
 
       const args: Statement[] = [];
-      for (const arg of action.args) {
-        if (arg.type != "")
-          args.push(this.sampleArgument(1, arg.type, arg.bits));
+      for (const param of action.parameters) {
+        if (param.type != "")
+          args.push(
+            this.sampleArgument(1, param, (<SolidityParameter>param).bits)
+          );
       }
 
+      // constructors do not have return parameters...
       return new ConstructorCall(
-        action.name,
+        [{ type: action.name, name: "" }],
         prng.uniqueId(),
         `${action.name}`,
         args,
@@ -90,8 +100,9 @@ export class SolidityRandomSampler extends SoliditySampler {
       );
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
+      // TODO empty name because there is no name?
       return new ConstructorCall(
-        this._subject.name,
+        [{ type: this._subject.name, name: "" }],
         prng.uniqueId(),
         `${this._subject.name}`,
         [],
@@ -101,61 +112,56 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
   }
 
-  sampleArgument(depth: number, type: string, bits: number): Statement {
+  sampleArgument(depth: number, type: Parameter, bits: number): Statement {
     // check depth to decide whether to pick a variable
     if (depth >= Properties.max_depth) {
       // TODO or take an already available variable
-      if (type.includes("int")) {
+      if (type.type.includes("int")) {
         return this.sampleNumericGene(depth, type, bits);
       } else {
-        return this.sampleStatement(depth, type);
+        return this.sampleStatement(depth, [type]);
       }
     }
 
     if (
-      this._subject.getPossibleActions().filter((a) => a.type === type)
+      this._subject.getPossibleActions().filter((a) => a.type === type.type)
         .length &&
       prng.nextBoolean(Properties.sample_func_as_arg)
     ) {
       // Pick function
       // TODO or take an already available functionCall
 
-      return this.sampleObjectFunctionCall(depth, type);
+      return this.sampleObjectFunctionCall(depth, [type]);
     } else {
       // Pick variable
       // TODO or take an already available variable
-      if (type.includes("int")) {
+      if (type.type.includes("int")) {
         return this.sampleNumericGene(depth, type, bits);
       } else {
-        return this.sampleStatement(depth, type);
+        return this.sampleStatement(depth, [type]);
       }
     }
   }
 
-  sampleNumericGene(depth: number, type: string, bits: number): Statement {
+  sampleNumericGene(depth: number, type: Parameter, bits: number): Statement {
     let max = new BigNumber(2).pow(bits - 1).minus(1);
 
-    if (type.includes("uint")) {
+    if (type.type.includes("uint")) {
       max = new BigNumber(2).pow(bits).minus(1);
-      return NumericStatement.getRandom(
-        "uint",
-        0,
-        false,
-        max,
-        new BigNumber(0)
-      );
+      return NumericStatement.getRandom(type, 0, false, max, new BigNumber(0));
     } else {
-      return NumericStatement.getRandom("int", 0, true, max, max.negated());
+      return NumericStatement.getRandom(type, 0, true, max, max.negated());
     }
-    if (type.includes("ufixed")) {
+    // TODO unreachable?
+    if (type.type.includes("ufixed")) {
       return NumericStatement.getRandom(
-        "ufixed",
+        type,
         Properties.numeric_decimals,
         false
       );
     } else {
       return NumericStatement.getRandom(
-        "fixed",
+        type,
         Properties.numeric_decimals,
         true
       );
@@ -164,62 +170,77 @@ export class SolidityRandomSampler extends SoliditySampler {
 
   sampleStatement(
     depth: number,
-    type: string,
+    types: Parameter[],
     geneType = "primitive"
   ): Statement {
+    if (types.length === 0) {
+      throw new Error("To sample a statement at least one type must be given!");
+    }
+
     if (geneType === "primitive") {
-      if (type === "bool") {
-        return BoolStatement.getRandom();
-      } else if (type === "address") {
-        return AddressStatement.getRandom();
-      } else if (type === "string") {
-        return StringStatement.getRandom();
-      } else if (type.includes("string")) {
-        return StringStatement.getRandom();
-      } else if (type.startsWith("byte")) {
-        return this.sampleByteStatement(type);
-      } else if (type == "") {
+      if (types.length !== 1) {
+        throw new Error(
+          "Primitive can only have a single type, multiple where given."
+        );
+      }
+
+      if (types[0].type === "bool") {
+        return BoolStatement.getRandom(types[0]);
+      } else if (types[0].type === "address") {
+        return AddressStatement.getRandom(types[0]);
+      } else if (types[0].type === "string") {
+        return StringStatement.getRandom(types[0]);
+      } else if (types[0].type.includes("string")) {
+        return StringStatement.getRandom(types[0]);
+      } else if (types[0].type.startsWith("byte")) {
+        return this.sampleByteStatement(types[0]);
+      } else if (types[0].type == "") {
         throw new Error(
           `Type "" not recognized. It must be a bug in our parser!`
         );
       }
     } else if (geneType === "functionCall") {
-      return this.sampleObjectFunctionCall(depth, type);
+      return this.sampleObjectFunctionCall(depth, types);
     } else if (geneType === "constructor") {
       return this.sampleConstructor(depth);
     }
 
-    throw new Error(`Unknown type ${type} ${geneType}!`);
+    throw new Error(`Unknown types [${types.join(", ")}] ${geneType}!`);
   }
 
-  sampleByteStatement(type: string): ByteStatement {
-    if (type === "byte" || type === "bytes1")
-      return ByteStatement.getRandom("byte", 1);
-    else if (type === "bytes") {
-      return ByteStatement.getRandom("byte", prng.nextInt(1, 32));
+  sampleByteStatement(type: Parameter): ByteStatement {
+    if (type.type === "byte" || type.type === "bytes1")
+      return ByteStatement.getRandom(type, 1);
+    else if (type.type === "bytes") {
+      return ByteStatement.getRandom(type, prng.nextInt(1, 32));
     } else {
-      const nBytes = type.replace("bytes", "");
+      const nBytes = type.type.replace("bytes", "");
       const n = Number.parseInt(nBytes);
-      return ByteStatement.getRandom("byte", n);
+      return ByteStatement.getRandom(type, n);
     }
   }
 
-  sampleObjectFunctionCall(depth: number, type: string): ObjectFunctionCall {
-    const action = prng.pickOne(
-      this._subject.getPossibleActions("function", type)
+  sampleObjectFunctionCall(
+    depth: number,
+    types: Parameter[]
+  ): ObjectFunctionCall {
+    const action = <FunctionDescription>(
+      prng.pickOne(this._subject.getPossibleActions("function", types))
     );
 
     const args: Statement[] = [];
 
-    for (const arg of action.args) {
-      if (arg.type != "")
-        args.push(this.sampleArgument(depth + 1, arg.type, arg.bits));
+    for (const param of action.parameters) {
+      if (param.type != "")
+        args.push(
+          this.sampleArgument(depth + 1, param, (<SolidityParameter>param).bits)
+        );
     }
 
     const constructor = this.sampleConstructor(depth + 1);
 
     return new ObjectFunctionCall(
-      action.returnType,
+      action.returnParameters,
       prng.uniqueId(),
       constructor,
       action.name,
