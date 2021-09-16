@@ -11,7 +11,7 @@ import { getTestFilePaths } from "../util/fileSystem";
 import { mfs } from "../memfs";
 
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
-import {readdirSync, readFileSync, rmdirSync, writeFileSync} from "fs";
+import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 
 /**
  * @author Dimitri Stallenberg
