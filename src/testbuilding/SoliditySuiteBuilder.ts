@@ -96,7 +96,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     console.log = old;
 
     // Create final tests files with additional assertions
-    await this.clearDirectory(Properties.temp_test_directory);
+    // await this.clearDirectory(Properties.temp_test_directory);
 
     for (const key of reducedArchive.keys()) {
       const assertions = await this.gatherAssertions(reducedArchive, key);

@@ -119,6 +119,7 @@ export class SolidityLauncher {
       );
       await this.finalize(archive, imports, dependencies);
     } catch (e) {
+      console.log(e)
       console.trace(e);
     }
 
@@ -543,7 +544,7 @@ export class SolidityLauncher {
       const crossover = new SolidityTreeCrossover();
       const algorithm = createAlgorithmFromConfig(sampler, runner, crossover);
 
-      await suiteBuilder.clearDirectory(Properties.temp_test_directory);
+      // await suiteBuilder.clearDirectory(Properties.temp_test_directory);
 
       // allocate budget manager
       const iterationBudget = new IterationBudget(Properties.iteration_budget);
