@@ -119,7 +119,7 @@ export class SolidityLauncher {
       );
       await this.finalize(archive, imports, dependencies);
     } catch (e) {
-      console.log(e)
+      console.log(e);
       console.trace(e);
     }
 
