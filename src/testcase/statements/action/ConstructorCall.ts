@@ -4,6 +4,7 @@ import { prng } from "syntest-framework/dist/util/prng";
 import { EncodingSampler } from "syntest-framework/dist/search/EncodingSampler";
 import { SolidityTestCase } from "../../SolidityTestCase";
 import { Parameter } from "syntest-framework";
+import { AddressStatement } from "../AddressStatement";
 
 /**
  * @author Dimitri Stallenberg
@@ -16,6 +17,7 @@ export class ConstructorCall extends ActionStatement {
 
   private _constructorName: string;
   private _calls: ActionStatement[];
+  private _sender: AddressStatement;
 
   /**
    * Constructor
@@ -24,17 +26,20 @@ export class ConstructorCall extends ActionStatement {
    * @param constructorName the name of the constructor
    * @param args the arguments of the constructor
    * @param calls the methods calls of the constructor
+   * @param sender the sender of the message
    */
   constructor(
     types: Parameter[],
     uniqueId: string,
     constructorName: string,
     args: Statement[],
-    calls: ActionStatement[]
+    calls: ActionStatement[],
+    sender: AddressStatement
   ) {
     super(types, uniqueId, args);
     this._constructorName = constructorName;
     this._calls = calls;
+    this._sender = sender;
   }
 
   mutate(sampler: EncodingSampler<SolidityTestCase>, depth: number) {
@@ -124,7 +129,8 @@ export class ConstructorCall extends ActionStatement {
       this.id,
       this.constructorName,
       deepCopyArgs,
-      deepCopyCalls
+      deepCopyCalls,
+      this._sender.copy()
     );
   }
 
@@ -138,5 +144,13 @@ export class ConstructorCall extends ActionStatement {
 
   hasMethodCalls(): boolean {
     return this._calls.length > 0;
+  }
+
+  setSender(sender: AddressStatement) {
+    this._sender = sender;
+  }
+
+  getSender(): AddressStatement {
+    return this._sender;
   }
 }
