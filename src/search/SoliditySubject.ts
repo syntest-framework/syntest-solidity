@@ -30,7 +30,9 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     // Branch objectives
     this._cfg.nodes
       // Find all branch nodes
-      .filter((node) => node.type === NodeType.Branch && !(<BranchNode>node).probe)
+      .filter(
+        (node) => node.type === NodeType.Branch && !(<BranchNode>node).probe
+      )
       .forEach((branchNode) => {
         this._cfg.edges
           // Find all edges from the branch node

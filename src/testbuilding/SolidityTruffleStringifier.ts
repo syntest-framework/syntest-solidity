@@ -121,7 +121,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
       // TODO not sure how the multi args are returned to javascript (since javascript does not support this syntax
       // TODO assuming it gets wrapped into an array
-      
+
       const sender = (statement as ObjectFunctionCall).getSender().getValue();
       const senderString =
         formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;

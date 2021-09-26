@@ -177,7 +177,9 @@ export class SolidityRandomSampler extends SoliditySampler {
   ): Statement {
     if (geneType === "primitive") {
       if (types.length === 0) {
-        throw new Error("To sample a statement at least one type must be given!");
+        throw new Error(
+          "To sample a statement at least one type must be given!"
+        );
       }
 
       if (types.length !== 1) {
