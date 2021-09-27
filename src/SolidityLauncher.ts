@@ -69,6 +69,7 @@ import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
 import TargetFile from "./targetting/TargetFile";
 import {
   collectCoverageData,
+  collectProbeCoverageData,
   collectInitialVariables,
   collectStatistics,
 } from "./util/collection";
@@ -577,7 +578,7 @@ export class SolidityLauncher {
       collectCoverageData(collector, archive, "branch");
       collectCoverageData(collector, archive, "statement");
       collectCoverageData(collector, archive, "function");
-      collectCoverageData(collector, archive, "probe");
+      collectProbeCoverageData(collector, archive);
 
       const statisticsDirectory = path.resolve(Properties.statistics_directory);
 

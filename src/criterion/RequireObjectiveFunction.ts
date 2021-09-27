@@ -42,17 +42,22 @@ export class RequireObjectiveFunction<
 
       if (this.type) {
         if (postCondition.hits > 0) return 0;
-        else {
-          if (preCondition.hits > 0) {
-            return BranchDistance.branchDistanceNumeric(
-              preCondition.opcode,
-              preCondition.left,
-              preCondition.right,
-              true
-            );
-          }
+
+        if (preCondition.hits > 0) {
+          return BranchDistance.branchDistanceNumeric(
+            preCondition.opcode,
+            preCondition.left,
+            preCondition.right,
+            true
+          );
         }
+
+        return 1;
       } else {
+        if (preCondition.hits == 0) return 1;
+
+        if (preCondition.hits > 0) return 0;
+
         return BranchDistance.branchDistanceNumeric(
           preCondition.opcode,
           preCondition.left,

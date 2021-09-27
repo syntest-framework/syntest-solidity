@@ -45,11 +45,14 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
+    const sender = (statement as ConstructorCall).getSender().getValue();
+    const senderString =
+      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
     return (
       string +
       `const ${statement.varNames[0]} = await ${
         (statement as ConstructorCall).constructorName
-      }.new(${formattedArgs});`
+      }.new(${formattedArgs}${senderString});`
     );
   }
 
@@ -69,11 +72,15 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
+    const sender = (statement as ConstructorCall).getSender().getValue();
+    const senderString =
+      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+
     return (
       string +
       `await expect(${
         (statement as ConstructorCall).constructorName
-      }.new(${formattedArgs})).to.be.rejectedWith(Error);`
+      }.new(${formattedArgs}${senderString}).to.be.rejectedWith(Error);`
     );
   }
 
@@ -114,6 +121,11 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
       // TODO not sure how the multi args are returned to javascript (since javascript does not support this syntax
       // TODO assuming it gets wrapped into an array
+
+      const sender = (statement as ObjectFunctionCall).getSender().getValue();
+      const senderString =
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+
       if (
         statement.types.length &&
         !(
@@ -127,11 +139,11 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         }
         return `const ${varNames} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
-        }.call(${formattedArgs});`;
+        }.call(${formattedArgs}${senderString});`;
       }
       return `await ${objectName}.${
         (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs});`;
+      }.call(${formattedArgs}${senderString});`;
     } else {
       throw new Error(`${statement} is not a function call`);
     }
@@ -146,9 +158,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         .map((a: Statement) => a.varNames[0])
         .join(", ");
 
+      const sender = (statement as ObjectFunctionCall).getSender().getValue();
+      const senderString =
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+
       return `await expect(${objectName}.${
         (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs})).to.be.rejectedWith(Error);`;
+      }.call(${formattedArgs}${senderString})).to.be.rejectedWith(Error);`;
     } else {
       throw new Error(`${statement} is not a function call`);
     }
@@ -312,8 +328,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
         if (gene instanceof ConstructorCall) {
           if (count === stopAfter) {
-            assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
-            break;
+            // assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
+            if (Properties.test_minimization) break;
           }
           testString.push(`\t\t${this.decodeConstructor(gene)}`);
           importableGenes.push(<ConstructorCall>gene);
@@ -328,7 +344,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
                 constructor.varNames[0]
               )}`
             );
-            break;
+            if (Properties.test_minimization) break;
           }
           functionCalls.push(
             `\t\t${this.decodeFunctionCall(gene, constructor.varNames[0])}`
