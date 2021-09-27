@@ -1,11 +1,11 @@
 import {
-  Properties,
-  ActionStatement,
   AbstractTestCase,
-  prng,
-  Statement,
+  ActionStatement,
   FunctionDescription,
   Parameter,
+  prng,
+  Properties,
+  Statement,
 } from "syntest-framework";
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/AddressStatement";
@@ -15,8 +15,6 @@ import {
   SolidityParameter,
   SoliditySubject,
 } from "../../search/SoliditySubject";
-
-import { ConstantPool } from "../../seeding/constant/ConstantPool";
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
 import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
@@ -66,7 +64,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     // TODO not sure why this is needed
     // if (action.returnType == "") uniqueID = "var" + uniqueID;
 
-    const call = new ObjectFunctionCall(
+    return new ObjectFunctionCall(
       action.returnParameters,
       uniqueID,
       root,
@@ -74,7 +72,6 @@ export class SolidityRandomSampler extends SoliditySampler {
       args,
       AddressStatement.getRandom()
     );
-    return call;
   }
 
   sampleConstructor(depth: number): ConstructorCall {
@@ -155,6 +152,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     } else {
       return NumericStatement.getRandom(type, 0, true, max, max.negated());
     }
+    // TODO unreachable?
     if (type.type.includes("ufixed")) {
       return NumericStatement.getRandom(
         type,

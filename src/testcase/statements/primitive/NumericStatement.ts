@@ -20,10 +20,10 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
   private static _max_value: number = Number.MAX_SAFE_INTEGER;
   private static _zero = new BigNumber(0);
 
-  private _decimals: number;
-  private _signed: boolean;
-  private _upper_bound: BigNumber;
-  private _lower_bound: BigNumber;
+  private readonly _decimals: number;
+  private readonly _signed: boolean;
+  private readonly _upper_bound: BigNumber;
+  private readonly _lower_bound: BigNumber;
 
   constructor(
     type: Parameter,

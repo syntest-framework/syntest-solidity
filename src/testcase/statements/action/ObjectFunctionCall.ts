@@ -11,10 +11,10 @@ import { AddressStatement } from "../AddressStatement";
  * @author Dimitri Stallenberg
  */
 export class ObjectFunctionCall extends ActionStatement {
-  private _functionName: string;
+  private readonly _functionName: string;
   private _sender: AddressStatement;
 
-  private _parent: ConstructorCall;
+  private readonly _parent: ConstructorCall;
 
   /**
    * Constructor

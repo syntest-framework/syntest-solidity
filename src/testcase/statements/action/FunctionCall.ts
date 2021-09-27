@@ -13,7 +13,7 @@ export class FunctionCall extends ActionStatement {
     return this._functionName;
   }
 
-  private _functionName: string;
+  private readonly _functionName: string;
 
   /**
    * Constructor

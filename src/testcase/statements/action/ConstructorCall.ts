@@ -15,8 +15,8 @@ export class ConstructorCall extends ActionStatement {
     return this._constructorName;
   }
 
-  private _constructorName: string;
-  private _calls: ActionStatement[];
+  private readonly _constructorName: string;
+  private readonly _calls: ActionStatement[];
   private _sender: AddressStatement;
 
   /**

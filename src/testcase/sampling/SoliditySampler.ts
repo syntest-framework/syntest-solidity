@@ -4,7 +4,6 @@ import {
   SearchSubject,
   Parameter,
 } from "syntest-framework";
-import { ConstantPool } from "../../seeding/constant/ConstantPool";
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
 import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
