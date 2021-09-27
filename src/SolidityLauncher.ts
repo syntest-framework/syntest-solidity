@@ -32,12 +32,11 @@ import {
   StatisticsSearchListener,
   SummaryWriter,
   TotalTimeBudget,
-  loadTargetFiles,
-  TargetFile,
+  loadTargets,
   setUserInterface,
   getUserInterface,
-  AbstractTestCase,
   getSeed,
+  clearDirectory,
 } from "syntest-framework";
 
 import * as path from "path";
@@ -75,6 +74,7 @@ import { TargetPool } from "./analysis/static/TargetPool";
 import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
 import { ASTGenerator } from "./analysis/static/ast/ASTGenerator";
 import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
+import { readFileSync } from "fs";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -217,11 +217,9 @@ export class SolidityLauncher {
       // Run post-launch server hook;
       await api.onServerReady(config);
 
-      const obj = await loadTargetFiles();
-      const included = obj["included"];
-      const excluded = obj["excluded"];
+      const [included, excluded] = await loadTargets();
 
-      if (!included.length) {
+      if (!included.size) {
         // Finish
         await tearDownTempFolders(tempContractsDir, tempArtifactsDir);
 
@@ -233,14 +231,17 @@ export class SolidityLauncher {
         process.exit(1);
       }
 
-      getUserInterface().report(
-        "targets",
-        included.map((t) => t.relativePath)
+      let names = [];
+
+      included.forEach((value, key, map) =>
+        names.push(`${path.basename(key)} -> ${value.join(", ")}`)
       );
-      getUserInterface().report(
-        "skip-files",
-        excluded.map((s) => s.relativePath)
+      getUserInterface().report("targets", names);
+      names = [];
+      excluded.forEach((value, key, map) =>
+        names.push(`${path.basename(key)} -> ${value.join(", ")}`)
       );
+      getUserInterface().report("skip-files", names);
 
       getUserInterface().report("header", ["configuration"]);
 
@@ -284,12 +285,41 @@ export class SolidityLauncher {
         ],
       ]);
 
+      const sourceGenerator = new SourceGenerator();
+      const astGenerator = new ASTGenerator();
+      const targetMapGenerator = new TargetMapGenerator();
+      const cfgGenerator = new SolidityCFGFactory();
+      const targetPool = new TargetPool(
+        sourceGenerator,
+        astGenerator,
+        targetMapGenerator,
+        cfgGenerator
+      );
+
+      const targets: TargetFile[] = [];
+      const skipped: TargetFile[] = [];
+
+      for (const _path of included.keys()) {
+        targets.push({
+          source: targetPool.getSource(_path),
+          canonicalPath: _path,
+          relativePath: path.basename(_path),
+        });
+      }
+
+      for (const _path of excluded.keys()) {
+        targets.push({
+          source: targetPool.getSource(_path),
+          canonicalPath: _path,
+          relativePath: path.basename(_path),
+        });
+      }
+
       // Instrument
-      const targets = api.instrument(included);
-      const skipped = excluded;
+      const instrumented = api.instrument(targets);
 
       await setupTempFolders(tempContractsDir, tempArtifactsDir);
-      await save(targets, config.contracts_directory, tempContractsDir);
+      await save(instrumented, config.contracts_directory, tempContractsDir);
       await save(skipped, config.contracts_directory, tempContractsDir);
 
       config.contracts_directory = tempContractsDir;
@@ -312,54 +342,65 @@ export class SolidityLauncher {
       let finalImportsMap: Map<string, string> = new Map();
       let finalDependencies: Map<string, string[]> = new Map();
 
-      const sourceGenerator = new SourceGenerator();
-      const astGenerator = new ASTGenerator();
-      const targetMapGenerator = new TargetMapGenerator();
-      const cfgGenerator = new SolidityCFGFactory();
-      const targetPool = new TargetPool(
-        sourceGenerator,
-        astGenerator,
-        targetMapGenerator,
-        cfgGenerator
-      );
+      for (const targetPath of included.keys()) {
+        const includedTargets = included.get(targetPath);
 
-      for (const target of targets) {
-        const archive = await testTarget(
-          target,
-          excluded,
-          api,
-          truffle,
-          config
-        );
+        const targetMap = targetPool.getTargetMap(targetPath);
+        for (const target of targetMap.keys()) {
+          // check if included
+          if (
+            !includedTargets.includes("*") &&
+            !includedTargets.includes(target)
+          ) {
+            continue;
+          }
 
-        for (const key of archive.getObjectives()) {
-          finalArchive.update(
-            key,
-            archive.getEncoding(key) as SolidityTestCase
+          // check if excluded
+          if (excluded.has(targetPath)) {
+            const excludedTargets = excluded.get(targetPath);
+            if (
+              excludedTargets.includes("*") ||
+              excludedTargets.includes(target)
+            ) {
+              continue;
+            }
+          }
+
+          const instrumentedTarget = instrumented.find(
+            (x) => x.canonicalPath === targetPath
           );
-        }
+          const archive = await testTarget(
+            targetPool,
+            targetPath,
+            target,
+            instrumentedTarget,
+            api,
+            truffle,
+            config
+          );
+          const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+            targetPath,
+            target
+          );
 
-        // TODO: check if we can prevent recalculating the dependencies
-        const ast = SolidityParser.parse(target.actualSource, {
-          loc: true,
-          range: true,
-        });
-        const { importsMap, dependencyMap } = getImportDependencies(
-          ast,
-          target
-        );
-        finalImportsMap = new Map([
-          ...Array.from(finalImportsMap.entries()),
-          ...Array.from(importsMap.entries()),
-        ]);
-        finalDependencies = new Map([
-          ...Array.from(finalDependencies.entries()),
-          ...Array.from(dependencyMap.entries()),
-        ]);
+          finalArchive.merge(archive);
+
+          finalImportsMap = new Map([
+            ...Array.from(finalImportsMap.entries()),
+            ...Array.from(importsMap.entries()),
+          ]);
+          finalDependencies = new Map([
+            ...Array.from(finalDependencies.entries()),
+            ...Array.from(dependencyMap.entries()),
+          ]);
+        }
       }
 
       await createDirectoryStructure();
       await createTempDirectoryStructure();
+
+      const testDir = path.resolve(Properties.final_suite_directory);
+      await clearDirectory(testDir);
 
       const stringifier = new SolidityTruffleStringifier(
         finalImportsMap,
@@ -378,7 +419,7 @@ export class SolidityLauncher {
       await deleteTempDirectories();
 
       config.test_files = await getTestFilePaths({
-        testDir: path.resolve(Properties.final_suite_directory),
+        testDir: testDir,
       });
 
       // Run tests
@@ -390,6 +431,8 @@ export class SolidityLauncher {
         await truffle.test.run(config);
       } catch (e) {
         error = e.stack;
+        getUserInterface().error(e);
+        console.trace(e);
       }
       console.log = old;
       await api.onTestsComplete(config);
@@ -416,35 +459,53 @@ export class SolidityLauncher {
 }
 
 async function testTarget(
-  target: any,
-  excluded: TargetFile[],
+  targetPool: TargetPool,
+  targetPath: string,
+  target: string,
+  instrumentedTarget: any,
   api,
   truffle,
   config
 ) {
+  await createDirectoryStructure();
+
+  const cfg = targetPool.getCFG(targetPath, target);
+
+  if (Properties.draw_cfg) {
+    // TODO dot's in the the name of a file will give issues
+    drawGraph(
+      cfg,
+      path.join(
+        Properties.cfg_directory,
+        `${path.basename(targetPath).split(".")[0]}.svg`
+      )
+    );
+  }
+
   try {
     await createDirectoryStructure();
     await createTempDirectoryStructure();
 
     getUserInterface().report("header", [
-      `Searching: "${target.relativePath}"`,
+      `Searching: "${path.basename(targetPath)}"`,
     ]);
 
-    const ast = SolidityParser.parse(target.actualSource, {
-      loc: true,
-      range: true,
-    });
+    const ast = targetPool.getAST(targetPath);
+    const cfg = targetPool.getCFG(targetPath, target);
 
-    const contractName = target.instrumented.contractName;
-    const cfgFactory = new SolidityCFGFactory();
-    const cfg = cfgFactory.convertAST(ast, false, false);
-    const fnMap = target.instrumented.fnMap;
+    const functionDescriptions = cfg.getFunctionDescriptions(target);
 
-    drawGraph(cfg, path.join(Properties.cfg_directory, `${contractName}.svg`));
+    const currentSubject = new SoliditySubject(
+      path.basename(targetPath),
+      target,
+      cfg,
+      functionDescriptions
+    );
 
-    const currentSubject = new SoliditySubject(contractName, cfg, fnMap);
-
-    const { importsMap, dependencyMap } = getImportDependencies(ast, target);
+    const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+      targetPath,
+      target
+    );
 
     const stringifier = new SolidityTruffleStringifier(
       importsMap,
@@ -493,7 +554,10 @@ async function testTarget(
       Properties.configuration
     );
     collector.recordVariable(RuntimeVariable.SEED, getSeed());
-    collector.recordVariable(RuntimeVariable.SUBJECT, target.relativePath);
+    collector.recordVariable(
+      RuntimeVariable.SUBJECT,
+      path.basename(targetPath)
+    );
     collector.recordVariable(
       RuntimeVariable.PROBE_ENABLED,
       Properties.probe_objective
@@ -552,8 +616,9 @@ async function testTarget(
 
     const numOfExceptions = archive
       .getObjectives()
-      .filter((objective) => objective instanceof ExceptionObjectiveFunction)
-      .length;
+      .filter(
+        (objective) => objective instanceof ExceptionObjectiveFunction
+      ).length;
     collector.recordVariable(
       RuntimeVariable.COVERED_EXCEPTIONS,
       numOfExceptions
@@ -582,54 +647,6 @@ async function testTarget(
     }
     throw e;
   }
-}
-
-function getImportDependencies(ast: any, target: any) {
-  const contractName = target.instrumented.contractName;
-
-  // Import the contract under test
-  const importsMap = new Map<string, string>();
-  importsMap.set(contractName, contractName);
-
-  // Find all external imports in the contract under test
-  const importVisitor = new ImportVisitor();
-  SolidityParser.visit(ast, importVisitor);
-
-  // For each external import scan the file for libraries with public and external functions
-  const libraries: string[] = [];
-  importVisitor.getImports().forEach((importPath: string) => {
-    // Full path to the imported file
-    const pathLib = path.join(path.dirname(target.canonicalPath), importPath);
-
-    // Read the imported file
-    // TODO: use the already parsed excluded information to prevent duplicate file reading
-    const source = fs.readFileSync(pathLib).toString();
-
-    // Parse the imported file
-    const astLib = SolidityParser.parse(source, {
-      loc: true,
-      range: true,
-    });
-
-    // Scan for libraries with public or external functions
-    const libraryVisitor = new LibraryVisitor();
-    SolidityParser.visit(astLib, libraryVisitor);
-
-    // Import the external file in the test
-    importsMap.set(
-      path.basename(importPath).split(".")[0],
-      path.basename(importPath).split(".")[0]
-    );
-
-    // Import the found libraries
-    // TODO: check for duplicates in libraries
-    libraries.push(...libraryVisitor.libraries);
-  });
-
-  // Return the library dependency information
-  const dependencyMap = new Map<string, string[]>();
-  dependencyMap.set(contractName, libraries);
-  return { importsMap, dependencyMap };
 }
 
 function collectCoverageData(
@@ -766,4 +783,10 @@ function collectProbeCoverageData(
   } else {
     collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, 0);
   }
+}
+
+interface TargetFile {
+  source: string;
+  canonicalPath: string;
+  relativePath: string;
 }

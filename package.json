@@ -69,7 +69,8 @@
     "solidity-coverage": "^0.7.16",
     "syntest-framework": "file:../syntest-framework",
     "truffle": "^5.1.65",
-    "web3": "^1.3.4"
+    "web3": "^1.3.4",
+    "web3-utils": "^1.5.2"
   },
   "devDependencies": {
     "@types/chai": "^4.2.15",

@@ -4,6 +4,8 @@ import {
   BranchDistance,
   ProbeObjectiveFunction,
   Node,
+  BranchNode,
+  NodeType,
 } from "syntest-framework";
 
 export class RequireObjectiveFunction<
@@ -67,7 +69,11 @@ export class RequireObjectiveFunction<
 
     // find the corresponding branch node inside the cfg
     const branchNode = this._subject.cfg.nodes.find((n: Node) => {
-      return n.probe && n.lines.includes(this._line);
+      return (
+        n.type === NodeType.Branch &&
+        (<BranchNode>n).probe &&
+        n.lines.includes(this._line)
+      );
     });
     const childEdge = this._subject.cfg.edges.find((edge) => {
       return edge.from === branchNode.id && edge.branchType === this._type;

@@ -3,6 +3,7 @@ import { ActionStatement } from "syntest-framework/dist/testcase/statements/Acti
 import { prng } from "syntest-framework/dist/util/prng";
 import { EncodingSampler } from "syntest-framework/dist/search/EncodingSampler";
 import { SolidityTestCase } from "../../SolidityTestCase";
+import { Parameter } from "syntest-framework";
 import { AddressStatement } from "../AddressStatement";
 
 /**
@@ -20,7 +21,7 @@ export class ConstructorCall extends ActionStatement {
 
   /**
    * Constructor
-   * @param type the return type of the constructor
+   * @param types the return types of the constructor
    * @param uniqueId optional argument
    * @param constructorName the name of the constructor
    * @param args the arguments of the constructor
@@ -28,14 +29,14 @@ export class ConstructorCall extends ActionStatement {
    * @param sender the sender of the message
    */
   constructor(
-    type: string,
+    types: Parameter[],
     uniqueId: string,
     constructorName: string,
     args: Statement[],
     calls: ActionStatement[],
     sender: AddressStatement
   ) {
-    super(type, uniqueId, args);
+    super(types, uniqueId, args);
     this._constructorName = constructorName;
     this._calls = calls;
     this._sender = sender;
@@ -124,7 +125,7 @@ export class ConstructorCall extends ActionStatement {
       ...this._calls.map((a: ActionStatement) => a.copy()),
     ];
     return new ConstructorCall(
-      this.type,
+      this.types,
       this.id,
       this.constructorName,
       deepCopyArgs,

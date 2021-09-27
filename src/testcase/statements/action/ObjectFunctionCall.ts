@@ -4,6 +4,7 @@ import { ConstructorCall } from "./ConstructorCall";
 import { TestCaseSampler } from "syntest-framework/dist/testcase/sampling/TestCaseSampler";
 import { prng } from "syntest-framework/dist/util/prng";
 import { Properties } from "syntest-framework/dist/properties";
+import { Parameter } from "syntest-framework/dist/graph/parsing/Parameter";
 import { AddressStatement } from "../AddressStatement";
 
 /**
@@ -17,21 +18,21 @@ export class ObjectFunctionCall extends ActionStatement {
 
   /**
    * Constructor
-   * @param type the return type of the function
+   * @param types the return types of the function
    * @param uniqueId id of the gene
    * @param instance the object to call the function on
    * @param functionName the name of the function
    * @param args the arguments of the function
    */
   constructor(
-    type: string,
+    types: Parameter[],
     uniqueId: string,
     instance: ConstructorCall,
     functionName: string,
     args: Statement[],
     sender: AddressStatement
   ) {
-    super(type, uniqueId, [...args]);
+    super(types, uniqueId, [...args]);
     this._parent = instance;
     this._functionName = functionName;
     this._sender = sender;
@@ -41,7 +42,7 @@ export class ObjectFunctionCall extends ActionStatement {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       // resample the gene
       return <ObjectFunctionCall>(
-        sampler.sampleStatement(depth, this.type, "functionCall")
+        sampler.sampleStatement(depth, this.types, "functionCall")
       );
     } else {
       const args = [...this.args.map((a: Statement) => a.copy())];
@@ -52,7 +53,7 @@ export class ObjectFunctionCall extends ActionStatement {
 
       const instance = this._parent;
       return new ObjectFunctionCall(
-        this.type,
+        this.types,
         this.id,
         instance,
         this.functionName,
@@ -66,7 +67,7 @@ export class ObjectFunctionCall extends ActionStatement {
     const deepCopyArgs = [...this.args.map((a: Statement) => a.copy())];
 
     return new ObjectFunctionCall(
-      this.type,
+      this.types,
       this.id,
       this._parent,
       this.functionName,

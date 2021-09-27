@@ -50,7 +50,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
     return (
       string +
-      `const ${statement.varName} = await ${
+      `const ${statement.varNames[0]} = await ${
         (statement as ConstructorCall).constructorName
       }.new(${formattedArgs}${senderString});`
     );
@@ -89,8 +89,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       throw new Error(`${statement} is not a primitive statement`);
     }
 
-    const primitive: PrimitiveStatement<any> = statement as PrimitiveStatement<any>;
-    if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
+    const primitive: PrimitiveStatement<any> =
+      statement as PrimitiveStatement<any>;
+    // TODO what happened to float support?
+    if (
+      statement.type.type.startsWith("int") ||
+      statement.type.type.startsWith("uint")
+    ) {
       const value = primitive.value.toFixed();
       return `const ${statement.varName} = BigInt("${value}")`;
     } else if (statement instanceof StringStatement) {
@@ -108,18 +113,31 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   decodeFunctionCall(statement: Statement, objectName: string): string {
     if (statement instanceof ObjectFunctionCall) {
       const args = (statement as ObjectFunctionCall).getChildren();
-      const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
+      // TODO the difficulty now is to select the correct var from the statements....
+      // TODO now assuming its always the first one
+      const formattedArgs = args
+        .map((a: Statement) => a.varNames[0])
+        .join(", ");
+
+      // TODO not sure how the multi args are returned to javascript (since javascript does not support this syntax
+      // TODO assuming it gets wrapped into an array
 
       const sender = (statement as ObjectFunctionCall).getSender().getValue();
       const senderString =
         formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
       if (
-        statement.type !== "none" &&
-        statement.type !== "" &&
-        !statement.varName.includes(",")
+        statement.types.length &&
+        !(
+          statement.types.length === 1 &&
+          ["void", "none"].includes(statement.types[0].type)
+        )
       ) {
-        return `const ${statement.varName} = await ${objectName}.${
+        let varNames = statement.varNames[0];
+        if (statement.types.length > 1) {
+          varNames = `[${statement.varNames.join(", ")}]`;
+        }
+        return `const ${varNames} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
         }.call(${formattedArgs}${senderString});`;
       }
@@ -134,7 +152,11 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   decodeErroringFunctionCall(statement: Statement, objectName: string): string {
     if (statement instanceof ObjectFunctionCall) {
       const args = (statement as ObjectFunctionCall).getChildren();
-      const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
+      // TODO the difficulty now is to select the correct var from the statements....
+      // TODO now assuming its always the first one
+      const formattedArgs = args
+        .map((a: Statement) => a.varNames[0])
+        .join(", ");
 
       const sender = (statement as ObjectFunctionCall).getSender().getValue();
       const senderString =
@@ -319,13 +341,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
             assertions.push(
               `\t\t${this.decodeErroringFunctionCall(
                 gene,
-                constructor.varName
+                constructor.varNames[0]
               )}`
             );
             if (Properties.test_minimization) break;
           }
           functionCalls.push(
-            `\t\t${this.decodeFunctionCall(gene, constructor.varName)}`
+            `\t\t${this.decodeFunctionCall(gene, constructor.varNames[0])}`
           );
           count += 1;
         } else {
@@ -334,21 +356,25 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
         if (addLogs) {
           if (gene instanceof ObjectFunctionCall) {
-            functionCalls.push(
-              `\t\tawait fs.writeFileSync('${path.join(
-                Properties.temp_log_directory,
-                ind.id,
-                gene.varName
-              )}', '' + ${gene.varName})`
-            );
+            for (const varName of gene.varNames) {
+              functionCalls.push(
+                `\t\tawait fs.writeFileSync('${path.join(
+                  Properties.temp_log_directory,
+                  ind.id,
+                  varName
+                )}', '' + ${varName})`
+              );
+            }
           } else if (gene instanceof ConstructorCall) {
-            testString.push(
-              `\t\tawait fs.writeFileSync('${path.join(
-                Properties.temp_log_directory,
-                ind.id,
-                gene.varName
-              )}', '' + ${gene.varName})`
-            );
+            for (const varName of gene.varNames) {
+              testString.push(
+                `\t\tawait fs.writeFileSync('${path.join(
+                  Properties.temp_log_directory,
+                  ind.id,
+                  varName
+                )}', '' + ${varName})`
+              );
+            }
           }
         }
       }
@@ -356,7 +382,10 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       // filter non-required statements
       primitiveStatements = primitiveStatements.filter((s) => {
         const varName = s.split(" ")[1];
-        return functionCalls.find((f) => f.includes(varName));
+        return (
+          functionCalls.find((f) => f.includes(varName)) ||
+          assertions.find((f) => f.includes(varName))
+        );
       });
 
       testString.push(...primitiveStatements);

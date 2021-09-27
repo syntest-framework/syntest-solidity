@@ -1,4 +1,9 @@
-import { TestCaseSampler, Statement, SearchSubject } from "syntest-framework";
+import {
+  TestCaseSampler,
+  Statement,
+  SearchSubject,
+  Parameter,
+} from "syntest-framework";
 import { ConstantPool } from "../../seeding/constant/ConstantPool";
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
@@ -19,7 +24,11 @@ export abstract class SoliditySampler extends TestCaseSampler {
   abstract sampleConstructor(depth: number): ConstructorCall;
   abstract sampleObjectFunctionCall(
     depth: number,
-    type: string
+    types: Parameter[]
   ): ObjectFunctionCall;
-  abstract sampleArgument(depth: number, type: string, bits: number): Statement;
+  abstract sampleArgument(
+    depth: number,
+    type: Parameter,
+    bits: number
+  ): Statement;
 }

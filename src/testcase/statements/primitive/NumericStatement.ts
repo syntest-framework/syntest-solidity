@@ -4,6 +4,7 @@ import { TestCaseSampler } from "syntest-framework/dist/testcase/sampling/TestCa
 import { prng } from "syntest-framework/dist/util/prng";
 import { Properties } from "syntest-framework/dist/properties";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
+import { Parameter } from "syntest-framework/dist/graph/parsing/Parameter";
 
 /**
  * Generic number class
@@ -25,7 +26,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
   private _lower_bound: BigNumber;
 
   constructor(
-    type: string,
+    type: Parameter,
     uniqueId: string,
     value: BigNumber,
     decimals = 0,
@@ -58,7 +59,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     // small mutation
     let change = prng.nextGaussian(0, 20);
 
-    if (this.type.includes("int")) {
+    if (this.type.type.includes("int")) {
       change = Math.round(change);
       if (change == 0) change = prng.nextBoolean() ? -1 : 1;
     }
@@ -101,7 +102,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
   }
 
   static getRandom(
-    type = "number",
+    type: Parameter = { type: "number", name: "noname" },
     decimals = Properties.numeric_decimals,
     signed = Properties.numeric_signed,
     upper_bound = new BigNumber(Number.MAX_SAFE_INTEGER),
@@ -116,7 +117,8 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
       prng.nextDouble(0, 1) <= Properties.constant_pool_probability
     ) {
       const value = ConstantPool.getInstance().getNumber();
-      if (value != null) return NumericStatement.createWithValue(value, signed);
+      if (value != null)
+        return NumericStatement.createWithValue(type, value, signed);
     }
 
     return new NumericStatement(
@@ -153,9 +155,13 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     return this._lower_bound;
   }
 
-  private static createWithValue(value: number, signed: boolean) {
+  private static createWithValue(
+    type: Parameter,
+    value: number,
+    signed: boolean
+  ) {
     return new NumericStatement(
-      "number",
+      type,
       prng.uniqueId(),
       new BigNumber(value),
       Properties.numeric_decimals,

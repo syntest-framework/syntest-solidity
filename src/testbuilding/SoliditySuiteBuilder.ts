@@ -5,6 +5,7 @@ import {
   Archive,
   ExceptionObjectiveFunction,
   getLogger,
+  getUserInterface,
 } from "syntest-framework";
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
@@ -90,7 +91,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
-      getLogger().error(e);
+      getUserInterface().error(e);
       console.trace(e);
     }
     console.log = old;
