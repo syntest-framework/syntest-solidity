@@ -69,7 +69,8 @@ export class SolidityRandomSampler extends SoliditySampler {
       uniqueID,
       root,
       action.name,
-      args
+      args,
+      AddressStatement.getRandom()
     );
   }
 
@@ -94,7 +95,8 @@ export class SolidityRandomSampler extends SoliditySampler {
         prng.uniqueId(),
         `${action.name}`,
         args,
-        []
+        [],
+        AddressStatement.getRandom()
       );
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
@@ -104,7 +106,8 @@ export class SolidityRandomSampler extends SoliditySampler {
         prng.uniqueId(),
         `${this._subject.name}`,
         [],
-        []
+        [],
+        AddressStatement.getRandom()
       );
     }
   }
@@ -170,11 +173,13 @@ export class SolidityRandomSampler extends SoliditySampler {
     types: Parameter[],
     geneType = "primitive"
   ): Statement {
-    if (types.length === 0) {
-      throw new Error("To sample a statement at least one type must be given!");
-    }
-
     if (geneType === "primitive") {
+      if (types.length === 0) {
+        throw new Error(
+          "To sample a statement at least one type must be given!"
+        );
+      }
+
       if (types.length !== 1) {
         throw new Error(
           "Primitive can only have a single type, multiple where given."
@@ -241,7 +246,8 @@ export class SolidityRandomSampler extends SoliditySampler {
       prng.uniqueId(),
       constructor,
       action.name,
-      args
+      args,
+      AddressStatement.getRandom()
     );
   }
 }

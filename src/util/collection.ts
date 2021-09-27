@@ -191,3 +191,53 @@ export function collectCoverageData(
       break;
   }
 }
+
+export function collectProbeCoverageData(
+  collector: StatisticsCollector<any>,
+  archive: Archive<any>
+): void {
+  let total = 0;
+  const covered = new Set();
+
+  for (const key of archive.getObjectives()) {
+    const test = archive.getEncoding(key);
+    const result: ExecutionResult = test.getExecutionResult();
+    const contractName = key.getSubject().name.concat(".sol");
+
+    // filter by contract
+    const traces = result.getTraces().filter((element) => {
+      const paths = (element as any).contractPath.split("/");
+      return paths[paths.length - 1].includes(contractName);
+    });
+
+    const preTraces = traces.filter(
+      (element) => element.type.includes("probePre") && element.hits > 0
+    );
+    const postTraces = traces.filter((element) =>
+      element.type.includes("probePost")
+    );
+
+    total = postTraces.length * 2;
+
+    preTraces.forEach((trace) => {
+      postTraces
+        .filter((postTrace) => postTrace.line == trace.line)
+        .forEach((postTrace) => {
+          if (postTrace.hits > 0) covered.add(postTrace.line + "_true");
+          else covered.add(postTrace.line + "_false");
+        });
+    });
+  }
+
+  collector.recordVariable(RuntimeVariable.COVERED_PROBES, covered.size);
+  collector.recordVariable(RuntimeVariable.TOTAL_PROBES, total);
+
+  if (total > 0.0) {
+    collector.recordVariable(
+      RuntimeVariable.PROBE_COVERAGE,
+      covered.size / total
+    );
+  } else {
+    collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, 0);
+  }
+}
