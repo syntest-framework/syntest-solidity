@@ -30,7 +30,7 @@ export class SolidityTestCase extends AbstractTestCase {
   }
 
   hashCode(decoder: TestCaseDecoder): number {
-    const string = decoder.decodeTestCase(this, `${this.id}`);
+    const string = decoder.decodeTestCase(this, `${this.id}`, false);
     let hash = 0;
     for (let i = 0; i < string.length; i++) {
       const character = string.charCodeAt(i);
