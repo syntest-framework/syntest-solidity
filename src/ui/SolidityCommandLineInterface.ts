@@ -42,7 +42,9 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
       case "header":
         return console.log(this.messages.header(args[0]));
       case "skipping":
-        return console.log(`Skipping '${args[0]}' no possible function calls found!`);
+        return console.log(
+          `Skipping '${args[0]}' no possible function calls found!`
+        );
     }
 
     throw new Error(`Message not supported by UI: "${text}"`);

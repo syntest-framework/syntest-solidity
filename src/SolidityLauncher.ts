@@ -502,7 +502,7 @@ export class SolidityLauncher {
 
       if (!currentSubject.getPossibleActions().length) {
         getUserInterface().report("skipping", [currentSubject.name]);
-        return new Archive()
+        return new Archive();
       }
 
       const [importsMap, dependencyMap] = targetPool.getImportDependencies(
