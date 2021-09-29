@@ -18,6 +18,7 @@ import {
   ExternalVisibility,
   InternalVisibility,
 } from "../analysis/static/map/ContractFunction";
+import {ContractVisitor} from "../analysis/static/map/ContractVisitor";
 
 // TODO break and continue statements
 
@@ -478,11 +479,22 @@ export class SolidityCFGFactory implements CFGFactory {
     };
   }
 
+  private parseParameter(parameter): Parameter {
+    return {
+      name: parameter.name,
+      type: ContractVisitor.resolveTypes(parameter.typeName)
+    };
+  }
+
   private FunctionDefinition(
     cfg: CFG,
     AST: any,
     contractName: string
   ): ReturnValue {
+    if (AST.name === "reduceReward") {
+      // console.log(AST.parameters)
+      console.log(AST.parameters[0].typeName)
+    }
     const node: RootNode = this.createRootNode(
       cfg,
       [AST.loc.start.line],
@@ -490,19 +502,9 @@ export class SolidityCFGFactory implements CFGFactory {
       contractName,
       AST.name || contractName,
       AST.isConstructor,
-      AST.parameters.map((p): Parameter => {
-        return {
-          name: p.name,
-          type: p.typeName.name,
-        };
-      }),
+      AST.parameters.map(this.parseParameter),
       AST.returnParameters
-        ? AST.returnParameters.map((p): Parameter => {
-            return {
-              name: p.name,
-              type: p.typeName.name,
-            };
-          })
+        ? AST.returnParameters.map(this.parseParameter)
         : [],
       AST.visibility
     );

@@ -79,7 +79,7 @@ export class ContractVisitor implements SolidityVisitor {
     const parameters = node.parameters.map((param) => {
       const functionParameter: Parameter = {
         name: param.name,
-        type: this._resolveTypes(param.typeName),
+        type: ContractVisitor.resolveTypes(param.typeName),
       };
       return functionParameter;
     });
@@ -130,7 +130,7 @@ export class ContractVisitor implements SolidityVisitor {
       ? node.returnParameters.map((param) => {
           const functionParameter: Parameter = {
             name: param.name,
-            type: this._resolveTypes(param.typeName),
+            type: ContractVisitor.resolveTypes(param.typeName),
           };
           return functionParameter;
         })
@@ -182,7 +182,7 @@ export class ContractVisitor implements SolidityVisitor {
    * @param type The type to resolve
    * @protected
    */
-  protected _resolveTypes(type: TypeName): string {
+  public static resolveTypes(type: TypeName): string {
     let paramType: string;
     switch (type.type) {
       case "ElementaryTypeName": {
@@ -194,25 +194,25 @@ export class ContractVisitor implements SolidityVisitor {
         break;
       }
       case "Mapping": {
-        paramType = `Map<${type.keyType.name},${this._resolveTypes(
+        paramType = `Map<${type.keyType.name},${this.resolveTypes(
           type.valueType
         )}>`;
         break;
       }
       case "ArrayTypeName": {
-        paramType = `${this._resolveTypes(type.baseTypeName)}[]`;
+        paramType = `${this.resolveTypes(type.baseTypeName)}[]`;
         break;
       }
       case "FunctionTypeName": {
         const parameterTypes = type.parameterTypes
           .map((param) => {
-            return this._resolveTypes(param);
+            return this.resolveTypes(param);
           })
           .join(",");
 
         const returnTypes = type.returnTypes
           .map((param) => {
-            return this._resolveTypes(param);
+            return this.resolveTypes(param);
           })
           .join(",");
 

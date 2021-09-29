@@ -203,6 +203,8 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
           decimals: null,
         };
 
+        console.log(param)
+
         if (param.type.includes("int")) {
           const type = param.type.includes("uint") ? "uint" : "int";
           const bits = param.type.replace(type, "");
