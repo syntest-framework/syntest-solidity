@@ -485,7 +485,7 @@ export class SolidityLauncher {
       await createTempDirectoryStructure();
 
       getUserInterface().report("header", [
-        `Searching: "${path.basename(targetPath)}"`,
+        `Searching: "${path.basename(targetPath)}": "${target}"`,
       ]);
 
       const ast = targetPool.getAST(targetPath);
@@ -499,6 +499,11 @@ export class SolidityLauncher {
         cfg,
         functionDescriptions
       );
+
+      if (!currentSubject.getPossibleActions().length) {
+        getUserInterface().report("skipping", [currentSubject.name]);
+        return new Archive()
+      }
 
       const [importsMap, dependencyMap] = targetPool.getImportDependencies(
         targetPath,

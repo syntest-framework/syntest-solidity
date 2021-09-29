@@ -491,10 +491,6 @@ export class SolidityCFGFactory implements CFGFactory {
     AST: any,
     contractName: string
   ): ReturnValue {
-    if (AST.name === "reduceReward") {
-      // console.log(AST.parameters)
-      console.log(AST.parameters[0].typeName);
-    }
     const node: RootNode = this.createRootNode(
       cfg,
       [AST.loc.start.line],
