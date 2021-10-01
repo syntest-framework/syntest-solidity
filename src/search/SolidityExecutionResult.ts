@@ -1,7 +1,4 @@
-import {
-  ExecutionResult,
-  Datapoint,
-} from "@syntest/framework";
+import { ExecutionResult, Datapoint } from "@syntest/framework";
 
 export enum SolidityExecutionStatus {
   PASSED,

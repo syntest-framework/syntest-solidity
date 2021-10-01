@@ -4,7 +4,7 @@ import {
   TestCaseSampler,
   prng,
   Properties,
-  Parameter
+  Parameter,
 } from "@syntest/framework";
 
 /**

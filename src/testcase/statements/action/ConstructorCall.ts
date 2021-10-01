@@ -7,7 +7,7 @@ import {
   prng,
   Properties,
   Parameter,
-  EncodingSampler
+  EncodingSampler,
 } from "@syntest/framework";
 
 /**
