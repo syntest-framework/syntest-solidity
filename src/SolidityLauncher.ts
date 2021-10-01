@@ -165,17 +165,17 @@ export class SolidityLauncher {
       Properties.temp_test_directory
     );
 
+    this.truffle = loadLibrary(this.config);
+    this.api = new API(myConfig);
+
     getUserInterface().report("clear", []);
     getUserInterface().report("asciiArt", ["Syntest"]);
     getUserInterface().report("version", [require("../package.json").version]);
 
-    if (this.config.help) {
+    if (this.config.help || this.config.h) {
       getUserInterface().report("help", []);
       await this.exit();
     } // Exit if --help
-
-    this.truffle = loadLibrary(this.config);
-    this.api = new API(myConfig);
 
     setNetwork(this.config, this.api);
 
