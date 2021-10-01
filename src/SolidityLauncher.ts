@@ -389,8 +389,10 @@ export class SolidityLauncher {
           targetPath,
           target
         );
-        const [importsMap, dependencyMap] =
-          this.targetPool.getImportDependencies(targetPath, target);
+        const [
+          importsMap,
+          dependencyMap,
+        ] = this.targetPool.getImportDependencies(targetPath, target);
 
         finalArchive.merge(archive);
 

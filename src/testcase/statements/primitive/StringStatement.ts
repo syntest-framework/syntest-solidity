@@ -129,8 +129,9 @@ export class StringStatement extends PrimitiveStatement<string> {
     const oldChar = this.value[position];
     const indexOldChar = this.alphabet.indexOf(oldChar);
     const delta = prng.pickOne([-2, -1, 1, -2]);
-    const newChar =
-      this.alphabet[(indexOldChar + delta) % this.alphabet.length];
+    const newChar = this.alphabet[
+      (indexOldChar + delta) % this.alphabet.length
+    ];
 
     let newValue = "";
 

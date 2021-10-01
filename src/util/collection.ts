@@ -77,9 +77,8 @@ export function collectStatistics(
 
   const numOfExceptions = archive
     .getObjectives()
-    .filter(
-      (objective) => objective instanceof ExceptionObjectiveFunction
-    ).length;
+    .filter((objective) => objective instanceof ExceptionObjectiveFunction)
+    .length;
 
   collector.recordVariable(RuntimeVariable.COVERED_EXCEPTIONS, numOfExceptions);
 

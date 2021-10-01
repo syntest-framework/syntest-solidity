@@ -89,8 +89,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       throw new Error(`${statement} is not a primitive statement`);
     }
 
-    const primitive: PrimitiveStatement<any> =
-      statement as PrimitiveStatement<any>;
+    const primitive: PrimitiveStatement<any> = statement as PrimitiveStatement<any>;
     // TODO what happened to float support?
     if (
       statement.type.type.startsWith("int") ||

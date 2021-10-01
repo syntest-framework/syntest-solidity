@@ -195,34 +195,36 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
     this._functionCalls = this.functions.map((actionDescription) => {
       (<FunctionDescription>actionDescription).parameters = (<
         FunctionDescription
-      >actionDescription).parameters.map((param): SolidityParameter => {
-        const newParam = {
-          name: param.name,
-          type: param.type,
-          bits: null,
-          decimals: null,
-        };
+      >actionDescription).parameters.map(
+        (param): SolidityParameter => {
+          const newParam = {
+            name: param.name,
+            type: param.type,
+            bits: null,
+            decimals: null,
+          };
 
-        if (param.type.includes("int")) {
-          const type = param.type.includes("uint") ? "uint" : "int";
-          const bits = param.type.replace(type, "");
-          newParam.type = type;
-          if (bits && bits.length) {
-            newParam.bits = parseInt(bits);
-          } else {
-            newParam.bits = 256;
+          if (param.type.includes("int")) {
+            const type = param.type.includes("uint") ? "uint" : "int";
+            const bits = param.type.replace(type, "");
+            newParam.type = type;
+            if (bits && bits.length) {
+              newParam.bits = parseInt(bits);
+            } else {
+              newParam.bits = 256;
+            }
+          } else if (param.type.includes("fixed")) {
+            const type = param.type.includes("ufixed") ? "ufixed" : "fixed";
+            let params = [param.type.replace(type, "")];
+            params = params[0].split("x");
+            newParam.type = type;
+            newParam.bits = parseInt(params[0]) || 128;
+            newParam.decimals = parseInt(params[1]) || 18;
           }
-        } else if (param.type.includes("fixed")) {
-          const type = param.type.includes("ufixed") ? "ufixed" : "fixed";
-          let params = [param.type.replace(type, "")];
-          params = params[0].split("x");
-          newParam.type = type;
-          newParam.bits = parseInt(params[0]) || 128;
-          newParam.decimals = parseInt(params[1]) || 18;
-        }
 
-        return newParam;
-      });
+          return newParam;
+        }
+      );
       return <FunctionDescription>actionDescription;
     });
   }
