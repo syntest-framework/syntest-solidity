@@ -1,9 +1,13 @@
 import {
-  ConstructorCall,
-  ObjectFunctionCall,
   TestCaseSampler,
   Statement,
-} from "@syntest-framework/syntest-framework";
+  SearchSubject,
+  Parameter,
+} from "@syntest/framework";
+
+import { SolidityTestCase } from "../SolidityTestCase";
+import { ConstructorCall } from "../statements/action/ConstructorCall";
+import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
 
 /**
  * SolidityRandomSampler class
@@ -11,10 +15,20 @@ import {
  * @author Dimitri Stallenberg
  */
 export abstract class SoliditySampler extends TestCaseSampler {
+  protected readonly POOL_PROB = 0.5;
+
+  protected constructor(subject: SearchSubject<SolidityTestCase>) {
+    super(subject);
+  }
+
   abstract sampleConstructor(depth: number): ConstructorCall;
   abstract sampleObjectFunctionCall(
     depth: number,
-    type: string
+    types: Parameter[]
   ): ObjectFunctionCall;
-  abstract sampleArgument(depth: number, type: string, bits: number): Statement;
+  abstract sampleArgument(
+    depth: number,
+    type: Parameter,
+    bits: number
+  ): Statement;
 }

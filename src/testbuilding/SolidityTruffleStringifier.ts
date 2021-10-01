@@ -1,23 +1,35 @@
 import {
-  ConstructorCall,
   Properties,
-  ObjectFunctionCall,
   PrimitiveStatement,
   Statement,
-  StringStatement,
   TestCaseDecoder,
-  TestCase,
-} from "@syntest-framework/syntest-framework";
+} from "@syntest/framework";
+
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
 import { AddressStatement } from "../testcase/statements/AddressStatement";
+import { ConstructorCall } from "../testcase/statements/action/ConstructorCall";
+import { StringStatement } from "../testcase/statements/primitive/StringStatement";
+import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunctionCall";
+import { SolidityTestCase } from "../testcase/SolidityTestCase";
 
 /**
  * @author Dimitri Stallenberg
  * @author Mitchell Olsthoorn
  */
 export class SolidityTruffleStringifier implements TestCaseDecoder {
+  private imports: Map<string, string>;
+  private contractDependencies: Map<string, string[]>;
+
+  constructor(
+    imports: Map<string, string>,
+    contractDependencies: Map<string, string[]>
+  ) {
+    this.imports = imports;
+    this.contractDependencies = contractDependencies;
+  }
+
   decodeConstructor(statement: Statement): string {
     if (!(statement instanceof ConstructorCall))
       throw new Error(`${statement} is not a constructor`);
@@ -27,19 +39,49 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     const args = (statement as ConstructorCall).args;
     for (const arg of args) {
       if (arg instanceof PrimitiveStatement) {
-        string = string + this.decodeStatement(arg) + "\n\t";
+        string = string + this.decodeStatement(arg) + "\n\t\t";
       }
     }
     const formattedArgs = args
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
+    const sender = (statement as ConstructorCall).getSender().getValue();
+    const senderString =
+      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
     return (
       string +
-      `\t` +
-      `const ${statement.varName} = await ${
+      `const ${statement.varNames[0]} = await ${
         (statement as ConstructorCall).constructorName
-      }.new(${formattedArgs});`
+      }.new(${formattedArgs}${senderString});`
+    );
+  }
+
+  decodeErroringConstructorCall(statement: Statement): string {
+    if (!(statement instanceof ConstructorCall))
+      throw new Error(`${statement} is not a constructor`);
+
+    let string = "";
+
+    const args = (statement as ConstructorCall).args;
+    for (const arg of args) {
+      if (arg instanceof PrimitiveStatement) {
+        string = string + this.decodeStatement(arg) + "\n\t\t";
+      }
+    }
+    const formattedArgs = args
+      .map((a: PrimitiveStatement<any>) => a.varName)
+      .join(", ");
+
+    const sender = (statement as ConstructorCall).getSender().getValue();
+    const senderString =
+      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+
+    return (
+      string +
+      `await expect(${
+        (statement as ConstructorCall).constructorName
+      }.new(${formattedArgs}${senderString}).to.be.rejectedWith(Error);`
     );
   }
 
@@ -48,21 +90,19 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       throw new Error(`${statement} is not a primitive statement`);
     }
 
-    const primitive: PrimitiveStatement<any> = statement as PrimitiveStatement<any>;
-    if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
+    const primitive: PrimitiveStatement<any> =
+      statement as PrimitiveStatement<any>;
+    // TODO what happened to float support?
+    if (
+      statement.type.type.startsWith("int") ||
+      statement.type.type.startsWith("uint")
+    ) {
       const value = primitive.value.toFixed();
       return `const ${statement.varName} = BigInt("${value}")`;
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = "${primitive.value}"`;
     } else if (statement instanceof AddressStatement) {
-      if (statement.account < 0) {
-        const address = "0x".concat(
-          (-statement.account).toString(16).padStart(40, "0")
-        );
-        return `const ${statement.varName} = "${address}"`;
-      } else {
-        return `const ${statement.varName} = ${primitive.value}`;
-      }
+      return (statement as AddressStatement).toCode();
     } else if (statement instanceof ByteStatement) {
       const bytes = web3_utils.bytesToHex((statement as ByteStatement).value);
       return `const ${statement.varName} = "${bytes}"`;
@@ -74,163 +114,334 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   decodeFunctionCall(statement: Statement, objectName: string): string {
     if (statement instanceof ObjectFunctionCall) {
       const args = (statement as ObjectFunctionCall).getChildren();
-      const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
+      // TODO the difficulty now is to select the correct var from the statements....
+      // TODO now assuming its always the first one
+      const formattedArgs = args
+        .map((a: Statement) => a.varNames[0])
+        .join(", ");
+
+      // TODO not sure how the multi args are returned to javascript (since javascript does not support this syntax
+      // TODO assuming it gets wrapped into an array
+
+      const sender = (statement as ObjectFunctionCall).getSender().getValue();
+      const senderString =
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
       if (
-        statement.type !== "none" &&
-        statement.type !== "" &&
-        !statement.varName.includes(",")
+        statement.types.length &&
+        !(
+          statement.types.length === 1 &&
+          ["void", "none"].includes(statement.types[0].type)
+        )
       ) {
-        return `const ${statement.varName} = await ${objectName}.${
+        let varNames = statement.varNames[0];
+        if (statement.types.length > 1) {
+          varNames = `[${statement.varNames.join(", ")}]`;
+        }
+        return `const ${varNames} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
-        }.call(${formattedArgs});`;
+        }.call(${formattedArgs}${senderString});`;
       }
       return `await ${objectName}.${
         (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs});`;
+      }.call(${formattedArgs}${senderString});`;
     } else {
       throw new Error(`${statement} is not a function call`);
     }
   }
 
-  getImport(statement: Statement): string {
-    if (statement instanceof ConstructorCall) {
-      // TODO This assumes constructor name is also name of the file
-      return `const ${
-        (statement as ConstructorCall).constructorName
-      } = artifacts.require("${
-        (statement as ConstructorCall).constructorName
-      }");\n\n`;
+  decodeErroringFunctionCall(statement: Statement, objectName: string): string {
+    if (statement instanceof ObjectFunctionCall) {
+      const args = (statement as ObjectFunctionCall).getChildren();
+      // TODO the difficulty now is to select the correct var from the statements....
+      // TODO now assuming its always the first one
+      const formattedArgs = args
+        .map((a: Statement) => a.varNames[0])
+        .join(", ");
+
+      const sender = (statement as ObjectFunctionCall).getSender().getValue();
+      const senderString =
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+
+      return `await expect(${objectName}.${
+        (statement as ObjectFunctionCall).functionName
+      }.call(${formattedArgs}${senderString})).to.be.rejectedWith(Error);`;
+    } else {
+      throw new Error(`${statement} is not a function call`);
+    }
+  }
+
+  getImport(constructorName: string): string {
+    if (!this.imports.has(constructorName)) {
+      throw new Error(
+        `Cannot find the import, constructor: ${constructorName} belongs to`
+      );
     }
 
-    return "";
+    return `const ${constructorName} = artifacts.require("${this.imports.get(
+      constructorName
+    )}");`;
+  }
+
+  convertToStatementStack(ind: SolidityTestCase): Statement[] {
+    const stack: Statement[] = [];
+    const queue: Statement[] = [ind.root];
+    while (queue.length) {
+      const current: Statement = queue.splice(0, 1)[0];
+
+      if (current instanceof ConstructorCall) {
+        for (const call of current.getMethodCalls()) {
+          queue.push(call);
+        }
+      } else {
+        stack.push(current);
+
+        for (const child of current.getChildren()) {
+          queue.push(child);
+        }
+      }
+    }
+    return stack;
+  }
+
+  gatherImports(importableGenes: ConstructorCall[]): [string[], string[]] {
+    const imports: string[] = [];
+    const linkings: string[] = [];
+    for (const gene of importableGenes) {
+      const contract = gene.constructorName;
+
+      const importString: string = this.getImport(contract);
+
+      if (imports.includes(importString) || importString.length === 0) {
+        continue;
+      }
+
+      imports.push(importString);
+
+      let count = 0;
+      for (const dependency of this.contractDependencies.get(contract)) {
+        const importString: string = this.getImport(dependency);
+
+        // Create link
+        linkings.push(`\t\tconst lib${count} = await ${dependency}.new();`);
+        linkings.push(
+          `\t\tawait ${contract}.link('${dependency}', lib${count}.address);`
+        );
+
+        if (imports.includes(importString) || importString.length === 0) {
+          continue;
+        }
+
+        imports.push(importString);
+
+        count += 1;
+      }
+    }
+
+    return [imports, linkings];
+  }
+
+  generateAssertions(ind: SolidityTestCase): string[] {
+    const assertions: string[] = [];
+    if (ind.assertions.size !== 0) {
+      for (const variableName of ind.assertions.keys()) {
+        if (variableName === "error") {
+          continue;
+        }
+
+        if (ind.assertions.get(variableName) === "[object Object]") continue;
+
+        if (variableName.includes("string")) {
+          assertions.push(
+            `\t\tassert.equal(${variableName}, "${ind.assertions.get(
+              variableName
+            )}")`
+          );
+        } else if (variableName.includes("int")) {
+          assertions.push(
+            `\t\tassert.equal(${variableName}, BigInt("${ind.assertions.get(
+              variableName
+            )}"))`
+          );
+        } else {
+          assertions.push(
+            `\t\tassert.equal(${variableName}, ${ind.assertions.get(
+              variableName
+            )})`
+          );
+        }
+      }
+    }
+
+    return assertions;
   }
 
   decodeTestCase(
-    testCase: TestCase | TestCase[],
+    testCase: SolidityTestCase | SolidityTestCase[],
     targetName: string,
-    addLogs?: boolean,
-    additionalAssertions?: Map<TestCase, { [p: string]: string }>
+    addLogs = false
   ): string {
-    if (testCase instanceof TestCase) {
+    if (testCase instanceof SolidityTestCase) {
       testCase = [testCase];
     }
 
-    let totalTestString = "";
+    const tests: string[] = [];
 
     const imports: string[] = [];
 
     for (const ind of testCase) {
-      let testString = "";
-      let assertions = "";
+      // The stopAfter variable makes sure that when one of the function calls has thrown an exception the test case ends there.
+      let stopAfter = -1;
+      if (ind.assertions.size !== 0 && ind.assertions.has("error")) {
+        stopAfter = ind.assertions.size;
+      }
 
-      const stack: Statement[] = [];
-      const queue: Statement[] = [ind.root];
+      const testString = [];
+      const stack: Statement[] = this.convertToStatementStack(ind);
 
       if (addLogs) {
-        testString += `\t\tawait fs.mkdirSync('${path.join(
-          Properties.temp_log_directory,
-          ind.id
-        )}', { recursive: true })\n`;
+        imports.push(`const fs = require('fs');\n\n`);
+        testString.push(
+          `\t\tawait fs.mkdirSync('${path.join(
+            Properties.temp_log_directory,
+            ind.id
+          )}', { recursive: true })\n`
+        );
+        testString.push("try {");
       }
 
-      while (queue.length) {
-        const current: Statement = queue.splice(0, 1)[0];
-
-        if (current instanceof ConstructorCall) {
-          for (const call of current.getMethodCalls()) {
-            queue.push(call);
-          }
-        } else {
-          stack.push(current);
-
-          for (const child of current.getChildren()) {
-            queue.push(child);
-          }
-        }
-      }
+      const importableGenes: ConstructorCall[] = [];
 
       const constructor = ind.root;
       stack.push(constructor);
 
+      let primitiveStatements: string[] = [];
+      const functionCalls: string[] = [];
+      const assertions: string[] = [];
+
+      let count = 1;
       while (stack.length) {
         const gene: Statement = stack.pop()!;
 
         if (gene instanceof ConstructorCall) {
-          testString += `\t\t${this.decodeConstructor(gene)}\n`;
+          if (count === stopAfter) {
+            // assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
+            if (Properties.test_minimization) break;
+          }
+          testString.push(`\t\t${this.decodeConstructor(gene)}`);
+          importableGenes.push(<ConstructorCall>gene);
+          count += 1;
         } else if (gene instanceof PrimitiveStatement) {
-          testString += `\t\t${this.decodeStatement(gene)}\n`;
+          primitiveStatements.push(`\t\t${this.decodeStatement(gene)}`);
         } else if (gene instanceof ObjectFunctionCall) {
-          testString += `\t\t${this.decodeFunctionCall(
-            gene,
-            constructor.varName
-          )}\n`;
+          if (count === stopAfter) {
+            assertions.push(
+              `\t\t${this.decodeErroringFunctionCall(
+                gene,
+                constructor.varNames[0]
+              )}`
+            );
+            if (Properties.test_minimization) break;
+          }
+          functionCalls.push(
+            `\t\t${this.decodeFunctionCall(gene, constructor.varNames[0])}`
+          );
+          count += 1;
         } else {
           throw Error(`The type of gene ${gene} is not recognized`);
         }
 
-        if (gene instanceof PrimitiveStatement) {
-          /*          if (gene.type.startsWith("int") || gene.type.startsWith("uint")) {
-            let value: string = (gene as NumericStatement).value.toFixed();
-            value = `BigInt("${value}")`;
-            assertions += `\t\tassert.equal(${gene.varName}, ${value})\n`;
-          } else if (gene instanceof StringStatement){
-            assertions += `\t\tassert.equal(${gene.varName}, "${gene.value}")\n`;
-          } else {
-            assertions += `\t\tassert.equal(${gene.varName}, ${gene.value})\n`;
-          }
- */
-        } else if (addLogs && gene instanceof ObjectFunctionCall) {
-          testString += `\t\tawait fs.writeFileSync('${path.join(
-            Properties.temp_log_directory,
-            ind.id,
-            gene.varName
-          )}', '' + ${gene.varName})\n`;
-        }
-
-        const importString: string = this.getImport(gene);
-
-        if (!imports.includes(importString) && importString.length) {
-          imports.push(importString);
-        }
-      }
-
-      testString += "\n";
-
-      if (additionalAssertions) {
-        if (additionalAssertions.has(ind)) {
-          const assertion: any = additionalAssertions.get(ind);
-          for (const variableName of Object.keys(assertion)) {
-            if (assertion[variableName] === "[object Object]") continue;
-
-            if (variableName.includes("string")) {
-              assertions += `\t\tassert.equal(${variableName}, "${assertion[variableName]}")\n`;
-            } else if (variableName.includes("int")) {
-              assertions += `\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))\n`;
-            } else {
-              assertions += `\t\tassert.equal(${variableName}, ${assertion[variableName]})\n`;
+        if (addLogs) {
+          if (gene instanceof ObjectFunctionCall) {
+            for (const varName of gene.varNames) {
+              functionCalls.push(
+                `\t\tawait fs.writeFileSync('${path.join(
+                  Properties.temp_log_directory,
+                  ind.id,
+                  varName
+                )}', '' + ${varName})`
+              );
+            }
+          } else if (gene instanceof ConstructorCall) {
+            for (const varName of gene.varNames) {
+              testString.push(
+                `\t\tawait fs.writeFileSync('${path.join(
+                  Properties.temp_log_directory,
+                  ind.id,
+                  varName
+                )}', '' + ${varName})`
+              );
             }
           }
         }
       }
 
+      // filter non-required statements
+      primitiveStatements = primitiveStatements.filter((s) => {
+        const varName = s.split(" ")[1];
+        return (
+          functionCalls.find((f) => f.includes(varName)) ||
+          assertions.find((f) => f.includes(varName))
+        );
+      });
+
+      testString.push(...primitiveStatements);
+      testString.push(...functionCalls);
+
+      if (addLogs) {
+        testString.push(`} catch (e) {`);
+        testString.push(
+          `await fs.writeFileSync('${path.join(
+            Properties.temp_log_directory,
+            ind.id,
+            "error"
+          )}', '' + e.stack)`
+        );
+        testString.push("}");
+      }
+
+      const [importsOfTest, linkings] = this.gatherImports(importableGenes);
+      imports.push(...importsOfTest);
+
+      if (ind.assertions.size) {
+        imports.push(`const chai = require('chai');`);
+        imports.push(`const expect = chai.expect;`);
+        imports.push(`chai.use(require('chai-as-promised'));`);
+      }
+
+      assertions.unshift(...this.generateAssertions(ind));
+
+      const body = [];
+      if (linkings.length) {
+        body.push(`${linkings.join("\n")}`);
+      }
+      if (testString.length) {
+        body.push(`${testString.join("\n")}`);
+      }
+      if (assertions.length) {
+        body.push(`${assertions.join("\n")}`);
+      }
+
       // TODO instead of using the targetName use the function call or a better description of the test
-      totalTestString +=
+      tests.push(
         `\tit('test for ${targetName}', async () => {\n` +
-        `${testString}` +
-        `${assertions}` +
-        `\t});\n`;
+          `${body.join("\n\n")}` +
+          `\n\t});`
+      );
     }
 
     let test =
-      `contract('${targetName}', (accounts) => {\n` + totalTestString + `\n})`;
+      `contract('${targetName}', (accounts) => {\n` +
+      tests.join("\n\n") +
+      `\n})`;
 
     // Add the imports
-    test = imports.join("\n") + `\n` + test;
-
-    if (addLogs) {
-      test = `const fs = require('fs');\n\n` + test;
-    }
+    test =
+      imports
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .join("\n") +
+      `\n\n` +
+      test;
 
     return test;
   }

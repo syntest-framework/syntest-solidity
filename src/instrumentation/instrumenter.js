@@ -17,10 +17,8 @@ class Instrumenter {
   constructor(config = {}) {
     this.instrumentationData = {};
     this.injector = new Injector();
-    this.measureStatementCoverage =
-      config.measureStatementCoverage === false ? false : true;
-    this.measureFunctionCoverage =
-      config.measureFunctionCoverage === false ? false : true;
+    this.measureStatementCoverage = config.measureStatementCoverage !== false;
+    this.measureFunctionCoverage = config.measureFunctionCoverage !== false;
   }
 
   _isRootNode(node) {
@@ -115,6 +113,7 @@ class Instrumenter {
     retValue.runnableLines = contract.runnableLines;
     retValue.contract = contract.instrumented;
     retValue.contractName = contract.contractName;
+    retValue.contracts = root.length ? root.map((n) => n.name) : null;
     return retValue;
   }
 }

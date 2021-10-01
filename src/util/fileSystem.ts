@@ -1,9 +1,11 @@
-import { existsSync, mkdirSync, rmdirSync } from "fs";
+import { existsSync, mkdirSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
-import { getLogger } from "@syntest-framework/syntest-framework";
+
+import { getUserInterface } from "@syntest/framework";
 const { outputFileSync } = require("fs-extra");
 const globby = require("globby");
 const recursive = require("recursive-readdir");
+const globalModules = require("global-modules");
 
 export async function setupTempFolders(
   tempContractsDir: string,
@@ -32,6 +34,22 @@ export async function tearDownTempFolders(
 ) {
   await rmdirSync(tempContractsDir, { recursive: true });
   await rmdirSync(tempArtifactsDir, { recursive: true });
+}
+
+export async function createTruffleConfig() {
+  const filepath = "./truffle-config.js";
+
+  if (existsSync(filepath)) {
+    return;
+  }
+
+  await writeFileSync(
+    filepath,
+    `module.exports = {
+  test_directory: ".syntest/tests",
+  plugins: ["syntest-solidity"]
+};`
+  );
 }
 
 /**
@@ -66,9 +84,38 @@ export async function getTestFilePaths(config) {
   const solregex = /.*\.(sol)$/;
   const hasSols = target.filter((f) => f.match(solregex) != null);
 
-  if (hasSols.length > 0) getLogger().info("sol-tests " + [hasSols.length]);
+  if (hasSols.length > 0)
+    getUserInterface().info("sol-tests " + [hasSols.length]);
 
   // Return list of test files
   const testregex = /.*\.(js|ts|es|es6|jsx)$/;
   return target.filter((f) => f.match(testregex) != null);
+}
+
+/**
+ * Tries to load truffle module library and reports source. User can force use of
+ * a non-local version using cli flags (see option). It's necessary to maintain
+ * a fail-safe lib because feature was only introduced in 5.0.30. Load order is:
+ *
+ * 1. local node_modules
+ * 2. global node_modules
+ * 3. fail-safe (truffle lib v 5.0.31 at ./plugin-assets/truffle.library)
+ *
+ * @param  {Object} truffleConfig config
+ * @return {Module}
+ */
+export function loadLibrary(config) {
+  // Local
+  try {
+    if (config.useGlobalTruffle || config.usePluginTruffle) throw null;
+    return require("truffle");
+  } catch (err) {}
+
+  // Global
+  try {
+    if (config.usePluginTruffle) throw null;
+
+    const globalTruffle = path.join(globalModules, "truffle");
+    return require(globalTruffle);
+  } catch (err) {}
 }

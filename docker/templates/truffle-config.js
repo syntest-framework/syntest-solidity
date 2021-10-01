@@ -1,3 +1,3 @@
 module.exports = {
-    plugins: ["syntest-solidity"]
+  plugins: ["syntest-solidity"],
 };

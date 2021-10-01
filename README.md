@@ -50,7 +50,9 @@ docker run -it syntest-solidity:V1.0.0 MetaCoin.sol "$(cat ./contracts/MetaCoin.
 ```
 
 ## Local development
+
 To be able to make quick changes to the syntest-framework and then test it in the syntest-solidity project change the following line:
+
 ```
   "dependencies": {
     ...
@@ -58,7 +60,9 @@ To be able to make quick changes to the syntest-framework and then test it in th
     ...
   }
 ```
+
 to:
+
 ```
   "dependencies": {
     ...
@@ -66,13 +70,32 @@ to:
     ...
   }
 ```
-> This assumes that both projects are in the same super-directory
 
+> This assumes that both projects are in the same super-directory
 
 ## Usage
 
+#### Standalone
+
 ```bash
-$ truffle run syntest-solidity
+$ syntest-solidity [options]
+```
+
+#### As a truffle plugin
+
+To run syntest-solidity as a plugin of the truffle testing library, you need to create a truffle-config.js with the following contents:
+
+```js
+module.exports = {
+  test_directory: ".syntest/tests",
+  plugins: ["syntest-solidity"],
+};
+```
+
+This file is auto-generated when using the standalone tool.
+
+```bash
+$ truffle run syntest-solidity [options]
 ```
 
 ## Support

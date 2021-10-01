@@ -1,11 +1,11 @@
 import {
   ExecutionResult,
-  getLogger,
   Properties,
   SuiteBuilder,
-  TestCase,
   TestCaseRunner,
-} from "@syntest-framework/syntest-framework";
+  getUserInterface,
+} from "@syntest/framework";
+
 import * as path from "path";
 import {
   SolidityExecutionResult,
@@ -14,6 +14,8 @@ import {
 import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { getTestFilePaths } from "../../util/fileSystem";
+import { SolidityTestCase } from "../SolidityTestCase";
+import { ConstructorCall } from "../statements/action/ConstructorCall";
 
 export class SolidityRunner extends TestCaseRunner {
   protected api: any;
@@ -28,46 +30,43 @@ export class SolidityRunner extends TestCaseRunner {
   }
 
   async execute(
-    subject: SoliditySubject<TestCase>,
-    testCase: TestCase
+    subject: SoliditySubject<SolidityTestCase>,
+    testCase: SolidityTestCase
   ): Promise<ExecutionResult> {
     const testPath = path.join(Properties.temp_test_directory, "tempTest.js");
     await this.suiteBuilder.writeTestCase(
       testPath,
       testCase,
-      testCase.root.constructorName
+      (testCase.root as ConstructorCall).constructorName
     );
-    // config.testDir = path.join(process.cwd(), Properties.temp_test_directory)
 
-    // this.config.testDir = path.join(process.cwd(), Properties.temp_test_directory);
     this.config.test_files = await getTestFilePaths(this.config);
 
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
 
-    // console.log(this.config)
-    // if (this.config) {
-    //   process.exit(0)
-    // }
-    // Run tests
+    // By replacing the global log function we disable the output of the truffle test framework
     const old = console.log;
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    console.log = function () {};
+    console.log = () => {};
+
+    // Run tests
     try {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
-      getLogger().error(e);
+      getUserInterface().error(e);
       console.trace(e);
     }
     console.log = old;
+
     // Retrieve execution information from the Mocha runner
     const mochaRunner: Runner = this.truffle.test.mochaRunner;
     const stats = mochaRunner.stats;
 
     // If one of the executions failed, log it
     if (stats.failures > 0) {
-      getLogger().error("Test case has failed!");
+      getUserInterface().error("Test case has failed!");
     }
 
     // Retrieve execution traces
@@ -75,7 +74,7 @@ export class SolidityRunner extends TestCaseRunner {
 
     const traces = [];
     for (const key of Object.keys(instrumentationData)) {
-      if (instrumentationData[key].contractPath.includes(subject.name + ".sol"))
+      if (instrumentationData[key].contractPath.includes(subject.name))
         traces.push(instrumentationData[key]);
     }
 
@@ -89,6 +88,7 @@ export class SolidityRunner extends TestCaseRunner {
 
       let status: SolidityExecutionStatus;
       let exception: string = null;
+
       if (test.isPassed()) {
         status = SolidityExecutionStatus.PASSED;
       } else if (test.timedOut) {
