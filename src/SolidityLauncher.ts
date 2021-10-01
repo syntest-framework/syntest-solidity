@@ -206,7 +206,7 @@ export class SolidityLauncher {
       await this.exit();
     }
 
-    getUserInterface().report("header", ["General info"]);
+    getUserInterface().report("header", ["GENERAL INFO"]);
 
     getUserInterface().report("property-set", [
       "Network Info",
@@ -217,7 +217,7 @@ export class SolidityLauncher {
       ],
     ]);
 
-    getUserInterface().report("header", ["Targets"]);
+    getUserInterface().report("header", ["TARGETS"]);
 
     // Run post-launch server hook;
     await this.api.onServerReady(this.config);
@@ -248,7 +248,7 @@ export class SolidityLauncher {
     );
     getUserInterface().report("skip-files", names);
 
-    getUserInterface().report("header", ["this.configuration"]);
+    getUserInterface().report("header", ["CONFIGURATION"]);
 
     getUserInterface().report("single-property", ["Seed", getSeed()]);
     getUserInterface().report("property-set", [
@@ -453,7 +453,7 @@ export class SolidityLauncher {
     console.log = old;
     await this.api.onTestsComplete(this.config);
 
-    getUserInterface().report("header", ["search results"]);
+    getUserInterface().report("header", ["SEARCH RESULTS"]);
 
     // Run Istanbul
     await this.api.report();
@@ -485,7 +485,7 @@ export class SolidityLauncher {
       await createTempDirectoryStructure();
 
       getUserInterface().report("header", [
-        `Searching: "${path.basename(targetPath)}": "${target}"`,
+        `SEARCHING: "${path.basename(targetPath)}": "${target}"`,
       ]);
 
       const ast = targetPool.getAST(targetPath);
