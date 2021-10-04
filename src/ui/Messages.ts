@@ -57,6 +57,6 @@ export default class Messages {
   }
 
   header(header: string): string {
-    return "\n" + chalk.green(chalk.bold(`${header.toUpperCase()}:`)) + "\n";
+    return "\n" + chalk.green(chalk.bold(`${header}`)) + "\n";
   }
 }

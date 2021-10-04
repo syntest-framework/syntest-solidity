@@ -49,6 +49,10 @@ export class SolidityRandomSampler extends SoliditySampler {
   sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
     const actions = this._subject.getPossibleActions("function");
 
+    if (!actions.length) {
+      throw new Error("There are no functions to test!");
+    }
+
     const action = <FunctionDescription>prng.pickOne(actions);
 
     const args: Statement[] = [];
