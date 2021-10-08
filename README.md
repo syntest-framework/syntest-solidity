@@ -65,14 +65,13 @@ This file is auto-generated when using the standalone tool.
 $ truffle run syntest-solidity [options]
 ```
 
+## Documentation
+
+For questions and help with how to use this tool, please see the [documentation](https://www.syntest.org).
+
 ## Support
 
 For questions and help with how to use this library, please see [SUPPORT.md](SUPPORT.md).
-
-## Roadmap
-
-- [x] Instrument the Contract Under Test (CUT) with function calls to record coverage.
-- [x] Write test-case files that are runnable by truffle.js.
 
 ## Contributing
 
