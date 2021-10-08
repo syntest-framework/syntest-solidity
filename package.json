@@ -25,9 +25,6 @@
     "type": "git",
     "url": "git+https://github.com/syntest-framework/syntest-solidity.git"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "scripts": {
     "build": "npm run build:compile",
     "build:compile": "tsc --build",

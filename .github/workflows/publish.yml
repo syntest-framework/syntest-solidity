@@ -4,7 +4,7 @@ on:
   push:
     branches: [setup-github-npm-repositories]
   release:
-    types: [created]
+    types: [published]
 
 jobs:
   publish:
@@ -15,7 +15,6 @@ jobs:
         with:
           node-version: 10
           registry-url: "https://registry.npmjs.org"
-      - uses: jgierer12/npm-auth-gpr@v1
       - run: npm install
       - run: npm publish
         env:
