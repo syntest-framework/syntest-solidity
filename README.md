@@ -10,33 +10,34 @@ The common core contains the common interfaces for the code control-flow represe
 
 ## Installation
 
-When the project reaches a stable state, a NPM package will be released. Until this happens, the tool can be used by cloning the project and the common framework, installing its dependencies, and compiling the TypeScript:
+### NPM
+
+The simplest way to use syntest-solidity is by installing the [npm package](https://www.npmjs.com/package/syntest/solidity).
+
+```bash
+$ npm install @syntest/solidity
+```
+
+### From source
+
+Until this happens, the tool can be used by cloning the project, installing its dependencies, and compiling the TypeScript:
 
 - Clone the projects
 
 ```bash
-$ git clone git@github.com:syntest-framework/syntest-framework.git
 $ git clone git@github.com:syntest-framework/syntest-solidity.git
 ```
 
 - Install dependencies
 
 ```bash
-$ cd syntest-framework; npm install
 $ cd syntest-solidity; npm install
 ```
 
 - Build Syntest-Solidity
 
 ```bash
-$ cd syntest-framework; npm run build
 $ cd syntest-solidity; npm run build
-```
-
-- Install Truffle
-
-```bash
-$ npm install -g truffle
 ```
 
 ## Usage
