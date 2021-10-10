@@ -1,3 +1,21 @@
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import {
   CFG,
   Node,
@@ -19,6 +37,7 @@ import {
   ExternalVisibility,
   InternalVisibility,
 } from "../analysis/static/map/ContractFunction";
+import { ContractVisitor } from "../analysis/static/map/ContractVisitor";
 
 // TODO break and continue statements
 
@@ -479,6 +498,13 @@ export class SolidityCFGFactory implements CFGFactory {
     };
   }
 
+  private parseParameter(parameter): Parameter {
+    return {
+      name: parameter.name,
+      type: ContractVisitor.resolveTypes(parameter.typeName),
+    };
+  }
+
   private FunctionDefinition(
     cfg: CFG,
     AST: any,
@@ -491,20 +517,8 @@ export class SolidityCFGFactory implements CFGFactory {
       contractName,
       AST.name || contractName,
       AST.isConstructor,
-      AST.parameters.map((p): Parameter => {
-        return {
-          name: p.name,
-          type: p.typeName.name,
-        };
-      }),
-      AST.returnParameters
-        ? AST.returnParameters.map((p): Parameter => {
-            return {
-              name: p.name,
-              type: p.typeName.name,
-            };
-          })
-        : [],
+      AST.parameters.map(this.parseParameter),
+      AST.returnParameters ? AST.returnParameters.map(this.parseParameter) : [],
       AST.visibility
     );
 

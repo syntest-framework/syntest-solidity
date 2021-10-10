@@ -1,6 +1,10 @@
 # SynTest Framework - Solidity
 
+> The aim of this tool is make it easier for Solidity contract developers to test their contracts in a more effective and efficient way.
+
 [![](https://github.com/syntest-framework/syntest-solidity/actions/workflows/node.js.yml/badge.svg)](https://github.com/syntest-framework/syntest-solidity/actions/workflows/node.js.yml)
+
+### What is SynTest Solidity?
 
 SynTest Solidity is a tool for automatically generating test cases for the Solidity platform. This tool is part of the [SynTest Framework](https://www.syntest.org). This framework contains multiple tools related to the generation of synthetic tests.
 
@@ -119,4 +123,4 @@ Contributions are welcome! For major changes, please open an issue first to disc
 
 ## License
 
-The content of this project itself is licensed under the [MIT license](LICENSE.md).
+The code within this project is licensed under the [Apache-2.0 license](LICENSE).

@@ -1,3 +1,21 @@
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { SolidityVisitor } from "../SolidityVisitor";
 import {
   ContractDefinition,
@@ -79,7 +97,7 @@ export class ContractVisitor implements SolidityVisitor {
     const parameters = node.parameters.map((param) => {
       const functionParameter: Parameter = {
         name: param.name,
-        type: this._resolveTypes(param.typeName),
+        type: ContractVisitor.resolveTypes(param.typeName),
       };
       return functionParameter;
     });
@@ -130,7 +148,7 @@ export class ContractVisitor implements SolidityVisitor {
       ? node.returnParameters.map((param) => {
           const functionParameter: Parameter = {
             name: param.name,
-            type: this._resolveTypes(param.typeName),
+            type: ContractVisitor.resolveTypes(param.typeName),
           };
           return functionParameter;
         })
@@ -182,7 +200,7 @@ export class ContractVisitor implements SolidityVisitor {
    * @param type The type to resolve
    * @protected
    */
-  protected _resolveTypes(type: TypeName): string {
+  public static resolveTypes(type: TypeName): string {
     let paramType: string;
     switch (type.type) {
       case "ElementaryTypeName": {
@@ -194,25 +212,25 @@ export class ContractVisitor implements SolidityVisitor {
         break;
       }
       case "Mapping": {
-        paramType = `Map<${type.keyType.name},${this._resolveTypes(
+        paramType = `Map<${type.keyType.name},${this.resolveTypes(
           type.valueType
         )}>`;
         break;
       }
       case "ArrayTypeName": {
-        paramType = `${this._resolveTypes(type.baseTypeName)}[]`;
+        paramType = `${this.resolveTypes(type.baseTypeName)}[]`;
         break;
       }
       case "FunctionTypeName": {
         const parameterTypes = type.parameterTypes
           .map((param) => {
-            return this._resolveTypes(param);
+            return this.resolveTypes(param);
           })
           .join(",");
 
         const returnTypes = type.returnTypes
           .map((param) => {
-            return this._resolveTypes(param);
+            return this.resolveTypes(param);
           })
           .join(",");
 

@@ -1,3 +1,21 @@
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { SoliditySubject } from "./search/SoliditySubject";
 import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleStringifier";
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
@@ -206,7 +224,7 @@ export class SolidityLauncher {
       await this.exit();
     }
 
-    getUserInterface().report("header", ["General info"]);
+    getUserInterface().report("header", ["GENERAL INFO"]);
 
     getUserInterface().report("property-set", [
       "Network Info",
@@ -217,7 +235,7 @@ export class SolidityLauncher {
       ],
     ]);
 
-    getUserInterface().report("header", ["Targets"]);
+    getUserInterface().report("header", ["TARGETS"]);
 
     // Run post-launch server hook;
     await this.api.onServerReady(this.config);
@@ -248,7 +266,7 @@ export class SolidityLauncher {
     );
     getUserInterface().report("skip-files", names);
 
-    getUserInterface().report("header", ["this.configuration"]);
+    getUserInterface().report("header", ["CONFIGURATION"]);
 
     getUserInterface().report("single-property", ["Seed", getSeed()]);
     getUserInterface().report("property-set", [
@@ -453,7 +471,7 @@ export class SolidityLauncher {
     console.log = old;
     await this.api.onTestsComplete(this.config);
 
-    getUserInterface().report("header", ["search results"]);
+    getUserInterface().report("header", ["SEARCH RESULTS"]);
 
     // Run Istanbul
     await this.api.report();
@@ -485,7 +503,7 @@ export class SolidityLauncher {
       await createTempDirectoryStructure();
 
       getUserInterface().report("header", [
-        `Searching: "${path.basename(targetPath)}"`,
+        `SEARCHING: "${path.basename(targetPath)}": "${target}"`,
       ]);
 
       const ast = targetPool.getAST(targetPath);
@@ -499,6 +517,11 @@ export class SolidityLauncher {
         cfg,
         functionDescriptions
       );
+
+      if (!currentSubject.getPossibleActions().length) {
+        getUserInterface().report("skipping", [currentSubject.name]);
+        return new Archive();
+      }
 
       const [importsMap, dependencyMap] = targetPool.getImportDependencies(
         targetPath,
