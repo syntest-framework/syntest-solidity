@@ -85,4 +85,4 @@ Contributions are welcome! For major changes, please open an issue first to disc
 
 ## License
 
-The content of this project itself is licensed under the [MIT license](LICENSE.md).
+The code within this project is licensed under the [Apache-2.0 license](LICENSE).
