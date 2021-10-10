@@ -22,7 +22,7 @@ You can install it in your project as shown in the snippit above or you can inst
 
 #### From source
 
-Until this happens, the tool can be used by cloning the project, installing its dependencies, and compiling the TypeScript:
+The tool can be used by cloning the project, installing its dependencies, and compiling the TypeScript:
 
 - Clone the projects
 
