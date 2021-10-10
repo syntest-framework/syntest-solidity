@@ -10,7 +10,7 @@ The common core contains the common interfaces for the code control-flow represe
 
 ## Installation
 
-### NPM
+#### NPM
 
 The simplest way to use syntest-solidity is by installing the [npm package](https://www.npmjs.com/package/syntest/solidity).
 
@@ -18,7 +18,9 @@ The simplest way to use syntest-solidity is by installing the [npm package](http
 $ npm install @syntest/solidity
 ```
 
-### From source
+You can install it in your project as shown in the snippit above or you can install the package globally by using the npm options `-g`.
+
+#### From source
 
 Until this happens, the tool can be used by cloning the project, installing its dependencies, and compiling the TypeScript:
 
@@ -42,6 +44,28 @@ $ cd syntest-solidity; npm run build
 
 ## Usage
 
+To start you need to be in the root of the project folder containing the contracts you want to create test-cases for. Next, you need to install two dev-dependencies in your project, namely [chai](https://www.npmjs.com/package/chai) and [chai-as-promised](https://www.npmjs.com/package/chai-as-promised). Both are needed to run the tests.
+
+After installing these dependencies together with the tool, you can run the following example command.
+
+```bash
+$ syntest-solidity --include="{PATH TO YOUR CONTRACTS FOLDER}/**/*.sol" --search-time=10 --total_time=10
+```
+
+This will test all solidity contracts that are contained in the contracts folder that you should specify. It will run for 10 seconds.
+
+Syntest-Solidity is highly configurable and supports a bunch of options and arguments, all of them can be found by providing the `--help` option or `-h` for short. Another way of configuring the tool is by putting a .syntest.js file in the root of your project. The file should have the following structure:
+
+```js
+module.exports = {
+    population_size: 10,
+    max_depth: 5,
+    ...
+}
+```
+
+The tool can be run via two modes, standalone or as a truffle plugin.
+
 #### Standalone
 
 ```bash
@@ -52,6 +76,8 @@ $ syntest-solidity [options]
 
 To run syntest-solidity as a plugin of the truffle testing library, you need to create a truffle-config.js with the following contents:
 
+> This file is auto-generated when using the standalone tool.
+
 ```js
 module.exports = {
   test_directory: ".syntest/tests",
@@ -59,7 +85,7 @@ module.exports = {
 };
 ```
 
-This file is auto-generated when using the standalone tool.
+Next, you can run the following truffle command.
 
 ```bash
 $ truffle run syntest-solidity [options]
