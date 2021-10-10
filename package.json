@@ -10,7 +10,7 @@
   "bugs": {
     "url": "https://github.com/syntest-framework/syntest-solidity/issues"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "contributors": [
     "Annibale Panichella",
     "Mitchell Olsthoorn",
