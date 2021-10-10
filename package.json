@@ -1,6 +1,6 @@
 {
   "name": "@syntest/solidity",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "SynTest Solidity is a tool for automatically generating test cases for the Solidity platform",
   "keywords": [
     "syntest",
