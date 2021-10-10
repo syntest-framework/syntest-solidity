@@ -147,10 +147,11 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         );
 
         for (const file of dir) {
-          assertions[file] = await readFileSync(
+          const assertionValue = await readFileSync(
             path.join(Properties.temp_log_directory, testCase.id, file),
             "utf8"
           );
+          assertions.set(file, assertionValue);
         }
       } catch (error) {
         continue;

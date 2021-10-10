@@ -113,7 +113,7 @@ export class SolidityRandomSampler extends SoliditySampler {
 
       // constructors do not have return parameters...
       return new ConstructorCall(
-        [{ type: action.name, name: "" }],
+        [{ type: action.name, name: "contract" }],
         prng.uniqueId(),
         `${action.name}`,
         args,
@@ -124,7 +124,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       // if no constructors is available, we invoke the default (implicit) constructor
       // TODO empty name because there is no name?
       return new ConstructorCall(
-        [{ type: this._subject.name, name: "" }],
+        [{ type: this._subject.name, name: "contract" }],
         prng.uniqueId(),
         `${this._subject.name}`,
         [],
