@@ -1,8 +1,6 @@
 name: SynTest CI
 
 on:
-  push:
-    branches: [setup-github-npm-repositories] # temporary
   release:
     types: [published]
 
