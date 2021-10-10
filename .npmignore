@@ -1,8 +1,12 @@
+.github/
 .nyc_output/
 docs/
+logs/
 node_modules/
 src/
 test/
+.eslintignore
+.gitignore
 *.json
 !package.json
 !package-lock.json
