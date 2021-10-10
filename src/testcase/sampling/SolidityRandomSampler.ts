@@ -101,7 +101,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       );
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
-      // TODO empty name because there is no name?
+      // TODO empty nagit me because there is no name?
       return new ConstructorCall(
         [{ type: this._subject.name, name: "" }],
         prng.uniqueId(),
