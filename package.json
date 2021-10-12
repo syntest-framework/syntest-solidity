@@ -18,6 +18,10 @@
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "/dist",
+    "/api.js"
+  ],
   "bin": {
     "syntest-solidity": "dist/bin.js"
   },
