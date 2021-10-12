@@ -16,11 +16,13 @@
  * limitations under the License.
  */
 
-import { PrimitiveStatement } from "syntest-framework/dist/testcase/statements/PrimitiveStatement";
-import { TestCaseSampler } from "syntest-framework/dist/testcase/sampling/TestCaseSampler";
-import { prng } from "syntest-framework/dist/util/prng";
-import { Properties } from "syntest-framework/dist/properties";
-import { Parameter } from "syntest-framework";
+import {
+  PrimitiveStatement,
+  TestCaseSampler,
+  prng,
+  Properties,
+  Parameter,
+} from "@syntest/framework";
 
 /**
  * @author Dimitri Stallenberg

@@ -28,7 +28,8 @@ import {
   Parameter,
   PublicVisibility,
   SearchSubject,
-} from "syntest-framework";
+} from "@syntest/framework";
+
 import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 import { ExternalVisibility } from "../analysis/static/map/ContractFunction";
 

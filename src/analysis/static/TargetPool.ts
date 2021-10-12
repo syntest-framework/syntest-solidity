@@ -23,7 +23,7 @@ import { TargetMapGenerator } from "./map/TargetMapGenerator";
 import { SolidityCFGFactory } from "../../graph/SolidityCFGFactory";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { ContractFunction } from "./map/ContractFunction";
-import { CFG } from "syntest-framework";
+import { CFG } from "@syntest/framework";
 import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
 import { LibraryVisitor } from "./dependency/LibraryVisitor";

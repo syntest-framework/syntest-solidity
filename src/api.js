@@ -7,6 +7,7 @@ const detect = require("detect-port");
 const _ = require("lodash/lang");
 
 const ConfigValidator = require("solidity-coverage/lib/validator");
+// const Instrumenter = require('solidity-coverage/lib/instrumenter')
 const Instrumenter = require("./instrumentation/instrumenter"); // Local version
 const Coverage = require("solidity-coverage/lib/coverage");
 const DataCollector = require("./instrumentation/collector"); // Local version

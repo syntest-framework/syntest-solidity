@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
-import { Statement } from "syntest-framework";
-import { ActionStatement } from "syntest-framework";
-import { TestCaseSampler } from "syntest-framework";
-import { prng } from "syntest-framework";
-import { Properties } from "syntest-framework";
-import { Parameter } from "syntest-framework";
+import {
+  Statement,
+  ActionStatement,
+  TestCaseSampler,
+  prng,
+  Properties,
+  Parameter,
+} from "@syntest/framework";
 
 /**
  * @author Dimitri Stallenberg

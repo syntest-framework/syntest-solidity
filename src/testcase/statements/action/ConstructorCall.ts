@@ -16,13 +16,15 @@
  * limitations under the License.
  */
 
-import { Statement } from "syntest-framework/dist/testcase/statements/Statement";
-import { ActionStatement } from "syntest-framework/dist/testcase/statements/ActionStatement";
-import { prng } from "syntest-framework/dist/util/prng";
-import { EncodingSampler } from "syntest-framework/dist/search/EncodingSampler";
 import { SolidityTestCase } from "../../SolidityTestCase";
-import { Parameter } from "syntest-framework";
 import { AddressStatement } from "../AddressStatement";
+import {
+  Statement,
+  ActionStatement,
+  prng,
+  Parameter,
+  EncodingSampler,
+} from "@syntest/framework";
 
 /**
  * @author Dimitri Stallenberg

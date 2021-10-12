@@ -29,7 +29,7 @@ import {
   SearchTimeBudget,
   StatisticsCollector,
   TotalTimeBudget,
-} from "syntest-framework";
+} from "@syntest/framework";
 import { SoliditySubject } from "../search/SoliditySubject";
 
 export function collectInitialVariables(

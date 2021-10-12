@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { prng } from "syntest-framework";
+import { prng } from "@syntest/framework";
 
 /**
  * A pool with constants extracted from the subject under test.

@@ -22,7 +22,8 @@ import {
   SuiteBuilder,
   TestCaseRunner,
   getUserInterface,
-} from "syntest-framework";
+} from "@syntest/framework";
+
 import * as path from "path";
 import {
   SolidityExecutionResult,

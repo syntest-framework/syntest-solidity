@@ -22,7 +22,7 @@ import {
   prng,
   TestCaseSampler,
   Parameter,
-} from "syntest-framework";
+} from "@syntest/framework";
 import { ConstantPool } from "../../seeding/constant/ConstantPool";
 
 /**

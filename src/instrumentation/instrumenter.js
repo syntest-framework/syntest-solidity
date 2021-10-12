@@ -5,6 +5,7 @@ const SolidityParser = require("@solidity-parser/parser");
 
 const Injector = require("./injector"); // Local copy
 const preprocess = require("solidity-coverage/lib/preprocessor");
+
 const parse = require("./parse"); // Local copy
 
 /**

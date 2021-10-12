@@ -46,6 +46,40 @@ $ cd syntest-solidity; npm install
 $ cd syntest-solidity; npm run build
 ```
 
+#### Building the docker image
+
+```
+docker build -t syntest-solidity:0.1.0 . --no-cache --build-arg REGISTRY_TOKEN={your_access_token}
+```
+
+```
+docker run -it syntest-solidity:0.1.0 MetaCoin.sol "$(cat ./contracts/MetaCoin.sol)"
+```
+
+## Local development
+
+To be able to make quick changes to the syntest-framework and then test it in the syntest-solidity project change the following line:
+
+```
+  "dependencies": {
+    ...
+    "@syntest-framework/syntest-framework": "^0.0.4",
+    ...
+  }
+```
+
+to:
+
+```
+  "dependencies": {
+    ...
+    "@syntest-framework/syntest-framework": "file:../syntest-framework",
+    ...
+  }
+```
+
+> This assumes that both projects are in the same super-directory
+
 ## Usage
 
 To start you need to be in the root of the project folder containing the contracts you want to create test-cases for. Next, you need to install two dev-dependencies in your project, namely [chai](https://www.npmjs.com/package/chai) and [chai-as-promised](https://www.npmjs.com/package/chai-as-promised). Both are needed to run the tests.

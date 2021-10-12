@@ -21,7 +21,7 @@ import {
   TestCaseDecoder,
   EncodingSampler,
   getUserInterface,
-} from "syntest-framework";
+} from "@syntest/framework";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
 
 /**

@@ -22,7 +22,8 @@ import {
   SuiteBuilder,
   Archive,
   getUserInterface,
-} from "syntest-framework";
+} from "@syntest/framework";
+
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
 import { getTestFilePaths } from "../util/fileSystem";

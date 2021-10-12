@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-import { SearchSubject, AbstractTestCase, CFG } from "syntest-framework";
+import { SearchSubject, AbstractTestCase, CFG } from "@syntest/framework";
+
 import { TargetPool } from "./TargetPool";
 import * as path from "path";
 import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";

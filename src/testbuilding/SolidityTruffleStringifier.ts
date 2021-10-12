@@ -21,7 +21,8 @@ import {
   PrimitiveStatement,
   Statement,
   TestCaseDecoder,
-} from "syntest-framework";
+} from "@syntest/framework";
+
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";

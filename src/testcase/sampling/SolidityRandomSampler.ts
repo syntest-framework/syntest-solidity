@@ -24,7 +24,8 @@ import {
   prng,
   Properties,
   Statement,
-} from "syntest-framework";
+} from "@syntest/framework";
+
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/AddressStatement";
 import BigNumber from "bignumber.js";

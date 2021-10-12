@@ -31,7 +31,6 @@ import {
   CoverageWriter,
   createAlgorithmFromConfig,
   createDirectoryStructure,
-  createTempDirectoryStructure,
   deleteTempDirectories,
   drawGraph,
   EvaluationBudget,
@@ -52,7 +51,8 @@ import {
   getUserInterface,
   getSeed,
   clearDirectory,
-} from "syntest-framework";
+  createTempDirectoryStructure,
+} from "@syntest/framework";
 
 import * as path from "path";
 import TruffleConfig = require("@truffle/config");

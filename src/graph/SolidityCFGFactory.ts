@@ -31,7 +31,8 @@ import {
   PrivateVisibility,
   PublicVisibility,
   NodeType,
-} from "syntest-framework";
+} from "@syntest/framework";
+
 import {
   ExternalVisibility,
   InternalVisibility,

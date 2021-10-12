@@ -33,7 +33,7 @@ import {
   Parameter,
   PrivateVisibility,
   PublicVisibility,
-} from "syntest-framework";
+} from "@syntest/framework";
 
 /**
  * Visits the AST nodes of a contract to find all functions with public or external visibility.

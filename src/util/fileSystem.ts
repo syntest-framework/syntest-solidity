@@ -18,7 +18,8 @@
 
 import { existsSync, mkdirSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
-import { getUserInterface } from "syntest-framework";
+
+import { getUserInterface } from "@syntest/framework";
 const { outputFileSync } = require("fs-extra");
 const globby = require("globby");
 const recursive = require("recursive-readdir");

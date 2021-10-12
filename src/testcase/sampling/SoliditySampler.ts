@@ -21,7 +21,8 @@ import {
   Statement,
   SearchSubject,
   Parameter,
-} from "syntest-framework";
+} from "@syntest/framework";
+
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
 import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
