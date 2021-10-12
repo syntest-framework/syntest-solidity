@@ -16,14 +16,16 @@
  * limitations under the License.
  */
 
-import { PrimitiveStatement } from "@syntest/framework";
+import {
+  PrimitiveStatement,
+  TestCaseSampler,
+  prng,
+  Properties,
+  Parameter,
+} from "@syntest/framework";
 
 import BigNumber from "bignumber.js";
-import { TestCaseSampler } from "@syntest/framework";
-import { prng } from "@syntest/framework";
-import { Properties } from "@syntest/framework";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
-import { Parameter } from "@syntest/framework";
 
 /**
  * Generic number class
