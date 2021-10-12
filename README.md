@@ -46,11 +46,11 @@ $ npm install -g truffle
 ### Building the docker image
 
 ```
-docker build -t syntest-solidity:V1.0.0 . --no-cache --build-arg REGISTRY_TOKEN={your_access_token}
+docker build -t syntest-solidity:0.1.0 . --no-cache --build-arg REGISTRY_TOKEN={your_access_token}
 ```
 
 ```
-docker run -it syntest-solidity:V1.0.0 MetaCoin.sol "$(cat ./contracts/MetaCoin.sol)"
+docker run -it syntest-solidity:0.1.0 MetaCoin.sol "$(cat ./contracts/MetaCoin.sol)"
 ```
 
 ## Local development
