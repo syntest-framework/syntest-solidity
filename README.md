@@ -78,7 +78,7 @@ to:
   }
 ```
 
-> This assumes that both projects are in the same super-directory
+> This assumes that both projects are in the same super-directory.
 
 ## Usage
 
@@ -87,10 +87,12 @@ To start you need to be in the root of the project folder containing the contrac
 After installing these dependencies together with the tool, you can run the following example command.
 
 ```bash
-$ syntest-solidity --include="{PATH TO YOUR CONTRACTS FOLDER}/**/*.sol" --search-time=10 --total_time=10
+$ syntest-solidity --include="{PATH_TO_YOUR_CONTRACTS_FOLDER}/contracts/**/*.sol" --search-time=10 --total_time=10
 ```
 
-This will test all solidity contracts that are contained in the contracts folder that you should specify. It will run for 10 seconds.
+This will test all solidity contracts that are contained in the contracts folder. It will run for 10 seconds.
+
+> Note that currently the contracts folder has to be named "contracts" for the tool to work. This will be solved in a later version.
 
 Syntest-Solidity is highly configurable and supports a bunch of options and arguments, all of them can be found by providing the `--help` option or `-h` for short. Another way of configuring the tool is by putting a .syntest.js file in the root of your project. The file should have the following structure:
 
