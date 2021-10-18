@@ -1,0 +1,65 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  style:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Cloning
+      - uses: actions/checkout@v2
+        with:
+          repository: "syntest-framework/syntest-framework"
+          token: ${{ secrets.SYNTEST_CI }}
+          path: syntest-framework
+      - uses: actions/checkout@v2
+        with:
+          path: syntest-solidity
+
+      # Setup
+      - name: Use Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16
+
+      # Caching
+      - name: Get NPM cache directory
+        id: npm-cache-dir
+        run: echo "::set-output name=dir::$(npm config get cache)"
+      - name: Cache Node.js modules
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-node-${{ hashFiles('*/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+            ${{ runner.os }}-
+
+      # SynTest Framework
+      - name: Framework - Install Dependencies
+        run: npm install
+        working-directory: syntest-framework
+      - name: Framework - Build framework
+        run: npm run build
+        working-directory: syntest-framework
+      - name: Framework - Link
+        run: npm link
+        working-directory: syntest-framework
+
+      # Dependencies
+      - name: Solidity - Install Dependencies
+        run: npm install
+        working-directory: syntest-solidity
+      - name: Solidity - Link Local Framework
+        run: npm link @syntest/framework
+        working-directory: syntest-solidity
+
+      # Check format
+      - name: Solidity - Run Format Checker
+        run: npm run format:check
+        working-directory: syntest-solidity
