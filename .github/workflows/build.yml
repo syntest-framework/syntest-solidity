@@ -1,19 +1,34 @@
-name: SynTest CI
+name: build
 
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/"
+      - "**.md"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "docs/"
+      - "**.md"
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  test:
+    runs-on: ${{ matrix.os }}
 
     strategy:
+      # Keep running other versions when a job fails
+      fail-fast: false
+
       matrix:
-        # Run the pipeline on all the currently supported LTS versions and the latest version
-        node-version: [10.x, 12.x, 14.x, 15.x]
+        # Run the pipeline on all the currently supported OS versions
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+        # Run the pipeline on all the currently supported LTS versions and the upcoming version
+        node-version: [10, 12, 14, 16]
+
+        # Run the pipeline on all the currently supported architectures
+        architecture: [x64]
 
     steps:
       # Cloning
@@ -28,19 +43,23 @@ jobs:
 
       # Setup
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
+          architecture: ${{ matrix.architecture }}
 
       # Caching
+      - name: Get NPM cache directory
+        id: npm-cache-dir
+        run: echo "::set-output name=dir::$(npm config get cache)"
       - name: Cache Node.js modules
         uses: actions/cache@v2
         with:
-          path: ~/.npm
-          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-node-${{ hashFiles('*/package.json') }}
           restore-keys: |
-            ${{ runner.OS }}-node-
-            ${{ runner.OS }}-
+            ${{ runner.os }}-node-
+            ${{ runner.os }}-
 
       # SynTest Framework
       - name: Framework - Install Dependencies
@@ -49,10 +68,16 @@ jobs:
       - name: Framework - Build framework
         run: npm run build
         working-directory: syntest-framework
+      - name: Framework - Link
+        run: npm link
+        working-directory: syntest-framework
 
       # Dependencies
       - name: Solidity - Install Dependencies
         run: npm install
+        working-directory: syntest-solidity
+      - name: Solidity - Link Local Framework
+        run: npm link @syntest/framework
         working-directory: syntest-solidity
 
       # Building
