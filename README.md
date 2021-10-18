@@ -3,7 +3,7 @@
 > The aim of this tool is make it easier for Solidity contract developers to test their contracts in a more effective and efficient way.
 
 [![](https://github.com/syntest-framework/syntest-solidity/actions/workflows/node.js.yml/badge.svg)](https://github.com/syntest-framework/syntest-solidity/actions/workflows/node.js.yml)
-[![publish](https://github.com/syntest-framework/syntest-solidity/actions/workflows/publish.yml/badge.svg)](https://github.com/syntest-framework/syntest-framework/actions/workflows/publish.yml)
+[![publish](https://github.com/syntest-framework/syntest-solidity/actions/workflows/publish.yml/badge.svg)](https://github.com/syntest-framework/syntest-syntest/actions/workflows/publish.yml)
 ![npm (scoped)](https://img.shields.io/npm/v/@syntest/solidity?style=flat)
 ![node-current (scoped)](https://img.shields.io/node/v/@syntest/solidity)
 
