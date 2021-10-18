@@ -1,8 +1,30 @@
-import { Statement } from "syntest-framework/dist/testcase/statements/Statement";
-import { ActionStatement } from "syntest-framework/dist/testcase/statements/ActionStatement";
-import { prng } from "syntest-framework/dist/util/prng";
-import { EncodingSampler } from "syntest-framework/dist/search/EncodingSampler";
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import { SolidityTestCase } from "../../SolidityTestCase";
+import { AddressStatement } from "../AddressStatement";
+import {
+  Statement,
+  ActionStatement,
+  prng,
+  Parameter,
+  EncodingSampler,
+} from "@syntest/framework";
 
 /**
  * @author Dimitri Stallenberg
@@ -13,27 +35,31 @@ export class ConstructorCall extends ActionStatement {
     return this._constructorName;
   }
 
-  private _constructorName: string;
-  private _calls: ActionStatement[];
+  private readonly _constructorName: string;
+  private readonly _calls: ActionStatement[];
+  private _sender: AddressStatement;
 
   /**
    * Constructor
-   * @param type the return type of the constructor
+   * @param types the return types of the constructor
    * @param uniqueId optional argument
    * @param constructorName the name of the constructor
    * @param args the arguments of the constructor
    * @param calls the methods calls of the constructor
+   * @param sender the sender of the message
    */
   constructor(
-    type: string,
+    types: Parameter[],
     uniqueId: string,
     constructorName: string,
     args: Statement[],
-    calls: ActionStatement[]
+    calls: ActionStatement[],
+    sender: AddressStatement
   ) {
-    super(type, uniqueId, args);
+    super(types, uniqueId, args);
     this._constructorName = constructorName;
     this._calls = calls;
+    this._sender = sender;
   }
 
   mutate(sampler: EncodingSampler<SolidityTestCase>, depth: number) {
@@ -119,11 +145,12 @@ export class ConstructorCall extends ActionStatement {
       ...this._calls.map((a: ActionStatement) => a.copy()),
     ];
     return new ConstructorCall(
-      this.type,
+      this.types,
       this.id,
       this.constructorName,
       deepCopyArgs,
-      deepCopyCalls
+      deepCopyCalls,
+      this._sender.copy()
     );
   }
 
@@ -137,5 +164,13 @@ export class ConstructorCall extends ActionStatement {
 
   hasMethodCalls(): boolean {
     return this._calls.length > 0;
+  }
+
+  setSender(sender: AddressStatement) {
+    this._sender = sender;
+  }
+
+  getSender(): AddressStatement {
+    return this._sender;
   }
 }

@@ -1,8 +1,0 @@
-.nyc_output/
-docs/
-node_modules/
-src/
-test/
-*.json
-!package.json
-!package-lock.json

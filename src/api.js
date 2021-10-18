@@ -7,6 +7,7 @@ const detect = require("detect-port");
 const _ = require("lodash/lang");
 
 const ConfigValidator = require("solidity-coverage/lib/validator");
+// const Instrumenter = require('solidity-coverage/lib/instrumenter')
 const Instrumenter = require("./instrumentation/instrumenter"); // Local version
 const Coverage = require("solidity-coverage/lib/coverage");
 const DataCollector = require("./instrumentation/collector"); // Local version
@@ -43,7 +44,7 @@ class API {
     this.port = config.port || this.defaultPort;
     this.host = config.host || "127.0.0.1";
     this.providerOptions = config.providerOptions || {};
-    this.autoLaunchServer = config.autoLaunchServer === false ? false : true;
+    this.autoLaunchServer = config.autoLaunchServer !== false;
 
     this.skipFiles = config.skipFiles || [];
 
@@ -77,32 +78,23 @@ class API {
    * }]
    */
   instrument(targets = []) {
-    let currentFile; // Keep track of filename in case we crash...
     let outputs = [];
+    for (let target of targets) {
+      const instrumented = this.instrumenter.instrument(
+        target.source,
+        target.canonicalPath
+      );
+      this.coverage.addContract(instrumented, target.canonicalPath);
 
-    try {
-      for (let target of targets) {
-        currentFile = target.relativePath || target.canonicalPath;
-
-        const instrumented = this.instrumenter.instrument(
-          target.source,
-          target.canonicalPath
-        );
-
-        this.coverage.addContract(instrumented, target.canonicalPath);
-
-        outputs.push({
-          canonicalPath: target.canonicalPath,
-          relativePath: target.relativePath,
-          actualSource: target.source,
-          source: instrumented.contract,
-          instrumented: instrumented,
-        });
-      }
-    } catch (err) {
-      throw err;
+      outputs.push({
+        canonicalPath: target.canonicalPath,
+        relativePath: target.relativePath,
+        actualSource: target.source,
+        source: instrumented.contract,
+        instrumented: instrumented,
+        contracts: [],
+      });
     }
-
     return outputs;
   }
 
@@ -179,8 +171,8 @@ class API {
     }
 
     await pify(this.server.listen)(this.port);
-    const address = `http://${this.host}:${this.port}`;
-    return address;
+
+    return `http://${this.host}:${this.port}`;
   }
 
   /**

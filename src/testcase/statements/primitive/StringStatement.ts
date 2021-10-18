@@ -1,7 +1,28 @@
-import { PrimitiveStatement } from "syntest-framework/dist/testcase/statements/PrimitiveStatement";
-import { TestCaseSampler } from "syntest-framework/dist/testcase/sampling/TestCaseSampler";
-import { prng } from "syntest-framework/dist/util/prng";
-import { Properties } from "syntest-framework/dist/properties";
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {
+  PrimitiveStatement,
+  TestCaseSampler,
+  prng,
+  Properties,
+  Parameter,
+} from "@syntest/framework";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 
 /**
@@ -12,7 +33,7 @@ export class StringStatement extends PrimitiveStatement<string> {
   private readonly maxlength: number;
 
   constructor(
-    type: string,
+    type: Parameter,
     uniqueId: string,
     value: string,
     alphabet: string,
@@ -128,9 +149,8 @@ export class StringStatement extends PrimitiveStatement<string> {
     const oldChar = this.value[position];
     const indexOldChar = this.alphabet.indexOf(oldChar);
     const delta = prng.pickOne([-2, -1, 1, -2]);
-    const newChar = this.alphabet[
-      (indexOldChar + delta) % this.alphabet.length
-    ];
+    const newChar =
+      this.alphabet[(indexOldChar + delta) % this.alphabet.length];
 
     let newValue = "";
 
@@ -162,7 +182,7 @@ export class StringStatement extends PrimitiveStatement<string> {
   }
 
   static getRandom(
-    type = "string",
+    type: Parameter = { type: "string", name: "noname" },
     alphabet = Properties.string_alphabet,
     maxlength = Properties.string_maxlength
   ): StringStatement {
@@ -171,7 +191,7 @@ export class StringStatement extends PrimitiveStatement<string> {
       prng.nextDouble(0, 1) <= Properties.constant_pool_probability
     ) {
       const value = ConstantPool.getInstance().getString();
-      if (value != null) return StringStatement.createWithValue(value);
+      if (value != null) return StringStatement.createWithValue(type, value);
     }
 
     const valueLength = prng.nextInt(0, maxlength - 1);
@@ -190,9 +210,9 @@ export class StringStatement extends PrimitiveStatement<string> {
     );
   }
 
-  static createWithValue(value: string): StringStatement {
+  static createWithValue(type: Parameter, value: string): StringStatement {
     return new StringStatement(
-      "string",
+      type,
       prng.uniqueId(),
       value,
       Properties.string_alphabet,

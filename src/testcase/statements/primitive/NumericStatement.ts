@@ -1,8 +1,30 @@
-import { PrimitiveStatement } from "syntest-framework/dist/testcase/statements/PrimitiveStatement";
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {
+  PrimitiveStatement,
+  TestCaseSampler,
+  prng,
+  Properties,
+  Parameter,
+} from "@syntest/framework";
+
 import BigNumber from "bignumber.js";
-import { TestCaseSampler } from "syntest-framework/dist/testcase/sampling/TestCaseSampler";
-import { prng } from "syntest-framework/dist/util/prng";
-import { Properties } from "syntest-framework/dist/properties";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 
 /**
@@ -19,13 +41,13 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
   private static _max_value: number = Number.MAX_SAFE_INTEGER;
   private static _zero = new BigNumber(0);
 
-  private _decimals: number;
-  private _signed: boolean;
-  private _upper_bound: BigNumber;
-  private _lower_bound: BigNumber;
+  private readonly _decimals: number;
+  private readonly _signed: boolean;
+  private readonly _upper_bound: BigNumber;
+  private readonly _lower_bound: BigNumber;
 
   constructor(
-    type: string,
+    type: Parameter,
     uniqueId: string,
     value: BigNumber,
     decimals = 0,
@@ -58,7 +80,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     // small mutation
     let change = prng.nextGaussian(0, 20);
 
-    if (this.type.includes("int")) {
+    if (this.type.type.includes("int")) {
       change = Math.round(change);
       if (change == 0) change = prng.nextBoolean() ? -1 : 1;
     }
@@ -101,7 +123,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
   }
 
   static getRandom(
-    type = "number",
+    type: Parameter = { type: "number", name: "noname" },
     decimals = Properties.numeric_decimals,
     signed = Properties.numeric_signed,
     upper_bound = new BigNumber(Number.MAX_SAFE_INTEGER),
@@ -116,7 +138,8 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
       prng.nextDouble(0, 1) <= Properties.constant_pool_probability
     ) {
       const value = ConstantPool.getInstance().getNumber();
-      if (value != null) return NumericStatement.createWithValue(value, signed);
+      if (value != null)
+        return NumericStatement.createWithValue(type, value, signed);
     }
 
     return new NumericStatement(
@@ -153,9 +176,13 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     return this._lower_bound;
   }
 
-  private static createWithValue(value: number, signed: boolean) {
+  private static createWithValue(
+    type: Parameter,
+    value: number,
+    signed: boolean
+  ) {
     return new NumericStatement(
-      "number",
+      type,
       prng.uniqueId(),
       new BigNumber(value),
       Properties.numeric_decimals,

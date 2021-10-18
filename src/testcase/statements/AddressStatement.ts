@@ -1,9 +1,28 @@
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import {
   Properties,
   PrimitiveStatement,
   prng,
   TestCaseSampler,
-} from "syntest-framework";
+  Parameter,
+} from "@syntest/framework";
 import { ConstantPool } from "../../seeding/constant/ConstantPool";
 
 /**
@@ -11,9 +30,14 @@ import { ConstantPool } from "../../seeding/constant/ConstantPool";
  * @author Dimitri Stallenberg
  */
 export class AddressStatement extends PrimitiveStatement<string> {
-  private _account: number;
+  private readonly _account: number;
 
-  constructor(type: string, uniqueId: string, value: string, account: number) {
+  constructor(
+    type: Parameter,
+    uniqueId: string,
+    value: string,
+    account: number
+  ) {
     super(type, uniqueId, value);
     this._account = account;
   }
@@ -21,13 +45,20 @@ export class AddressStatement extends PrimitiveStatement<string> {
   mutate(sampler: TestCaseSampler, depth: number): AddressStatement {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       return <AddressStatement>(
-        sampler.sampleStatement(depth, this.type, "primitive")
+        sampler.sampleStatement(depth, this.types, "primitive")
       );
     }
 
     if (this.value.startsWith("0x")) {
-      return <AddressStatement>(
-        sampler.sampleStatement(depth, this.type, "primitive")
+      const newAccount = prng.nextBoolean(0.5)
+        ? this.account + 1
+        : this.account - 1;
+      const value = "0x".concat((-newAccount).toString(16).padStart(40, "0"));
+      return new AddressStatement(
+        this.type,
+        prng.uniqueId(),
+        value,
+        newAccount
       );
     }
 
@@ -56,7 +87,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
     );
   }
 
-  static getRandom(type = "address") {
+  static getRandom(type: Parameter = { type: "address", name: "noname" }) {
     let account = -1;
     if (
       Properties.constant_pool &&
@@ -70,7 +101,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
 
     account = prng.nextInt(-1, 5);
     if (account < 0) {
-      const value = "0x".concat(account.toString(16).padStart(40, "0"));
+      const value = "0x".concat((-account).toString(16).padStart(40, "0"));
       return new AddressStatement(type, prng.uniqueId(), value, account);
     }
 
@@ -83,6 +114,15 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   public toCode(): string {
+    if (this.value.startsWith("0x"))
+      return `const ${this.varName} = "${this.value}"`;
+
     return `const ${this.varName} = ${this.value}`;
+  }
+
+  public getValue(): string {
+    if (this.value.startsWith("0x")) return `"${this.value}"`;
+
+    return `${this.value}`;
   }
 }

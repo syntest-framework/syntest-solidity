@@ -1,5 +1,5 @@
 {
-  "name": "syntest-solidity",
+  "name": "@syntest/solidity",
   "version": "0.1.0",
   "description": "SynTest Solidity is a tool for automatically generating test cases for the Solidity platform",
   "keywords": [
@@ -10,7 +10,7 @@
   "bugs": {
     "url": "https://github.com/syntest-framework/syntest-solidity/issues"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "contributors": [
     "Annibale Panichella",
     "Mitchell Olsthoorn",
@@ -18,12 +18,17 @@
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "/dist",
+    "/api.js",
+    "/NOTICE"
+  ],
   "bin": {
     "syntest-solidity": "dist/bin.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/syntest-framework/syntest-framework.git"
+    "url": "git+https://github.com/syntest-framework/syntest-solidity.git"
   },
   "scripts": {
     "build": "npm run build:compile",
@@ -43,12 +48,14 @@
   },
   "dependencies": {
     "@solidity-parser/parser": "^0.6.0",
-    "@truffle/config": "^1.2.34",
+    "@syntest/framework": "^0.1.1",
+    "@truffle/config": "^1.2.44",
     "@truffle/provider": "^0.1.17",
     "bignumber.js": "^9.0.1",
+    "chai": "^4.3.3",
+    "chai-as-promised": "^7.1.1",
     "chalk": "^2.4.2",
     "clear": "^0.1.0",
-    "death": "^1.1.0",
     "detect-port": "^1.3.0",
     "figlet": "^1.5.0",
     "fs-extra": "^8.1.0",
@@ -66,26 +73,27 @@
     "sc-istanbul": "^0.4.5",
     "shelljs": "^0.8.3",
     "solidity-coverage": "^0.7.16",
-    "syntest-framework": "file:../syntest-framework",
     "truffle": "^5.1.65",
-    "web3": "^1.3.4"
+    "web3": "^1.3.4",
+    "web3-utils": "^1.5.2"
   },
   "devDependencies": {
     "@types/chai": "^4.2.15",
+    "@types/chai-as-promised": "^7.1.4",
     "@types/mocha": "^8.2.2",
-    "@types/node": "^14.14.32",
+    "@types/node": "^14.17.4",
     "@types/sinon": "^9.0.11",
-    "@typescript-eslint/eslint-plugin": "^4.17.0",
-    "@typescript-eslint/parser": "^4.17.0",
+    "@typescript-eslint/eslint-plugin": "^4.28.1",
+    "@typescript-eslint/parser": "^4.28.1",
     "chai": "^4.3.3",
-    "eslint": "^7.21.0",
+    "eslint": "^7.30.0",
     "eslint-config-prettier": "^8.1.0",
     "mocha": "^8.3.1",
     "nyc": "^15.1.0",
-    "prettier": "^2.2.1",
+    "prettier": "^2.3.2",
     "sinon": "^9.2.4",
     "ts-node": "^9.0.0",
-    "typescript": "^4.2.3"
+    "typescript": "^4.3.5"
   },
   "engines": {
     "node": ">=10.24.0"

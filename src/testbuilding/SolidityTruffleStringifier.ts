@@ -1,9 +1,28 @@
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import {
   Properties,
   PrimitiveStatement,
   Statement,
   TestCaseDecoder,
-} from "syntest-framework";
+} from "@syntest/framework";
+
 import * as path from "path";
 import * as web3_utils from "web3-utils";
 import { ByteStatement } from "../testcase/statements/ByteStatement";
@@ -45,11 +64,14 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
+    const sender = (statement as ConstructorCall).getSender().getValue();
+    const senderString =
+      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
     return (
       string +
-      `const ${statement.varName} = await ${
+      `const ${statement.varNames[0]} = await ${
         (statement as ConstructorCall).constructorName
-      }.new(${formattedArgs});`
+      }.new(${formattedArgs}${senderString});`
     );
   }
 
@@ -69,11 +91,15 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
+    const sender = (statement as ConstructorCall).getSender().getValue();
+    const senderString =
+      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+
     return (
       string +
       `await expect(${
         (statement as ConstructorCall).constructorName
-      }.new(${formattedArgs})).to.be.rejectedWith(Error);`
+      }.new(${formattedArgs}${senderString}).to.be.rejectedWith(Error);`
     );
   }
 
@@ -82,8 +108,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       throw new Error(`${statement} is not a primitive statement`);
     }
 
-    const primitive: PrimitiveStatement<any> = statement as PrimitiveStatement<any>;
-    if (statement.type.startsWith("int") || statement.type.startsWith("uint")) {
+    const primitive: PrimitiveStatement<any> =
+      statement as PrimitiveStatement<any>;
+    // TODO what happened to float support?
+    if (
+      statement.type.type.startsWith("int") ||
+      statement.type.type.startsWith("uint")
+    ) {
       const value = primitive.value.toFixed();
       return `const ${statement.varName} = BigInt("${value}")`;
     } else if (statement instanceof StringStatement) {
@@ -101,20 +132,37 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   decodeFunctionCall(statement: Statement, objectName: string): string {
     if (statement instanceof ObjectFunctionCall) {
       const args = (statement as ObjectFunctionCall).getChildren();
-      const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
+      // TODO the difficulty now is to select the correct var from the statements....
+      // TODO now assuming its always the first one
+      const formattedArgs = args
+        .map((a: Statement) => a.varNames[0])
+        .join(", ");
+
+      // TODO not sure how the multi args are returned to javascript (since javascript does not support this syntax
+      // TODO assuming it gets wrapped into an array
+
+      const sender = (statement as ObjectFunctionCall).getSender().getValue();
+      const senderString =
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
       if (
-        statement.type !== "none" &&
-        statement.type !== "" &&
-        !statement.varName.includes(",")
+        statement.types.length &&
+        !(
+          statement.types.length === 1 &&
+          ["void", "none"].includes(statement.types[0].type)
+        )
       ) {
-        return `const ${statement.varName} = await ${objectName}.${
+        let varNames = statement.varNames[0];
+        if (statement.types.length > 1) {
+          varNames = `[${statement.varNames.join(", ")}]`;
+        }
+        return `const ${varNames} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
-        }.call(${formattedArgs});`;
+        }.call(${formattedArgs}${senderString});`;
       }
       return `await ${objectName}.${
         (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs});`;
+      }.call(${formattedArgs}${senderString});`;
     } else {
       throw new Error(`${statement} is not a function call`);
     }
@@ -123,11 +171,19 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   decodeErroringFunctionCall(statement: Statement, objectName: string): string {
     if (statement instanceof ObjectFunctionCall) {
       const args = (statement as ObjectFunctionCall).getChildren();
-      const formattedArgs = args.map((a: Statement) => a.varName).join(", ");
+      // TODO the difficulty now is to select the correct var from the statements....
+      // TODO now assuming its always the first one
+      const formattedArgs = args
+        .map((a: Statement) => a.varNames[0])
+        .join(", ");
+
+      const sender = (statement as ObjectFunctionCall).getSender().getValue();
+      const senderString =
+        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
       return `await expect(${objectName}.${
         (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs})).to.be.rejectedWith(Error);`;
+      }.call(${formattedArgs}${senderString})).to.be.rejectedWith(Error);`;
     } else {
       throw new Error(`${statement} is not a function call`);
     }
@@ -203,32 +259,33 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     return [imports, linkings];
   }
 
-  generateAssertions(
-    ind: SolidityTestCase,
-    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
-  ): string[] {
+  generateAssertions(ind: SolidityTestCase): string[] {
     const assertions: string[] = [];
-    if (additionalAssertions && additionalAssertions.has(ind)) {
-      const assertion: { [p: string]: string } = additionalAssertions.get(ind);
-
-      for (const variableName of Object.keys(assertion)) {
+    if (ind.assertions.size !== 0) {
+      for (const variableName of ind.assertions.keys()) {
         if (variableName === "error") {
           continue;
         }
 
-        if (assertion[variableName] === "[object Object]") continue;
+        if (ind.assertions.get(variableName) === "[object Object]") continue;
 
         if (variableName.includes("string")) {
           assertions.push(
-            `\t\tassert.equal(${variableName}, "${assertion[variableName]}")`
+            `\t\tassert.equal(${variableName}, "${ind.assertions.get(
+              variableName
+            )}")`
           );
         } else if (variableName.includes("int")) {
           assertions.push(
-            `\t\tassert.equal(${variableName}, BigInt("${assertion[variableName]}"))`
+            `\t\tassert.equal(${variableName}, BigInt("${ind.assertions.get(
+              variableName
+            )}"))`
           );
         } else {
           assertions.push(
-            `\t\tassert.equal(${variableName}, ${assertion[variableName]})`
+            `\t\tassert.equal(${variableName}, ${ind.assertions.get(
+              variableName
+            )})`
           );
         }
       }
@@ -240,8 +297,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
   decodeTestCase(
     testCase: SolidityTestCase | SolidityTestCase[],
     targetName: string,
-    addLogs?: boolean,
-    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
+    addLogs = false
   ): string {
     if (testCase instanceof SolidityTestCase) {
       testCase = [testCase];
@@ -254,12 +310,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     for (const ind of testCase) {
       // The stopAfter variable makes sure that when one of the function calls has thrown an exception the test case ends there.
       let stopAfter = -1;
-      if (
-        additionalAssertions &&
-        additionalAssertions.has(ind) &&
-        additionalAssertions.get(ind)["error"]
-      ) {
-        stopAfter = Object.keys(additionalAssertions.get(ind)).length;
+      if (ind.assertions.size !== 0 && ind.assertions.has("error")) {
+        stopAfter = ind.assertions.size;
       }
 
       const testString = [];
@@ -291,8 +343,8 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
         if (gene instanceof ConstructorCall) {
           if (count === stopAfter) {
-            assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
-            break;
+            // assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
+            if (Properties.test_minimization) break;
           }
           testString.push(`\t\t${this.decodeConstructor(gene)}`);
           importableGenes.push(<ConstructorCall>gene);
@@ -304,13 +356,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
             assertions.push(
               `\t\t${this.decodeErroringFunctionCall(
                 gene,
-                constructor.varName
+                constructor.varNames[0]
               )}`
             );
-            break;
+            if (Properties.test_minimization) break;
           }
           functionCalls.push(
-            `\t\t${this.decodeFunctionCall(gene, constructor.varName)}`
+            `\t\t${this.decodeFunctionCall(gene, constructor.varNames[0])}`
           );
           count += 1;
         } else {
@@ -319,21 +371,25 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
         if (addLogs) {
           if (gene instanceof ObjectFunctionCall) {
-            functionCalls.push(
-              `\t\tawait fs.writeFileSync('${path.join(
-                Properties.temp_log_directory,
-                ind.id,
-                gene.varName
-              )}', '' + ${gene.varName})`
-            );
+            for (const varName of gene.varNames) {
+              functionCalls.push(
+                `\t\tawait fs.writeFileSync('${path.join(
+                  Properties.temp_log_directory,
+                  ind.id,
+                  varName
+                )}', '' + ${varName})`
+              );
+            }
           } else if (gene instanceof ConstructorCall) {
-            testString.push(
-              `\t\tawait fs.writeFileSync('${path.join(
-                Properties.temp_log_directory,
-                ind.id,
-                gene.varName
-              )}', '' + ${gene.varName})`
-            );
+            for (const varName of gene.varNames) {
+              testString.push(
+                `\t\tawait fs.writeFileSync('${path.join(
+                  Properties.temp_log_directory,
+                  ind.id,
+                  varName
+                )}', '' + ${varName})`
+              );
+            }
           }
         }
       }
@@ -341,7 +397,10 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       // filter non-required statements
       primitiveStatements = primitiveStatements.filter((s) => {
         const varName = s.split(" ")[1];
-        return functionCalls.find((f) => f.includes(varName));
+        return (
+          functionCalls.find((f) => f.includes(varName)) ||
+          assertions.find((f) => f.includes(varName))
+        );
       });
 
       testString.push(...primitiveStatements);
@@ -362,13 +421,13 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
       const [importsOfTest, linkings] = this.gatherImports(importableGenes);
       imports.push(...importsOfTest);
 
-      if (additionalAssertions) {
+      if (ind.assertions.size) {
         imports.push(`const chai = require('chai');`);
         imports.push(`const expect = chai.expect;`);
         imports.push(`chai.use(require('chai-as-promised'));`);
       }
 
-      assertions.unshift(...this.generateAssertions(ind, additionalAssertions));
+      assertions.unshift(...this.generateAssertions(ind));
 
       const body = [];
       if (linkings.length) {

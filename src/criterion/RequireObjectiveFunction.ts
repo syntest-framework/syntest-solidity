@@ -1,10 +1,30 @@
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import {
-  Encoding,
-  SearchSubject,
   BranchDistance,
-  ProbeObjectiveFunction,
+  BranchNode,
+  Encoding,
   Node,
-} from "syntest-framework";
+  NodeType,
+  ProbeObjectiveFunction,
+  SearchSubject,
+} from "@syntest/framework";
 
 export class RequireObjectiveFunction<
   T extends Encoding
@@ -40,17 +60,22 @@ export class RequireObjectiveFunction<
 
       if (this.type) {
         if (postCondition.hits > 0) return 0;
-        else {
-          if (preCondition.hits > 0) {
-            return BranchDistance.branchDistanceNumeric(
-              preCondition.opcode,
-              preCondition.left,
-              preCondition.right,
-              true
-            );
-          }
+
+        if (preCondition.hits > 0) {
+          return BranchDistance.branchDistanceNumeric(
+            preCondition.opcode,
+            preCondition.left,
+            preCondition.right,
+            true
+          );
         }
+
+        return 1;
       } else {
+        if (preCondition.hits == 0) return 1;
+
+        if (preCondition.hits > 0) return 0;
+
         return BranchDistance.branchDistanceNumeric(
           preCondition.opcode,
           preCondition.left,
@@ -62,7 +87,11 @@ export class RequireObjectiveFunction<
 
     // find the corresponding branch node inside the cfg
     const branchNode = this._subject.cfg.nodes.find((n: Node) => {
-      return n.probe && n.lines.includes(this._line);
+      return (
+        n.type === NodeType.Branch &&
+        (<BranchNode>n).probe &&
+        n.lines.includes(this._line)
+      );
     });
     const childEdge = this._subject.cfg.edges.find((edge) => {
       return edge.from === branchNode.id && edge.branchType === this._type;
@@ -106,8 +135,7 @@ export class RequireObjectiveFunction<
     else branchDistance = this.computeBranchDistance(closestHitNode);
 
     // add the distances
-    const distance = approachLevel + branchDistance;
-    return distance;
+    return approachLevel + branchDistance;
   }
 
   getIdentifier(): string {

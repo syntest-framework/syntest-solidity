@@ -1,4 +1,23 @@
-import { SearchSubject, AbstractTestCase } from "syntest-framework";
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import { SearchSubject, AbstractTestCase, CFG } from "@syntest/framework";
+
 import { TargetPool } from "./TargetPool";
 import * as path from "path";
 import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
@@ -29,7 +48,7 @@ export class Target {
   protected _functions: Map<string, Map<string, any>>;
 
   // Mapping: target name -> (function name -> CFG)
-  protected _controlFlowGraphs: Map<string, any>;
+  protected _controlFlowGraphs: Map<string, CFG>;
 
   protected _linkingGraph: Graph<string>;
 
@@ -94,7 +113,7 @@ export class Target {
 
     const importGraph = analyzer.analyzeImports(targetPath);
     const context = analyzer.analyzeContext(importGraph);
-    const inheritanceGraph = analyzer.analyzeInheritance(context, targetName);
+    // const inheritanceGraph = analyzer.analyzeInheritance(context, targetName);
 
     const nodes = importGraph.getNodes();
     nodes.forEach((filePath) => {
@@ -151,7 +170,7 @@ export class Target {
     return this._functions.get(targetName);
   }
 
-  getCFG(targetName: string): any {
+  getCFG(targetName: string): CFG {
     return this._controlFlowGraphs.get(targetName);
   }
 

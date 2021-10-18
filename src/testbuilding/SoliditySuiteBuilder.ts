@@ -1,11 +1,29 @@
+/*
+ * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ *
+ * This file is part of SynTest Solidity.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import {
   Properties,
   TestCaseDecoder,
   SuiteBuilder,
   Archive,
-  ExceptionObjectiveFunction,
-  getLogger,
-} from "syntest-framework";
+  getUserInterface,
+} from "@syntest/framework";
+
 import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
 import { getTestFilePaths } from "../util/fileSystem";
@@ -17,7 +35,7 @@ import { SolidityTestCase } from "../testcase/SolidityTestCase";
 export class SoliditySuiteBuilder extends SuiteBuilder {
   private api: any;
   private truffle: any;
-  private config: any;
+  private readonly config: any;
 
   constructor(decoder: TestCaseDecoder, api: any, truffle: any, config: any) {
     super(decoder);
@@ -30,19 +48,19 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     filePath: string,
     testCase: SolidityTestCase,
     targetName: string,
-    addLogs = false,
-    additionalAssertions?: Map<SolidityTestCase, { [p: string]: string }>
+    addLogs = false
   ) {
     const decodedTestCase = this.decoder.decodeTestCase(
       testCase,
       targetName,
-      addLogs,
-      additionalAssertions
+      addLogs
     );
     await writeFileSync(filePath, decodedTestCase);
   }
 
-  async createSuite(archive: Archive<SolidityTestCase>) {
+  reduceArchive(
+    archive: Archive<SolidityTestCase>
+  ): Map<string, SolidityTestCase[]> {
     const reducedArchive = new Map<string, SolidityTestCase[]>();
 
     for (const objective of archive.getObjectives()) {
@@ -58,7 +76,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
 
       if (
         reducedArchive
-          .get(targetName)!
+          .get(targetName)
           .includes(archive.getEncoding(objective) as SolidityTestCase)
       ) {
         // skip duplicate individuals (i.e. individuals which cover multiple objectives
@@ -66,10 +84,17 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       }
 
       reducedArchive
-        .get(targetName)!
+        .get(targetName)
         .push(archive.getEncoding(objective) as SolidityTestCase);
     }
 
+    return reducedArchive;
+  }
+
+  async createSuite(archive: Archive<SolidityTestCase>): Promise<void> {
+    const reducedArchive = this.reduceArchive(archive);
+
+    // write the test cases with logs to know what to assert
     for (const key of reducedArchive.keys()) {
       for (const testCase of reducedArchive.get(key)!) {
         const testPath = path.join(
@@ -90,43 +115,32 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
-      getLogger().error(e);
+      getUserInterface().error(e);
       console.trace(e);
     }
     console.log = old;
 
-    // Create final tests files with additional assertions
+    // Create final tests files with assertions
     await this.clearDirectory(Properties.temp_test_directory);
 
     for (const key of reducedArchive.keys()) {
-      const assertions = await this.gatherAssertions(reducedArchive, key);
+      await this.gatherAssertions(reducedArchive.get(key));
       const testPath = path.join(
         Properties.final_suite_directory,
         `test-${key}.js`
       );
       await writeFileSync(
         testPath,
-        this.decoder.decodeTestCase(
-          reducedArchive.get(key)!,
-          `${key}`,
-          false,
-          assertions
-        )
+        this.decoder.decodeTestCase(reducedArchive.get(key), `${key}`, false)
       );
     }
 
     this.api.resetInstrumentationData();
   }
 
-  async gatherAssertions(
-    archive: Map<string, SolidityTestCase[]>,
-    key: string
-  ): Promise<Map<SolidityTestCase, { [p: string]: string }>> {
-    const assertions = new Map();
-
-    for (const testCase of archive.get(key)!) {
-      const additionalAssertions: { [key: string]: string } = {};
-
+  async gatherAssertions(testCases: SolidityTestCase[]): Promise<void> {
+    for (const testCase of testCases) {
+      const assertions = new Map<string, string>();
       try {
         // extract the log statements
         const dir = await readdirSync(
@@ -134,10 +148,11 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
         );
 
         for (const file of dir) {
-          additionalAssertions[file] = await readFileSync(
+          const assertionValue = await readFileSync(
             path.join(Properties.temp_log_directory, testCase.id, file),
             "utf8"
           );
+          assertions.set(file, assertionValue);
         }
       } catch (error) {
         continue;
@@ -149,9 +164,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       );
       await rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
 
-      assertions.set(testCase, additionalAssertions);
+      testCase.assertions = assertions;
     }
-
-    return assertions;
   }
 }
