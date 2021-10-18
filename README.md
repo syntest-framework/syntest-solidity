@@ -3,6 +3,9 @@
 > The aim of this tool is make it easier for Solidity contract developers to test their contracts in a more effective and efficient way.
 
 [![](https://github.com/syntest-framework/syntest-solidity/actions/workflows/node.js.yml/badge.svg)](https://github.com/syntest-framework/syntest-solidity/actions/workflows/node.js.yml)
+[![publish](https://github.com/syntest-framework/syntest-solidity/actions/workflows/publish.yml/badge.svg)](https://github.com/syntest-framework/syntest-framework/actions/workflows/publish.yml)
+![npm (scoped)](https://img.shields.io/npm/v/@syntest/solidity?style=flat)
+![node-current (scoped)](https://img.shields.io/node/v/@syntest/solidity)
 
 ### What is SynTest Solidity?
 
@@ -48,37 +51,24 @@ $ cd syntest-solidity; npm run build
 
 #### Building the docker image
 
-```
+```bash
 docker build -t syntest-solidity:0.1.0 . --no-cache --build-arg REGISTRY_TOKEN={your_access_token}
 ```
 
-```
+```bash
 docker run -it syntest-solidity:0.1.0 MetaCoin.sol "$(cat ./contracts/MetaCoin.sol)"
 ```
 
 ## Local development
 
-To be able to make quick changes to the syntest-framework and then test it in the syntest-solidity project change the following line:
+To be able to make quick changes to the syntest-framework and then test it in the syntest-solidity project use `npm link`:
 
-```
-  "dependencies": {
-    ...
-    "@syntest-framework/syntest-framework": "^0.0.4",
-    ...
-  }
+```bash
+cd <PATH_TO_SYNTEST_FRAMEWORK>; npm link
+cd <PATH_TO_SYNTEST_SOLIDITY>; npm link @syntest/framework
 ```
 
-to:
-
-```
-  "dependencies": {
-    ...
-    "@syntest-framework/syntest-framework": "file:../syntest-framework",
-    ...
-  }
-```
-
-> This assumes that both projects are in the same super-directory
+This creates a symbolic link to the local syntest-framework instance in the node modules folder of syntest-solidity.
 
 ## Usage
 
@@ -87,10 +77,12 @@ To start you need to be in the root of the project folder containing the contrac
 After installing these dependencies together with the tool, you can run the following example command.
 
 ```bash
-$ syntest-solidity --include="{PATH TO YOUR CONTRACTS FOLDER}/**/*.sol" --search-time=10 --total_time=10
+$ syntest-solidity --include="<PATH_TO_YOUR_CONTRACTS_FOLDER>/contracts/**/*.sol" --search-time=10 --total_time=10
 ```
 
-This will test all solidity contracts that are contained in the contracts folder that you should specify. It will run for 10 seconds.
+This will test all solidity contracts that are contained in the contracts folder. It will run for 10 seconds.
+
+> Note that currently the contracts folder has to be named "contracts" for the tool to work. This will be solved in a later version.
 
 Syntest-Solidity is highly configurable and supports a bunch of options and arguments, all of them can be found by providing the `--help` option or `-h` for short. Another way of configuring the tool is by putting a .syntest.js file in the root of your project. The file should have the following structure:
 
