@@ -118,7 +118,7 @@ module.exports = {
 Next, you can run the following truffle command.
 
 ```bash
-$ truffle run syntest-solidity [options]
+$ truffle run @syntest/solidity [options]
 ```
 
 ## Documentation

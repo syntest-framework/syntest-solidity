@@ -1,6 +1,6 @@
 {
   "name": "@syntest/solidity",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SynTest Solidity is a tool for automatically generating test cases for the Solidity platform",
   "keywords": [
     "syntest",
@@ -20,6 +20,7 @@
   "types": "dist/index.d.ts",
   "files": [
     "/dist",
+    "/src/**/*.js",
     "/api.js",
     "/NOTICE"
   ],

@@ -65,7 +65,7 @@ export async function createTruffleConfig() {
     filepath,
     `module.exports = {
   test_directory: ".syntest/tests",
-  plugins: ["syntest-solidity"]
+  plugins: ["@syntest/solidity"]
 };`
   );
 }
