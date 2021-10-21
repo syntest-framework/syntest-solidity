@@ -1,5 +1,5 @@
 {
   "commands": {
-    "syntest-solidity": "truffle.plugin.js"
+    "@syntest/solidity": "truffle.plugin.js"
   }
 }
