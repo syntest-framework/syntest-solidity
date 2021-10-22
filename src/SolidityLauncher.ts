@@ -152,7 +152,10 @@ export class SolidityLauncher {
     const additionalOptions = {}; // TODO
     setupOptions(this._program, additionalOptions);
 
-    const args = process.argv.slice(process.argv.indexOf(this._program) + 1);
+    const index = process.argv.indexOf(process.argv.find((a) => a.includes(this._program)))
+
+    const args = process.argv.slice(index + 1);
+
     const myConfig = loadConfig(args);
 
     processConfig(myConfig, args);
@@ -187,13 +190,13 @@ export class SolidityLauncher {
     getUserInterface().report("asciiArt", ["Syntest"]);
     getUserInterface().report("version", [require("../package.json").version]);
 
-    if (this.config.help) {
+    this.truffle = loadLibrary(this.config);
+    this.api = new API(myConfig);
+
+    if (args.includes("--help") || args.includes("-h")) {
       getUserInterface().report("help", []);
       await this.exit();
     } // Exit if --help
-
-    this.truffle = loadLibrary(this.config);
-    this.api = new API(myConfig);
 
     setNetwork(this.config, this.api);
 
@@ -206,23 +209,18 @@ export class SolidityLauncher {
     const nodeInfo = await web3.eth.getNodeInfo();
     const ganacheVersion = nodeInfo.split("/")[1];
 
-    setNetworkFrom(this.config, accounts);
-
     // Exit if --version
-    if (this.config.version) {
+    if (args.includes("--version") || args.includes("-v")) {
       getUserInterface().report("versions", [
         this.truffle.version,
         ganacheVersion,
         pkg.version,
-      ]); // Exit if --help
+      ]);
 
-      // Finish
-      await tearDownTempFolders(this.tempContractsDir, this.tempArtifactsDir);
-
-      // Shut server down
-      await this.api.finish();
       await this.exit();
     }
+
+    setNetworkFrom(this.config, accounts);
 
     getUserInterface().report("header", ["GENERAL INFO"]);
 
