@@ -152,7 +152,9 @@ export class SolidityLauncher {
     const additionalOptions = {}; // TODO
     setupOptions(this._program, additionalOptions);
 
-    const index = process.argv.indexOf(process.argv.find((a) => a.includes(this._program)))
+    const index = process.argv.indexOf(
+      process.argv.find((a) => a.includes(this._program))
+    );
 
     const args = process.argv.slice(index + 1);
 
