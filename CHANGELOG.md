@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.1.2] - 2021-11-29
+
+### Fixed
+
+- The help and version commands of the CLI were not working properly
+- Removed the failing docker workflow
+
 ## [0.1.1] - 2021-10-22
 
 ### Fixed
@@ -35,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Solidity instrumentation
 - Solidity specific search criteria (i.e., probe coverage)
 
-[unreleased]: https://github.com/syntest-framework/syntest-solidity/compare/v0.1.1...HEAD
+[unreleased]: https://github.com/syntest-framework/syntest-solidity/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/syntest-framework/syntest-solidity/releases/tag/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/syntest-framework/syntest-solidity/releases/tag/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/syntest-framework/syntest-solidity/releases/tag/v0.1.0
