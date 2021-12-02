@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { TargetPool } from "../TargetPool";
+import { SolidityTargetPool } from "../TargetPool";
 import { ContractMetadata, ContractKind } from "../map/ContractMetadata";
 import { ContractFunction, ExternalVisibility } from "../map/ContractFunction";
 import * as path from "path";
@@ -33,9 +33,9 @@ const SolidityParser = require("@solidity-parser/parser");
  * @author Mitchell Olsthoorn
  */
 export class DependencyAnalyzer {
-  protected _targetPool: TargetPool;
+  protected _targetPool: SolidityTargetPool;
 
-  constructor(targetPool: TargetPool) {
+  constructor(targetPool: SolidityTargetPool) {
     this._targetPool = targetPool;
   }
 

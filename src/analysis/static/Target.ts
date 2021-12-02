@@ -18,7 +18,7 @@
 
 import { SearchSubject, AbstractTestCase, CFG } from "@syntest/framework";
 
-import { TargetPool } from "./TargetPool";
+import { SolidityTargetPool } from "./TargetPool";
 import * as path from "path";
 import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
 import { TargetContext } from "./dependency/TargetContext";
@@ -82,7 +82,7 @@ export class Target {
    * @param targetName the name of the target
    */
   static fromPool(
-    targetPool: TargetPool,
+    targetPool: SolidityTargetPool,
     targetPath: string,
     targetName: string
   ): Target {

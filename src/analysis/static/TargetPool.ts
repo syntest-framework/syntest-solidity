@@ -27,6 +27,7 @@ import { CFG } from "@syntest/framework";
 import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
 import { LibraryVisitor } from "./dependency/LibraryVisitor";
+import { TargetPool } from "@syntest/framework";
 const SolidityParser = require("@solidity-parser/parser");
 
 /**
@@ -36,7 +37,7 @@ const SolidityParser = require("@solidity-parser/parser");
  *
  * @author Mitchell Olsthoorn
  */
-export class TargetPool {
+export class SolidityTargetPool implements TargetPool {
   protected _sourceGenerator: SourceGenerator;
   protected _abstractSyntaxTreeGenerator: ASTGenerator;
   protected _targetMapGenerator: TargetMapGenerator;
