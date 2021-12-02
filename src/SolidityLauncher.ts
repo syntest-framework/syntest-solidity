@@ -53,7 +53,7 @@ import {
   clearDirectory,
   createTempDirectoryStructure,
   saveTempFiles,
-  TargetFile
+  TargetFile,
 } from "@syntest/framework";
 
 import * as path from "path";
