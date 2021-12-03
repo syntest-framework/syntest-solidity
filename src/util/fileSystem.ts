@@ -24,9 +24,7 @@ const globby = require("globby");
 const recursive = require("recursive-readdir");
 const globalModules = require("global-modules");
 
-export async function setupTempFolders(
-  tempArtifactsDir: string
-) {
+export async function setupTempFolders(tempArtifactsDir: string) {
   if (existsSync(tempArtifactsDir)) {
     await rmdirSync(tempArtifactsDir, { recursive: true });
   }
@@ -36,9 +34,7 @@ export async function setupTempFolders(
   });
 }
 
-export async function tearDownTempFolders(
-  tempArtifactsDir: string
-) {
+export async function tearDownTempFolders(tempArtifactsDir: string) {
   await rmdirSync(tempArtifactsDir, { recursive: true });
 }
 

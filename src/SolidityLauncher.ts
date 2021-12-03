@@ -324,7 +324,6 @@ export class SolidityLauncher {
   ): Promise<
     [Archive<SolidityTestCase>, Map<string, string>, Map<string, string[]>]
   > {
-
     const excludedSet = new Set(
       ...targetPool.excluded.map((x) => x.canonicalPath)
     );
@@ -342,7 +341,7 @@ export class SolidityLauncher {
     await saveTempFiles(
       targetPool.excluded,
       this.config.contracts_directory,
-        Properties.temp_instrumented_directory
+      Properties.temp_instrumented_directory
     );
 
     this.config.contracts_directory = Properties.temp_instrumented_directory;
@@ -483,7 +482,6 @@ export class SolidityLauncher {
     }
 
     try {
-
       getUserInterface().report("header", [
         `SEARCHING: "${path.basename(targetPath)}": "${target}"`,
       ]);
