@@ -53,7 +53,6 @@ import {
   clearDirectory,
   createTempDirectoryStructure,
   saveTempFiles,
-  TargetFile,
 } from "@syntest/framework";
 
 import * as path from "path";
@@ -97,20 +96,14 @@ const Web3 = require("web3");
 
 export class SolidityLauncher {
   private readonly _program = "syntest-solidity";
-  private readonly tempContractsDir = path.join(
-    process.cwd(),
-    ".syntest_coverage"
-  );
   private readonly tempArtifactsDir = path.join(
     process.cwd(),
-    ".syntest_artifacts"
+    ".syntest/artifacts"
   );
 
   private api;
   private config;
   private truffle;
-
-  private targetPool: SolidityTargetPool;
 
   /**
    * Truffle Plugin: `truffle run coverage [options]`
@@ -136,7 +129,8 @@ export class SolidityLauncher {
 
   async exit(): Promise<void> {
     // Finish
-    await tearDownTempFolders(this.tempContractsDir, this.tempArtifactsDir);
+    await deleteTempDirectories();
+    await tearDownTempFolders(this.tempArtifactsDir);
 
     // Shut server down
     await this.api.finish();
@@ -159,6 +153,8 @@ export class SolidityLauncher {
 
     processConfig(myConfig, args);
     setupLogger();
+    await createDirectoryStructure();
+    await createTempDirectoryStructure();
 
     const messages = new Messages();
 
@@ -251,15 +247,11 @@ export class SolidityLauncher {
     await loadTargets(targetPool);
 
     if (!targetPool.included.length) {
-      // Finish
-      await tearDownTempFolders(this.tempContractsDir, this.tempArtifactsDir);
-
       // Shut server down
-      await this.api.finish();
       getUserInterface().error(
         `No targets where selected! Try changing the 'include' parameter`
       );
-      process.exit(1);
+      await this.exit();
     }
 
     let names = [];
@@ -332,6 +324,7 @@ export class SolidityLauncher {
   ): Promise<
     [Archive<SolidityTestCase>, Map<string, string>, Map<string, string[]>]
   > {
+
     const excludedSet = new Set(
       ...targetPool.excluded.map((x) => x.canonicalPath)
     );
@@ -339,19 +332,20 @@ export class SolidityLauncher {
     // Instrument
     const instrumented = this.api.instrument(targetPool.targetFiles);
 
-    await setupTempFolders(this.tempContractsDir, this.tempArtifactsDir);
+    await setupTempFolders(this.tempArtifactsDir);
     await saveTempFiles(
       instrumented,
       this.config.contracts_directory,
-      this.tempContractsDir
+      Properties.temp_instrumented_directory
     );
+    // TODO remove
     await saveTempFiles(
       targetPool.excluded,
       this.config.contracts_directory,
-      this.tempContractsDir
+        Properties.temp_instrumented_directory
     );
 
-    this.config.contracts_directory = this.tempContractsDir;
+    this.config.contracts_directory = Properties.temp_instrumented_directory;
     this.config.build_directory = this.tempArtifactsDir;
 
     this.config.contracts_build_directory = path.join(
@@ -428,9 +422,6 @@ export class SolidityLauncher {
     finalImportsMap: Map<string, string>,
     finalDependencies: Map<string, string[]>
   ): Promise<void> {
-    await createDirectoryStructure();
-    await createTempDirectoryStructure();
-
     const testDir = path.resolve(Properties.final_suite_directory);
     await clearDirectory(testDir);
 
@@ -447,8 +438,6 @@ export class SolidityLauncher {
     );
 
     await suiteBuilder.createSuite(finalArchive as Archive<SolidityTestCase>);
-
-    await deleteTempDirectories();
 
     this.config.test_files = await getTestFilePaths({
       testDir: testDir,
@@ -480,8 +469,6 @@ export class SolidityLauncher {
     targetPath: string,
     target: string
   ): Promise<Archive<SolidityTestCase>> {
-    await createDirectoryStructure();
-
     const cfg = targetPool.getCFG(targetPath, target);
 
     if (Properties.draw_cfg) {
@@ -496,8 +483,6 @@ export class SolidityLauncher {
     }
 
     try {
-      await createDirectoryStructure();
-      await createTempDirectoryStructure();
 
       getUserInterface().report("header", [
         `SEARCHING: "${path.basename(targetPath)}": "${target}"`,
@@ -608,7 +593,8 @@ export class SolidityLauncher {
       const coverageWriter = new CoverageWriter();
       coverageWriter.write(collector, statisticsDirectory + "/coverage.csv");
 
-      await deleteTempDirectories();
+      await clearDirectory(Properties.temp_test_directory);
+      await clearDirectory(Properties.temp_log_directory);
 
       return archive;
     } catch (e) {

@@ -19,26 +19,17 @@
 import { existsSync, mkdirSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
 
-import { getUserInterface } from "@syntest/framework";
+import { getUserInterface, Properties } from "@syntest/framework";
 const globby = require("globby");
 const recursive = require("recursive-readdir");
 const globalModules = require("global-modules");
 
 export async function setupTempFolders(
-  tempContractsDir: string,
   tempArtifactsDir: string
 ) {
-  if (existsSync(tempContractsDir)) {
-    await rmdirSync(tempContractsDir, { recursive: true });
-  }
-
   if (existsSync(tempArtifactsDir)) {
     await rmdirSync(tempArtifactsDir, { recursive: true });
   }
-
-  await mkdirSync(tempContractsDir, {
-    recursive: true,
-  });
 
   await mkdirSync(tempArtifactsDir, {
     recursive: true,
@@ -46,10 +37,8 @@ export async function setupTempFolders(
 }
 
 export async function tearDownTempFolders(
-  tempContractsDir: string,
   tempArtifactsDir: string
 ) {
-  await rmdirSync(tempContractsDir, { recursive: true });
   await rmdirSync(tempArtifactsDir, { recursive: true });
 }
 
@@ -63,7 +52,7 @@ export async function createTruffleConfig() {
   await writeFileSync(
     filepath,
     `module.exports = {
-  test_directory: ".syntest/tests",
+  test_directory: "${Properties.temp_test_directory}",
   plugins: ["@syntest/solidity"]
 };`
   );
