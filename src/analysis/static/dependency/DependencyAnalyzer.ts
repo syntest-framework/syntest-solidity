@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { SolidityTargetPool } from "../TargetPool";
+import { SolidityTargetPool } from "../SolidityTargetPool";
 import { ContractMetadata, ContractKind } from "../map/ContractMetadata";
 import { ContractFunction, ExternalVisibility } from "../map/ContractFunction";
 import * as path from "path";

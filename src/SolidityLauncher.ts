@@ -81,7 +81,7 @@ import { ConstantVisitor } from "./seeding/constant/ConstantVisitor";
 import { SolidityTestCase } from "./testcase/SolidityTestCase";
 import { SolidityTreeCrossover } from "./search/operators/crossover/SolidityTreeCrossover";
 
-import { SolidityTargetPool } from "./analysis/static/TargetPool";
+import { SolidityTargetPool } from "./analysis/static/SolidityTargetPool";
 import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
 import { ASTGenerator } from "./analysis/static/ast/ASTGenerator";
 import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
@@ -124,11 +124,8 @@ export class SolidityLauncher {
       this.config = normalizeConfig(config);
 
       await guessCWD(this.config.workingDir);
-      const [included, excluded] = await this.setup();
-      const [archive, imports, dependencies] = await this.search(
-        included,
-        excluded
-      );
+      const targetPool = await this.setup();
+      const [archive, imports, dependencies] = await this.search(targetPool);
       await this.finalize(archive, imports, dependencies);
     } catch (e) {
       console.trace(e);
@@ -147,7 +144,7 @@ export class SolidityLauncher {
     process.exit(0);
   }
 
-  async setup(): Promise<[TargetFile[], TargetFile[]]> {
+  async setup(): Promise<SolidityTargetPool> {
     // Filesystem & Compiler Re-configuration
     const additionalOptions = {}; // TODO
     setupOptions(this._program, additionalOptions);
@@ -244,16 +241,16 @@ export class SolidityLauncher {
     const astGenerator = new ASTGenerator();
     const targetMapGenerator = new TargetMapGenerator();
     const cfgGenerator = new SolidityCFGFactory();
-    this.targetPool = new SolidityTargetPool(
+    const targetPool = new SolidityTargetPool(
       sourceGenerator,
       astGenerator,
       targetMapGenerator,
       cfgGenerator
     );
 
-    const [included, excluded] = await loadTargets(this.targetPool);
+    await loadTargets(targetPool);
 
-    if (!included.length) {
+    if (!targetPool.included.length) {
       // Finish
       await tearDownTempFolders(this.tempContractsDir, this.tempArtifactsDir);
 
@@ -267,7 +264,7 @@ export class SolidityLauncher {
 
     let names = [];
 
-    included.forEach((targetFile) =>
+    targetPool.included.forEach((targetFile) =>
       names.push(
         `${path.basename(
           targetFile.canonicalPath
@@ -276,7 +273,7 @@ export class SolidityLauncher {
     );
     getUserInterface().report("targets", names);
     names = [];
-    excluded.forEach((targetFile) =>
+    targetPool.excluded.forEach((targetFile) =>
       names.push(
         `${path.basename(
           targetFile.canonicalPath
@@ -327,20 +324,16 @@ export class SolidityLauncher {
       ],
     ]);
 
-    return [included, excluded];
+    return targetPool;
   }
 
-  async search(
-    included: TargetFile[],
-    excluded: TargetFile[]
-  ): Promise<
+  async search(targetPool: SolidityTargetPool): Promise<
     [Archive<SolidityTestCase>, Map<string, string>, Map<string, string[]>]
   > {
-    const targets: TargetFile[] = [...included, ...excluded];
-    const excludedSet = new Set(...excluded.map((x) => x.canonicalPath));
+    const excludedSet = new Set(...targetPool.excluded.map((x) => x.canonicalPath));
 
     // Instrument
-    const instrumented = this.api.instrument(targets);
+    const instrumented = this.api.instrument(targetPool.targetFiles);
 
     await setupTempFolders(this.tempContractsDir, this.tempArtifactsDir);
     await saveTempFiles(
@@ -349,7 +342,7 @@ export class SolidityLauncher {
       this.tempContractsDir
     );
     await saveTempFiles(
-      excluded,
+      targetPool.excluded,
       this.config.contracts_directory,
       this.tempContractsDir
     );
@@ -374,10 +367,10 @@ export class SolidityLauncher {
     let finalImportsMap: Map<string, string> = new Map();
     let finalDependencies: Map<string, string[]> = new Map();
 
-    for (const targetFile of included) {
+    for (const targetFile of targetPool.included) {
       const includedTargets = targetFile.targets;
 
-      const targetMap = this.targetPool.getTargetMap(targetFile.canonicalPath);
+      const targetMap = targetPool.getTargetMap(targetFile.canonicalPath);
       for (const target of targetMap.keys()) {
         // check if included
         if (
@@ -389,7 +382,7 @@ export class SolidityLauncher {
 
         // check if excluded
         if (excludedSet.has(targetFile.canonicalPath)) {
-          const excludedTargets = excluded.find(
+          const excludedTargets = targetPool.excluded.find(
             (x) => x.canonicalPath === targetFile.canonicalPath
           ).targets;
           if (
@@ -401,12 +394,12 @@ export class SolidityLauncher {
         }
 
         const archive = await this.testTarget(
-          this.targetPool,
+          targetPool,
           targetFile.canonicalPath,
           target
         );
         const [importsMap, dependencyMap] =
-          this.targetPool.getImportDependencies(
+          targetPool.getImportDependencies(
             targetFile.canonicalPath,
             target
           );

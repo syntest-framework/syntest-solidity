@@ -18,7 +18,7 @@
 
 import { SearchSubject, AbstractTestCase, CFG } from "@syntest/framework";
 
-import { SolidityTargetPool } from "./TargetPool";
+import { SolidityTargetPool } from "./SolidityTargetPool";
 import * as path from "path";
 import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
 import { TargetContext } from "./dependency/TargetContext";

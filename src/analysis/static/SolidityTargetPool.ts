@@ -37,7 +37,7 @@ const SolidityParser = require("@solidity-parser/parser");
  *
  * @author Mitchell Olsthoorn
  */
-export class SolidityTargetPool implements TargetPool {
+export class SolidityTargetPool extends TargetPool {
   protected _sourceGenerator: SourceGenerator;
   protected _abstractSyntaxTreeGenerator: ASTGenerator;
   protected _targetMapGenerator: TargetMapGenerator;
@@ -73,6 +73,7 @@ export class SolidityTargetPool implements TargetPool {
     targetMapGenerator: TargetMapGenerator,
     controlFlowGraphGenerator: SolidityCFGFactory
   ) {
+    super()
     this._sourceGenerator = sourceGenerator;
     this._abstractSyntaxTreeGenerator = abtractSyntaxTreeGenerator;
     this._targetMapGenerator = targetMapGenerator;
@@ -102,7 +103,7 @@ export class SolidityTargetPool implements TargetPool {
     }
   }
 
-  getAST(targetPath: string): string {
+  getAST(targetPath: string): any {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (this._abstractSyntaxTrees.has(absoluteTargetPath)) {
