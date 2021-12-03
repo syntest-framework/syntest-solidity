@@ -73,7 +73,7 @@ export class SolidityTargetPool extends TargetPool {
     targetMapGenerator: TargetMapGenerator,
     controlFlowGraphGenerator: SolidityCFGFactory
   ) {
-    super()
+    super();
     this._sourceGenerator = sourceGenerator;
     this._abstractSyntaxTreeGenerator = abtractSyntaxTreeGenerator;
     this._targetMapGenerator = targetMapGenerator;

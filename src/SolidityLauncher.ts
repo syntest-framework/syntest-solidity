@@ -327,10 +327,14 @@ export class SolidityLauncher {
     return targetPool;
   }
 
-  async search(targetPool: SolidityTargetPool): Promise<
+  async search(
+    targetPool: SolidityTargetPool
+  ): Promise<
     [Archive<SolidityTestCase>, Map<string, string>, Map<string, string[]>]
   > {
-    const excludedSet = new Set(...targetPool.excluded.map((x) => x.canonicalPath));
+    const excludedSet = new Set(
+      ...targetPool.excluded.map((x) => x.canonicalPath)
+    );
 
     // Instrument
     const instrumented = this.api.instrument(targetPool.targetFiles);
@@ -398,11 +402,10 @@ export class SolidityLauncher {
           targetFile.canonicalPath,
           target
         );
-        const [importsMap, dependencyMap] =
-          targetPool.getImportDependencies(
-            targetFile.canonicalPath,
-            target
-          );
+        const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+          targetFile.canonicalPath,
+          target
+        );
 
         finalArchive.merge(archive);
 
