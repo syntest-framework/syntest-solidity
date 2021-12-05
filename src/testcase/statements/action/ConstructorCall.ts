@@ -24,7 +24,7 @@ import {
   prng,
   Parameter,
 } from "@syntest/framework";
-import {SoliditySampler} from "../../sampling/SoliditySampler";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
 
 /**
  * @author Dimitri Stallenberg
@@ -100,10 +100,7 @@ export class ConstructorCall extends ActionStatement {
     return this;
   }
 
-  protected addMethodCall(
-    sampler: SoliditySampler,
-    depth: number,
-  ) {
+  protected addMethodCall(sampler: SoliditySampler, depth: number) {
     let count = 0;
     while (prng.nextDouble(0, 1) <= Math.pow(0.5, count) && count < 10) {
       const index = prng.nextInt(0, this._calls.length);
@@ -117,10 +114,7 @@ export class ConstructorCall extends ActionStatement {
     }
   }
 
-  protected replaceMethodCall(
-    sampler: SoliditySampler,
-    depth: number,
-  ) {
+  protected replaceMethodCall(sampler: SoliditySampler, depth: number) {
     if (this.hasMethodCalls()) {
       const calls = this.getMethodCalls();
       const index = prng.nextInt(0, calls.length - 1);

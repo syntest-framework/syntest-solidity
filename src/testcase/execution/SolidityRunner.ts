@@ -52,11 +52,7 @@ export class SolidityRunner extends TestCaseRunner {
     testCase: SolidityTestCase
   ): Promise<ExecutionResult> {
     const testPath = path.join(Properties.temp_test_directory, "tempTest.js");
-    await this.suiteBuilder.writeTestCase(
-      testPath,
-      testCase,
-      subject.name
-    );
+    await this.suiteBuilder.writeTestCase(testPath, testCase, subject.name);
 
     this.config.test_files = await getTestFilePaths(this.config);
 

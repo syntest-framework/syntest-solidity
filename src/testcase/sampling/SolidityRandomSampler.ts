@@ -60,7 +60,10 @@ export class SolidityRandomSampler extends SoliditySampler {
     return new SolidityTestCase(root);
   }
 
-  sampleObjectFunctionCall(depth: number, root: ConstructorCall): ObjectFunctionCall {
+  sampleObjectFunctionCall(
+    depth: number,
+    root: ConstructorCall
+  ): ObjectFunctionCall {
     const actions = this._subject.getPossibleActions("function");
 
     // TODO make sure these actions are available on this root
@@ -110,12 +113,12 @@ export class SolidityRandomSampler extends SoliditySampler {
       }
 
       const root = new ConstructorCall(
-          [{ type: action.name, name: "contract" }],
-          prng.uniqueId(),
-          `${action.name}`,
-          args,
-          [],
-          AddressStatement.getRandom()
+        [{ type: action.name, name: "contract" }],
+        prng.uniqueId(),
+        `${action.name}`,
+        args,
+        [],
+        AddressStatement.getRandom()
       );
 
       const nCalls = prng.nextInt(1, 5);
@@ -125,7 +128,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       }
 
       // constructors do not have return parameters...
-      return root
+      return root;
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
       const root = new ConstructorCall(
@@ -143,7 +146,7 @@ export class SolidityRandomSampler extends SoliditySampler {
         root.setMethodCall(index, call as ActionStatement);
       }
 
-      return root
+      return root;
     }
   }
 

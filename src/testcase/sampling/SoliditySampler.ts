@@ -40,7 +40,10 @@ export abstract class SoliditySampler extends TestCaseSampler {
   }
 
   abstract sampleConstructor(depth: number): ConstructorCall;
-  abstract sampleObjectFunctionCall(depth: number, root: ConstructorCall): ObjectFunctionCall;
+  abstract sampleObjectFunctionCall(
+    depth: number,
+    root: ConstructorCall
+  ): ObjectFunctionCall;
 
   abstract sampleObjectFunctionCallTypeBased(
     depth: number,

@@ -22,7 +22,7 @@ import {
   getUserInterface,
 } from "@syntest/framework";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
-import {SoliditySampler} from "./sampling/SoliditySampler";
+import { SoliditySampler } from "./sampling/SoliditySampler";
 
 /**
  * SolidityTestCase class
