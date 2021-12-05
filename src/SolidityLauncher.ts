@@ -155,6 +155,7 @@ export class SolidityLauncher {
     setupLogger();
     await createDirectoryStructure();
     await createTempDirectoryStructure();
+    await setupTempFolders(this.tempArtifactsDir);
 
     const messages = new Messages();
 
@@ -331,7 +332,6 @@ export class SolidityLauncher {
     // Instrument
     const instrumented = this.api.instrument(targetPool.targetFiles);
 
-    await setupTempFolders(this.tempArtifactsDir);
     await saveTempFiles(
       instrumented,
       this.config.contracts_directory,
@@ -347,6 +347,7 @@ export class SolidityLauncher {
     this.config.contracts_directory = Properties.temp_instrumented_directory;
     this.config.build_directory = this.tempArtifactsDir;
 
+    // TODO what?
     this.config.contracts_build_directory = path.join(
       this.tempArtifactsDir,
       path.basename(this.config.contracts_build_directory)
@@ -471,12 +472,11 @@ export class SolidityLauncher {
     const cfg = targetPool.getCFG(targetPath, target);
 
     if (Properties.draw_cfg) {
-      // TODO dot's in the the name of a file will give issues
       drawGraph(
         cfg,
         path.join(
           Properties.cfg_directory,
-          `${path.basename(targetPath).split(".")[0]}.svg`
+          `${path.basename(targetPath, '.sol')}.svg`
         )
       );
     }
@@ -487,7 +487,6 @@ export class SolidityLauncher {
       ]);
 
       const ast = targetPool.getAST(targetPath);
-      const cfg = targetPool.getCFG(targetPath, target);
 
       const functionDescriptions = cfg.getFunctionDescriptions(target);
 
