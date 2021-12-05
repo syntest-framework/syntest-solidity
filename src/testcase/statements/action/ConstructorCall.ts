@@ -23,8 +23,8 @@ import {
   ActionStatement,
   prng,
   Parameter,
-  EncodingSampler,
 } from "@syntest/framework";
+import {SoliditySampler} from "../../sampling/SoliditySampler";
 
 /**
  * @author Dimitri Stallenberg
@@ -62,7 +62,7 @@ export class ConstructorCall extends ActionStatement {
     this._sender = sender;
   }
 
-  mutate(sampler: EncodingSampler<SolidityTestCase>, depth: number) {
+  mutate(sampler: SoliditySampler, depth: number) {
     if (this.args.length > 0) {
       const args = [...this.args.map((a: Statement) => a.copy())];
       const index = prng.nextInt(0, args.length - 1);
@@ -79,50 +79,47 @@ export class ConstructorCall extends ActionStatement {
       changed = true;
     }
     if (prng.nextDouble(0, 1) <= 1.0 / 3.0) {
-      this.replaceMethodCall(depth, sampler);
+      this.replaceMethodCall(sampler, depth);
       changed = true;
     }
     if (prng.nextDouble(0, 1) <= 1.0 / 3.0) {
-      this.addMethodCall(depth, sampler);
+      this.addMethodCall(sampler, depth);
       changed = true;
     }
 
     if (!this.hasMethodCalls()) {
-      this.addMethodCall(depth, sampler);
+      this.addMethodCall(sampler, depth);
       changed = true;
     }
 
     if (!changed) {
-      this.replaceMethodCall(depth, sampler);
-      this.addMethodCall(depth, sampler);
+      this.replaceMethodCall(sampler, depth);
+      this.addMethodCall(sampler, depth);
     }
 
     return this;
   }
 
   protected addMethodCall(
+    sampler: SoliditySampler,
     depth: number,
-    sampler: EncodingSampler<SolidityTestCase>
   ) {
     let count = 0;
     while (prng.nextDouble(0, 1) <= Math.pow(0.5, count) && count < 10) {
       const index = prng.nextInt(0, this._calls.length);
 
-      // get a random test case and we extract one of its method call
-      // ugly solution for now. But we have to fix with proper refactoring
-      const randomTest: SolidityTestCase = sampler.sample();
       this._calls.splice(
         index,
         0,
-        (randomTest.root as ConstructorCall).getMethodCalls()[0]
+        sampler.sampleObjectFunctionCall(depth + 1, this)
       );
       count++;
     }
   }
 
   protected replaceMethodCall(
+    sampler: SoliditySampler,
     depth: number,
-    sampler: EncodingSampler<SolidityTestCase>
   ) {
     if (this.hasMethodCalls()) {
       const calls = this.getMethodCalls();

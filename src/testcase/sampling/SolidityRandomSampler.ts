@@ -57,16 +57,13 @@ export class SolidityRandomSampler extends SoliditySampler {
   sample(): SolidityTestCase {
     const root = this.sampleConstructor(0);
 
-    const nCalls = prng.nextInt(1, 5);
-    for (let index = 0; index <= nCalls; index++) {
-      const call = this.sampleMethodCall(root);
-      root.setMethodCall(index, call as ActionStatement);
-    }
     return new SolidityTestCase(root);
   }
 
-  sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
+  sampleObjectFunctionCall(depth: number, root: ConstructorCall): ObjectFunctionCall {
     const actions = this._subject.getPossibleActions("function");
+
+    // TODO make sure these actions are available on this root
 
     if (!actions.length) {
       throw new Error("There are no functions to test!");
@@ -79,7 +76,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     for (const param of action.parameters) {
       if (param.type != "")
         args.push(
-          this.sampleArgument(1, param, (<SolidityParameter>param).bits)
+          this.sampleArgument(depth + 1, param, (<SolidityParameter>param).bits)
         );
     }
 
@@ -112,19 +109,26 @@ export class SolidityRandomSampler extends SoliditySampler {
           );
       }
 
-      // constructors do not have return parameters...
-      return new ConstructorCall(
-        [{ type: action.name, name: "contract" }],
-        prng.uniqueId(),
-        `${action.name}`,
-        args,
-        [],
-        AddressStatement.getRandom()
+      const root = new ConstructorCall(
+          [{ type: action.name, name: "contract" }],
+          prng.uniqueId(),
+          `${action.name}`,
+          args,
+          [],
+          AddressStatement.getRandom()
       );
+
+      const nCalls = prng.nextInt(1, 5);
+      for (let index = 0; index <= nCalls; index++) {
+        const call = this.sampleObjectFunctionCall(1, root);
+        root.setMethodCall(index, call as ActionStatement);
+      }
+
+      // constructors do not have return parameters...
+      return root
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
-      // TODO empty name because there is no name?
-      return new ConstructorCall(
+      const root = new ConstructorCall(
         [{ type: this._subject.name, name: "contract" }],
         prng.uniqueId(),
         `${this._subject.name}`,
@@ -132,6 +136,14 @@ export class SolidityRandomSampler extends SoliditySampler {
         [],
         AddressStatement.getRandom()
       );
+
+      const nCalls = prng.nextInt(1, 5);
+      for (let index = 0; index <= nCalls; index++) {
+        const call = this.sampleObjectFunctionCall(1, root);
+        root.setMethodCall(index, call as ActionStatement);
+      }
+
+      return root
     }
   }
 
@@ -154,7 +166,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       // Pick function
       // TODO or take an already available functionCall
 
-      return this.sampleObjectFunctionCall(depth, [type]);
+      return this.sampleObjectFunctionCallTypeBased(depth, [type]);
     } else {
       // Pick variable
       // TODO or take an already available variable
@@ -225,7 +237,7 @@ export class SolidityRandomSampler extends SoliditySampler {
         );
       }
     } else if (geneType === "functionCall") {
-      return this.sampleObjectFunctionCall(depth, types);
+      return this.sampleObjectFunctionCallTypeBased(depth, types);
     } else if (geneType === "constructor") {
       return this.sampleConstructor(depth);
     }
@@ -245,7 +257,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
   }
 
-  sampleObjectFunctionCall(
+  sampleObjectFunctionCallTypeBased(
     depth: number,
     types: Parameter[]
   ): ObjectFunctionCall {

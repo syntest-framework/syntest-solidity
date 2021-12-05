@@ -19,10 +19,10 @@
 import {
   AbstractTestCase,
   TestCaseDecoder,
-  EncodingSampler,
   getUserInterface,
 } from "@syntest/framework";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
+import {SoliditySampler} from "./sampling/SoliditySampler";
 
 /**
  * SolidityTestCase class
@@ -40,7 +40,7 @@ export class SolidityTestCase extends AbstractTestCase {
     super(root);
   }
 
-  mutate(sampler: EncodingSampler<SolidityTestCase>) {
+  mutate(sampler: SoliditySampler) {
     getUserInterface().debug(`Mutating test case: ${this._id}`);
     return new SolidityTestCase(
       (this._root as ConstructorCall).mutate(sampler, 0)

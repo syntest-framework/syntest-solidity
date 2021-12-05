@@ -476,7 +476,7 @@ export class SolidityLauncher {
         cfg,
         path.join(
           Properties.cfg_directory,
-          `${path.basename(targetPath, '.sol')}.svg`
+          `${path.basename(targetPath, ".sol")}.svg`
         )
       );
     }

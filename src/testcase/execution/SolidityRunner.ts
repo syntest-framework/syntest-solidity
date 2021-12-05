@@ -55,7 +55,7 @@ export class SolidityRunner extends TestCaseRunner {
     await this.suiteBuilder.writeTestCase(
       testPath,
       testCase,
-      (testCase.root as ConstructorCall).constructorName
+      subject.name
     );
 
     this.config.test_files = await getTestFilePaths(this.config);
