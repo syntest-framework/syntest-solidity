@@ -24,7 +24,7 @@ import {
 } from "@syntest/framework";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
 import { SoliditySampler } from "./sampling/SoliditySampler";
-import {SolidityDecoder} from "../testbuilding/SolidityDecoder";
+import { SolidityDecoder } from "../testbuilding/SolidityDecoder";
 
 /**
  * SolidityTestCase class
@@ -33,7 +33,7 @@ import {SolidityDecoder} from "../testbuilding/SolidityDecoder";
  * @author Mitchell Olsthoorn
  */
 export class SolidityTestCase extends Encoding {
-  private _root: ConstructorCall
+  private _root: ConstructorCall;
 
   /**
    * Constructor.
@@ -42,7 +42,7 @@ export class SolidityTestCase extends Encoding {
    */
   constructor(root: ConstructorCall) {
     super();
-    this._root = root
+    this._root = root;
   }
 
   mutate(sampler: SoliditySampler) {
@@ -75,7 +75,6 @@ export class SolidityTestCase extends Encoding {
   getLength(): number {
     return (this.root as ConstructorCall).getMethodCalls().length;
   }
-
 
   get root(): ConstructorCall {
     return this._root;

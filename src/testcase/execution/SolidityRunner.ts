@@ -20,7 +20,7 @@ import {
   ExecutionResult,
   Properties,
   getUserInterface,
-  EncodingRunner
+  EncodingRunner,
 } from "@syntest/framework";
 
 import * as path from "path";
@@ -32,16 +32,21 @@ import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { getTestFilePaths } from "../../util/fileSystem";
 import { SolidityTestCase } from "../SolidityTestCase";
-import {SoliditySuiteBuilder} from "../../testbuilding/SoliditySuiteBuilder";
+import { SoliditySuiteBuilder } from "../../testbuilding/SoliditySuiteBuilder";
 
 export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
-  protected suiteBuilder: SoliditySuiteBuilder
+  protected suiteBuilder: SoliditySuiteBuilder;
   protected api: any;
   protected truffle: any;
   protected config: any;
 
-  constructor(suiteBuilder: SoliditySuiteBuilder, api: any, truffle: any, config: any) {
-    this.suiteBuilder = suiteBuilder
+  constructor(
+    suiteBuilder: SoliditySuiteBuilder,
+    api: any,
+    truffle: any,
+    config: any
+  ) {
+    this.suiteBuilder = suiteBuilder;
     this.api = api;
     this.truffle = truffle;
     this.config = config;

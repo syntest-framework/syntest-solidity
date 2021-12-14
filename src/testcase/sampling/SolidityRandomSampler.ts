@@ -99,9 +99,7 @@ export class SolidityRandomSampler extends SoliditySampler {
   sampleConstructor(depth: number): ConstructorCall {
     const constructors = this._subject.getPossibleActions("constructor");
     if (constructors.length > 0) {
-      const action = <FunctionDescription>(
-        prng.pickOne(constructors)
-      );
+      const action = <FunctionDescription>prng.pickOne(constructors);
 
       const args: Statement[] = [];
       for (const param of action.parameters) {

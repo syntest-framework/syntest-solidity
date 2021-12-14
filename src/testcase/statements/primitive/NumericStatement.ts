@@ -25,7 +25,7 @@ import {
 
 import BigNumber from "bignumber.js";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
-import {SoliditySampler} from "../../sampling/SoliditySampler";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
 
 /**
  * Generic number class

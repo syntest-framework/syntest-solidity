@@ -23,7 +23,7 @@ import {
   Properties,
   Parameter,
 } from "@syntest/framework";
-import {SoliditySampler} from "../../sampling/SoliditySampler";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
 
 /**
  * @author Dimitri Stallenberg

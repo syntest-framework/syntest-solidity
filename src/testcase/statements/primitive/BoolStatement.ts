@@ -23,9 +23,8 @@ import {
   Parameter,
   EncodingSampler,
 } from "@syntest/framework";
-import {Encoding} from "crypto";
-import {SoliditySampler} from "../../sampling/SoliditySampler";
-
+import { Encoding } from "crypto";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
 
 /**
  * @author Dimitri Stallenberg

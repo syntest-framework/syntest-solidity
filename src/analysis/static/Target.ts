@@ -24,7 +24,7 @@ import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
 import { TargetContext } from "./dependency/TargetContext";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { Graph } from "./Graph";
-import {SolidityTestCase} from "../../testcase/SolidityTestCase";
+import { SolidityTestCase } from "../../testcase/SolidityTestCase";
 
 /**
  * Target system under test.

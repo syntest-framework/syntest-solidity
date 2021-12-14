@@ -32,7 +32,7 @@ import {
 
 import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 import { ExternalVisibility } from "../analysis/static/map/ContractFunction";
-import {SolidityTestCase} from "../testcase/SolidityTestCase";
+import { SolidityTestCase } from "../testcase/SolidityTestCase";
 
 export class SoliditySubject extends SearchSubject<SolidityTestCase> {
   private _functionCalls: FunctionDescription[] | null = null;
@@ -133,7 +133,9 @@ export class SoliditySubject extends SearchSubject<SolidityTestCase> {
       });
   }
 
-  findChildren(obj: ObjectiveFunction<SolidityTestCase>): ObjectiveFunction<SolidityTestCase>[] {
+  findChildren(
+    obj: ObjectiveFunction<SolidityTestCase>
+  ): ObjectiveFunction<SolidityTestCase>[] {
     let childrenObj = [];
 
     let edges2Visit = this._cfg.edges.filter(

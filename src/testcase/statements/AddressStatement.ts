@@ -23,7 +23,7 @@ import {
   Parameter,
 } from "@syntest/framework";
 import { ConstantPool } from "../../seeding/constant/ConstantPool";
-import {SoliditySampler} from "../sampling/SoliditySampler";
+import { SoliditySampler } from "../sampling/SoliditySampler";
 
 /**
  * Special statement specific to solidity contracts

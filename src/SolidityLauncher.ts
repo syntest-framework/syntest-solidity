@@ -425,10 +425,7 @@ export class SolidityLauncher {
     const testDir = path.resolve(Properties.final_suite_directory);
     await clearDirectory(testDir);
 
-    const stringifier = new SolidityDecoder(
-      finalImportsMap,
-      finalDependencies
-    );
+    const stringifier = new SolidityDecoder(finalImportsMap, finalDependencies);
 
     const suiteBuilder = new SoliditySuiteBuilder(
       stringifier,
@@ -507,10 +504,7 @@ export class SolidityLauncher {
         target
       );
 
-      const stringifier = new SolidityDecoder(
-        importsMap,
-        dependencyMap
-      );
+      const stringifier = new SolidityDecoder(importsMap, dependencyMap);
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
         this.api,

@@ -16,29 +16,31 @@
  * limitations under the License.
  */
 
-import {
-  Properties,
-  Archive,
-  getUserInterface,
-} from "@syntest/framework";
+import { Properties, Archive, getUserInterface } from "@syntest/framework";
 
-import {readdirSync, readFileSync, rmdirSync, unlinkSync, writeFileSync} from "fs";
+import {
+  readdirSync,
+  readFileSync,
+  rmdirSync,
+  unlinkSync,
+  writeFileSync,
+} from "fs";
 import * as path from "path";
 import { getTestFilePaths } from "../util/fileSystem";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
-import {SolidityDecoder} from "./SolidityDecoder";
+import { SolidityDecoder } from "./SolidityDecoder";
 
 /**
  * @author Dimitri Stallenberg
  */
 export class SoliditySuiteBuilder {
-  private decoder: SolidityDecoder
+  private decoder: SolidityDecoder;
   private api: any;
   private truffle: any;
   private readonly config: any;
 
   constructor(decoder: SolidityDecoder, api: any, truffle: any, config: any) {
-    this.decoder = decoder
+    this.decoder = decoder;
     this.api = api;
     this.truffle = truffle;
     this.config = config;

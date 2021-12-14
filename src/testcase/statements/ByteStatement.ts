@@ -22,7 +22,7 @@ import {
   prng,
   Parameter,
 } from "@syntest/framework";
-import {SoliditySampler} from "../sampling/SoliditySampler";
+import { SoliditySampler } from "../sampling/SoliditySampler";
 
 /**
  * Special statement specific to solidity contracts
