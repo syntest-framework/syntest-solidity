@@ -17,12 +17,14 @@
  */
 
 import {
-  AbstractTestCase,
-  TestCaseDecoder,
   getUserInterface,
+  Encoding,
+  Decoder,
+  EncodingSampler,
 } from "@syntest/framework";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
 import { SoliditySampler } from "./sampling/SoliditySampler";
+import {SolidityDecoder} from "../testbuilding/SolidityDecoder";
 
 /**
  * SolidityTestCase class
@@ -30,14 +32,17 @@ import { SoliditySampler } from "./sampling/SoliditySampler";
  * @author Dimitri Stallenberg
  * @author Mitchell Olsthoorn
  */
-export class SolidityTestCase extends AbstractTestCase {
+export class SolidityTestCase extends Encoding {
+  private _root: ConstructorCall
+
   /**
    * Constructor.
    *
    * @param root The root of the tree chromosome of the test case
    */
   constructor(root: ConstructorCall) {
-    super(root);
+    super();
+    this._root = root
   }
 
   mutate(sampler: SoliditySampler) {
@@ -47,8 +52,8 @@ export class SolidityTestCase extends AbstractTestCase {
     );
   }
 
-  hashCode(decoder: TestCaseDecoder): number {
-    const string = decoder.decodeTestCase(this, `${this.id}`, false);
+  hashCode(decoder: Decoder<Encoding, string>): number {
+    const string = decoder.decodeTestCase(this, `${this.id}`);
     let hash = 0;
     for (let i = 0; i < string.length; i++) {
       const character = string.charCodeAt(i);
@@ -69,5 +74,10 @@ export class SolidityTestCase extends AbstractTestCase {
 
   getLength(): number {
     return (this.root as ConstructorCall).getMethodCalls().length;
+  }
+
+
+  get root(): ConstructorCall {
+    return this._root;
   }
 }

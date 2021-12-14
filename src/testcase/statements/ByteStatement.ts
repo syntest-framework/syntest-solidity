@@ -20,9 +20,9 @@ import {
   Properties,
   PrimitiveStatement,
   prng,
-  TestCaseSampler,
   Parameter,
 } from "@syntest/framework";
+import {SoliditySampler} from "../sampling/SoliditySampler";
 
 /**
  * Special statement specific to solidity contracts
@@ -40,7 +40,7 @@ export class ByteStatement extends PrimitiveStatement<number[]> {
     return new ByteStatement(this.type, prng.uniqueId(), [...this.value]);
   }
 
-  mutate(sampler: TestCaseSampler, depth: number): ByteStatement {
+  mutate(sampler: SoliditySampler, depth: number): ByteStatement {
     if (prng.nextBoolean(Properties.delta_mutation_probability)) {
       const index = prng.nextInt(0, this.value.length - 1);
 

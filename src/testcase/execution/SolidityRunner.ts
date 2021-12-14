@@ -19,9 +19,8 @@
 import {
   ExecutionResult,
   Properties,
-  SuiteBuilder,
-  TestCaseRunner,
   getUserInterface,
+  EncodingRunner
 } from "@syntest/framework";
 
 import * as path from "path";
@@ -33,22 +32,23 @@ import { Runner } from "mocha";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { getTestFilePaths } from "../../util/fileSystem";
 import { SolidityTestCase } from "../SolidityTestCase";
-import { ConstructorCall } from "../statements/action/ConstructorCall";
+import {SoliditySuiteBuilder} from "../../testbuilding/SoliditySuiteBuilder";
 
-export class SolidityRunner extends TestCaseRunner {
+export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
+  protected suiteBuilder: SoliditySuiteBuilder
   protected api: any;
   protected truffle: any;
   protected config: any;
 
-  constructor(suiteBuilder: SuiteBuilder, api: any, truffle: any, config: any) {
-    super(suiteBuilder);
+  constructor(suiteBuilder: SoliditySuiteBuilder, api: any, truffle: any, config: any) {
+    this.suiteBuilder = suiteBuilder
     this.api = api;
     this.truffle = truffle;
     this.config = config;
   }
 
   async execute(
-    subject: SoliditySubject<SolidityTestCase>,
+    subject: SoliditySubject,
     testCase: SolidityTestCase
   ): Promise<ExecutionResult> {
     const testPath = path.join(Properties.temp_test_directory, "tempTest.js");

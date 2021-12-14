@@ -17,10 +17,10 @@
  */
 
 import {
-  TestCaseSampler,
   Statement,
   SearchSubject,
   Parameter,
+  EncodingSampler,
 } from "@syntest/framework";
 
 import { SolidityTestCase } from "../SolidityTestCase";
@@ -32,7 +32,7 @@ import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
  *
  * @author Dimitri Stallenberg
  */
-export abstract class SoliditySampler extends TestCaseSampler {
+export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> {
   protected readonly POOL_PROB = 0.5;
 
   protected constructor(subject: SearchSubject<SolidityTestCase>) {

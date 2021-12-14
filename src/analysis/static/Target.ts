@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { SearchSubject, AbstractTestCase, CFG } from "@syntest/framework";
+import { SearchSubject, CFG, Encoding } from "@syntest/framework";
 
 import { SolidityTargetPool } from "./SolidityTargetPool";
 import * as path from "path";
@@ -24,6 +24,7 @@ import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
 import { TargetContext } from "./dependency/TargetContext";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { Graph } from "./Graph";
+import {SolidityTestCase} from "../../testcase/SolidityTestCase";
 
 /**
  * Target system under test.
@@ -32,7 +33,7 @@ import { Graph } from "./Graph";
  *
  * @author Mitchell Olsthoorn
  */
-export class Target {
+export class Target<T extends Encoding> {
   protected readonly _path: string;
   protected readonly _name: string;
 
@@ -52,7 +53,7 @@ export class Target {
 
   protected _linkingGraph: Graph<string>;
 
-  protected _subject: SearchSubject<AbstractTestCase>;
+  protected _subject: SearchSubject<T>;
 
   constructor(
     targetPath: string,
@@ -85,14 +86,14 @@ export class Target {
     targetPool: SolidityTargetPool,
     targetPath: string,
     targetName: string
-  ): Target {
+  ): Target<SolidityTestCase> {
     const absoluteTargetPath = path.resolve(targetPath);
 
     // Get source, AST, FunctionMap, and CFG for target under test
     const sources = new Map<string, string>();
     const abstractSyntaxTrees = new Map<string, any>();
     const functionMaps = new Map<string, Map<string, any>>();
-    const controlFlowGraphs = new Map<string, any>();
+    const controlFlowGraphs = new Map<string, CFG>();
 
     sources.set(absoluteTargetPath, targetPool.getSource(absoluteTargetPath));
     abstractSyntaxTrees.set(

@@ -23,7 +23,7 @@ export * from "./testcase/sampling/SolidityRandomSampler";
 export * from "./testcase/sampling/SoliditySampler";
 
 export * from "./testbuilding/SoliditySuiteBuilder";
-export * from "./testbuilding/SolidityTruffleStringifier";
+export * from "./testbuilding/SolidityDecoder";
 
 export * from "./testcase/statements/AddressStatement";
 

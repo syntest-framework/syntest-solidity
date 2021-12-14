@@ -17,7 +17,7 @@
  */
 
 import { SoliditySubject } from "./search/SoliditySubject";
-import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleStringifier";
+import { SolidityDecoder } from "./testbuilding/SolidityDecoder";
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
@@ -425,7 +425,7 @@ export class SolidityLauncher {
     const testDir = path.resolve(Properties.final_suite_directory);
     await clearDirectory(testDir);
 
-    const stringifier = new SolidityTruffleStringifier(
+    const stringifier = new SolidityDecoder(
       finalImportsMap,
       finalDependencies
     );
@@ -507,7 +507,7 @@ export class SolidityLauncher {
         target
       );
 
-      const stringifier = new SolidityTruffleStringifier(
+      const stringifier = new SolidityDecoder(
         importsMap,
         dependencyMap
       );

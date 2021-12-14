@@ -34,7 +34,7 @@ import { SoliditySubject } from "../search/SoliditySubject";
 
 export function collectInitialVariables(
   collector: StatisticsCollector<any>,
-  currentSubject: SoliditySubject<any>,
+  currentSubject: SoliditySubject,
   targetPath: string
 ) {
   collector.recordVariable(RuntimeVariable.VERSION, 1);
@@ -61,7 +61,7 @@ export function collectInitialVariables(
 
 export function collectStatistics(
   collector: StatisticsCollector<any>,
-  currentSubject: SoliditySubject<any>,
+  currentSubject: SoliditySubject,
   archive: Archive<any>,
   totalTimeBudget: TotalTimeBudget<any>,
   searchBudget: SearchTimeBudget<any>,

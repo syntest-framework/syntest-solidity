@@ -18,11 +18,14 @@
 
 import {
   PrimitiveStatement,
-  TestCaseSampler,
   prng,
   Properties,
   Parameter,
+  EncodingSampler,
 } from "@syntest/framework";
+import {Encoding} from "crypto";
+import {SoliditySampler} from "../../sampling/SoliditySampler";
+
 
 /**
  * @author Dimitri Stallenberg
@@ -32,7 +35,7 @@ export class BoolStatement extends PrimitiveStatement<boolean> {
     super(type, uniqueId, value);
   }
 
-  mutate(sampler: TestCaseSampler, depth: number) {
+  mutate(sampler: SoliditySampler, depth: number) {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       return BoolStatement.getRandom(this.type);
     }

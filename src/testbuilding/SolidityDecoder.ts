@@ -20,7 +20,7 @@ import {
   Properties,
   PrimitiveStatement,
   Statement,
-  TestCaseDecoder,
+  Decoder,
 } from "@syntest/framework";
 
 import * as path from "path";
@@ -36,7 +36,7 @@ import { SolidityTestCase } from "../testcase/SolidityTestCase";
  * @author Dimitri Stallenberg
  * @author Mitchell Olsthoorn
  */
-export class SolidityTruffleStringifier implements TestCaseDecoder {
+export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
   private imports: Map<string, string>;
   private contractDependencies: Map<string, string[]>;
 

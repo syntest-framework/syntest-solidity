@@ -22,11 +22,11 @@ import { AddressStatement } from "../AddressStatement";
 import {
   Statement,
   ActionStatement,
-  TestCaseSampler,
   prng,
   Properties,
   Parameter,
 } from "@syntest/framework";
+import {SoliditySampler} from "../../sampling/SoliditySampler";
 
 /**
  * @author Dimitri Stallenberg
@@ -59,7 +59,7 @@ export class ObjectFunctionCall extends ActionStatement {
     this._sender = sender;
   }
 
-  mutate(sampler: TestCaseSampler, depth: number): ObjectFunctionCall {
+  mutate(sampler: SoliditySampler, depth: number): ObjectFunctionCall {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       // resample the gene
       return <ObjectFunctionCall>(

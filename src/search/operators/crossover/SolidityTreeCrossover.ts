@@ -35,7 +35,7 @@ import { NumericStatement } from "../../../testcase/statements/primitive/Numeric
  * @author Annibale Panichella
  * @author Dimitri Stallenberg
  */
-export class SolidityTreeCrossover implements Crossover {
+export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
   public crossOver(
     parentA: SolidityTestCase,
     parentB: SolidityTestCase

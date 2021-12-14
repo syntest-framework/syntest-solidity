@@ -19,11 +19,11 @@
 import {
   Statement,
   ActionStatement,
-  TestCaseSampler,
   prng,
   Properties,
   Parameter,
 } from "@syntest/framework";
+import {SoliditySampler} from "../../sampling/SoliditySampler";
 
 /**
  * @author Dimitri Stallenberg
@@ -52,7 +52,7 @@ export class FunctionCall extends ActionStatement {
     this._functionName = functionName;
   }
 
-  mutate(sampler: TestCaseSampler, depth: number) {
+  mutate(sampler: SoliditySampler, depth: number) {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       // resample the gene
       return sampler.sampleStatement(depth, this.types, "functionCall");

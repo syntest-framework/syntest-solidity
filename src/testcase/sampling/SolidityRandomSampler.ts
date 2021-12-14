@@ -17,7 +17,6 @@
  */
 
 import {
-  AbstractTestCase,
   ActionStatement,
   FunctionDescription,
   Parameter,
@@ -50,7 +49,7 @@ export class SolidityRandomSampler extends SoliditySampler {
   /**
    * Constructor
    */
-  constructor(subject: SoliditySubject<AbstractTestCase>) {
+  constructor(subject: SoliditySubject) {
     super(subject);
   }
 
@@ -101,7 +100,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     const constructors = this._subject.getPossibleActions("constructor");
     if (constructors.length > 0) {
       const action = <FunctionDescription>(
-        prng.pickOne(this._subject.getPossibleActions("constructor"))
+        prng.pickOne(constructors)
       );
 
       const args: Statement[] = [];

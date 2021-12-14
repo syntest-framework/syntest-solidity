@@ -20,10 +20,10 @@ import {
   Properties,
   PrimitiveStatement,
   prng,
-  TestCaseSampler,
   Parameter,
 } from "@syntest/framework";
 import { ConstantPool } from "../../seeding/constant/ConstantPool";
+import {SoliditySampler} from "../sampling/SoliditySampler";
 
 /**
  * Special statement specific to solidity contracts
@@ -42,7 +42,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
     this._account = account;
   }
 
-  mutate(sampler: TestCaseSampler, depth: number): AddressStatement {
+  mutate(sampler: SoliditySampler, depth: number): AddressStatement {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       return <AddressStatement>(
         sampler.sampleStatement(depth, this.types, "primitive")

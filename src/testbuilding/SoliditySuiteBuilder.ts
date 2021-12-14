@@ -18,30 +18,56 @@
 
 import {
   Properties,
-  TestCaseDecoder,
-  SuiteBuilder,
   Archive,
   getUserInterface,
 } from "@syntest/framework";
 
-import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
+import {readdirSync, readFileSync, rmdirSync, unlinkSync, writeFileSync} from "fs";
 import * as path from "path";
 import { getTestFilePaths } from "../util/fileSystem";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
+import {SolidityDecoder} from "./SolidityDecoder";
 
 /**
  * @author Dimitri Stallenberg
  */
-export class SoliditySuiteBuilder extends SuiteBuilder {
+export class SoliditySuiteBuilder {
+  private decoder: SolidityDecoder
   private api: any;
   private truffle: any;
   private readonly config: any;
 
-  constructor(decoder: TestCaseDecoder, api: any, truffle: any, config: any) {
-    super(decoder);
+  constructor(decoder: SolidityDecoder, api: any, truffle: any, config: any) {
+    this.decoder = decoder
     this.api = api;
     this.truffle = truffle;
     this.config = config;
+  }
+
+  /**
+   * Deletes a certain file.
+   *
+   * @param filepath  the filepath of the file to delete
+   */
+  async deleteTestCase(filepath: string) {
+    try {
+      await unlinkSync(filepath);
+    } catch (error) {
+      getUserInterface().debug(error);
+    }
+  }
+
+  /**
+   * Removes all files that match the given regex within a certain directory
+   * @param dirPath   the directory to clear
+   * @param match     the regex to which the files must match
+   */
+  async clearDirectory(dirPath: string, match = /.*\.(js)/g) {
+    const dirContent = await readdirSync(dirPath);
+
+    for (const file of dirContent.filter((el: string) => el.match(match))) {
+      await unlinkSync(path.resolve(dirPath, file));
+    }
   }
 
   async writeTestCase(
