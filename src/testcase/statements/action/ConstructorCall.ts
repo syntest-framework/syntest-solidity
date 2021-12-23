@@ -16,15 +16,14 @@
  * limitations under the License.
  */
 
-import { SolidityTestCase } from "../../SolidityTestCase";
-import { AddressStatement } from "../AddressStatement";
+import { AddressStatement } from "../primitive/AddressStatement";
 import {
-  Statement,
-  ActionStatement,
   prng,
   Parameter,
 } from "@syntest/framework";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
+import {ActionStatement} from "./ActionStatement";
+import {Statement} from "../Statement";
 
 /**
  * @author Dimitri Stallenberg

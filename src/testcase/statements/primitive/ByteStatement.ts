@@ -18,11 +18,11 @@
 
 import {
   Properties,
-  PrimitiveStatement,
   prng,
   Parameter,
 } from "@syntest/framework";
-import { SoliditySampler } from "../sampling/SoliditySampler";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
+import {PrimitiveStatement} from "./PrimitiveStatement";
 
 /**
  * Special statement specific to solidity contracts

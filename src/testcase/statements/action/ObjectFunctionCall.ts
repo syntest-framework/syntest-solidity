@@ -17,17 +17,16 @@
  */
 
 import { ConstructorCall } from "./ConstructorCall";
-import { AddressStatement } from "../AddressStatement";
+import { AddressStatement } from "../primitive/AddressStatement";
 
 import {
-  Statement,
-  ActionStatement,
   prng,
   Properties,
   Parameter,
 } from "@syntest/framework";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
-
+import {ActionStatement} from "./ActionStatement";
+import {Statement} from "../Statement";
 /**
  * @author Dimitri Stallenberg
  */

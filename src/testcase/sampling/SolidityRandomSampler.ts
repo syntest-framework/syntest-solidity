@@ -17,18 +17,16 @@
  */
 
 import {
-  ActionStatement,
   FunctionDescription,
   Parameter,
   prng,
   Properties,
-  Statement,
 } from "@syntest/framework";
 
 import { SoliditySampler } from "./SoliditySampler";
-import { AddressStatement } from "../statements/AddressStatement";
+import { AddressStatement } from "../statements/primitive/AddressStatement";
 import BigNumber from "bignumber.js";
-import { ByteStatement } from "../statements/ByteStatement";
+import { ByteStatement } from "../statements/primitive/ByteStatement";
 import {
   SolidityParameter,
   SoliditySubject,
@@ -39,6 +37,8 @@ import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
 import { NumericStatement } from "../statements/primitive/NumericStatement";
 import { BoolStatement } from "../statements/primitive/BoolStatement";
 import { StringStatement } from "../statements/primitive/StringStatement";
+import {Statement} from "../statements/Statement";
+import {ActionStatement} from "../statements/action/ActionStatement";
 
 /**
  * SolidityRandomSampler class

@@ -18,19 +18,19 @@
 
 import {
   Properties,
-  PrimitiveStatement,
-  Statement,
   Decoder,
 } from "@syntest/framework";
 
 import * as path from "path";
 import * as web3_utils from "web3-utils";
-import { ByteStatement } from "../testcase/statements/ByteStatement";
-import { AddressStatement } from "../testcase/statements/AddressStatement";
+import { ByteStatement } from "../testcase/statements/primitive/ByteStatement";
+import { AddressStatement } from "../testcase/statements/primitive/AddressStatement";
 import { ConstructorCall } from "../testcase/statements/action/ConstructorCall";
 import { StringStatement } from "../testcase/statements/primitive/StringStatement";
 import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunctionCall";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
+import {Statement} from "../testcase/statements/Statement";
+import {PrimitiveStatement} from "../testcase/statements/primitive/PrimitiveStatement";
 
 /**
  * @author Dimitri Stallenberg

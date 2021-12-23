@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-import { prng, Statement, Crossover, Properties } from "@syntest/framework";
+import { prng, Crossover, Properties } from "@syntest/framework";
 
 import { SolidityTestCase } from "../../../testcase/SolidityTestCase";
 import { ConstructorCall } from "../../../testcase/statements/action/ConstructorCall";
 import { NumericStatement } from "../../../testcase/statements/primitive/NumericStatement";
+import {Statement} from "../../../testcase/statements/Statement";
 
 /**
  * Creates 2 children which are each other's complement with respect to their parents.
@@ -94,8 +95,9 @@ export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
       donorTree.parent.setChild(donorTree.childIndex, pair.child.copy());
     }
 
-    rootA.args = [...parentA.root.args];
-    rootB.args = [...parentB.root.args];
+    // TODO i think those are not necceasry
+    // rootA.args = [...parentA.root.args];
+    // rootB.args = [...parentB.root.args];
     return [
       new SolidityTestCase(rootA as ConstructorCall),
       new SolidityTestCase(rootB as ConstructorCall),

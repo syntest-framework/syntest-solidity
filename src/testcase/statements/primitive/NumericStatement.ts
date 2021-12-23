@@ -17,7 +17,6 @@
  */
 
 import {
-  PrimitiveStatement,
   prng,
   Properties,
   Parameter,
@@ -26,6 +25,7 @@ import {
 import BigNumber from "bignumber.js";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
+import {PrimitiveStatement} from "./PrimitiveStatement";
 
 /**
  * Generic number class

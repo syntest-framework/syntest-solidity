@@ -17,7 +17,6 @@
  */
 
 import {
-  Statement,
   SearchSubject,
   Parameter,
   EncodingSampler,
@@ -26,6 +25,7 @@ import {
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
 import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
+import {Statement} from "../statements/Statement";
 
 /**
  * SolidityRandomSampler class
@@ -54,5 +54,19 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
     depth: number,
     type: Parameter,
     bits: number
+  ): Statement;
+
+  /**
+   * Should sample any statement based on the type.
+   *
+   * @param depth      the current depth of the statement tree
+   * @param types      the return types of the statement to sample
+   * @param geneType   the type of the statement
+   * @return Statement a sampled statement
+   */
+  abstract sampleStatement(
+      depth: number,
+      types: Parameter[],
+      geneType: string
   ): Statement;
 }

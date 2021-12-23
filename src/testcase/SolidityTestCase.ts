@@ -64,12 +64,7 @@ export class SolidityTestCase extends Encoding {
   }
 
   copy(): SolidityTestCase {
-    const copy = this.root.copy() as ConstructorCall;
-    for (let index = 0; index < this.root.getChildren().length; index++) {
-      copy.setChild(index, this.root.getChildren()[index].copy());
-    }
-
-    return new SolidityTestCase(copy);
+    return new SolidityTestCase(this.root.copy());
   }
 
   getLength(): number {

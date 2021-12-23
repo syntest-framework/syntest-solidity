@@ -17,14 +17,12 @@
  */
 
 import {
-  PrimitiveStatement,
   prng,
   Properties,
   Parameter,
-  EncodingSampler,
 } from "@syntest/framework";
-import { Encoding } from "crypto";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
+import {PrimitiveStatement} from "./PrimitiveStatement";
 
 /**
  * @author Dimitri Stallenberg

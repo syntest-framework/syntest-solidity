@@ -17,13 +17,13 @@
  */
 
 import {
-  PrimitiveStatement,
   prng,
   Properties,
   Parameter,
 } from "@syntest/framework";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
+import {PrimitiveStatement} from "./PrimitiveStatement";
 
 /**
  * @author Dimitri Stallenberg

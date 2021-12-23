@@ -25,7 +25,7 @@ export * from "./testcase/sampling/SoliditySampler";
 export * from "./testbuilding/SoliditySuiteBuilder";
 export * from "./testbuilding/SolidityDecoder";
 
-export * from "./testcase/statements/AddressStatement";
+export * from "./testcase/statements/primitive/AddressStatement";
 
 export * from "./graph/SolidityCFGFactory";
 

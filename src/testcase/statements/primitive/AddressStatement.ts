@@ -18,12 +18,12 @@
 
 import {
   Properties,
-  PrimitiveStatement,
   prng,
   Parameter,
 } from "@syntest/framework";
-import { ConstantPool } from "../../seeding/constant/ConstantPool";
-import { SoliditySampler } from "../sampling/SoliditySampler";
+import { ConstantPool } from "../../../seeding/constant/ConstantPool";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
+import {PrimitiveStatement} from "./PrimitiveStatement";
 
 /**
  * Special statement specific to solidity contracts
