@@ -59,71 +59,76 @@ export class ConstructorCall extends ActionStatement {
   }
 
   mutate(sampler: SoliditySampler, depth: number) {
-    if (this.args.length > 0) {
-      const args = [...this.args.map((a: Statement) => a.copy())];
+
+    const args = [...this.args.map((a: Statement) => a.copy())];
+
+    if (args.length > 0) {
       const index = prng.nextInt(0, args.length - 1);
       if (args[index] !== undefined)
         args[index] = args[index].mutate(sampler, depth + 1);
     }
 
+    let calls = [...this.calls.map((a: ActionStatement) => a.copy())];
+
     let changed = false;
     if (
-      prng.nextDouble(0, 1) <= 1.0 / 3.0 &&
-      this.getMethodCalls().length > 1
+      prng.nextBoolean(1.0 / 3.0) &&
+      calls.length > 1
     ) {
-      this.deleteMethodCall();
+      calls = this.deleteMethodCall(calls);
       changed = true;
     }
-    if (prng.nextDouble(0, 1) <= 1.0 / 3.0) {
-      this.replaceMethodCall(sampler, depth);
+    if (prng.nextBoolean(1.0 / 3.0)) {
+      calls = this.replaceMethodCall(sampler, depth, calls);
       changed = true;
     }
-    if (prng.nextDouble(0, 1) <= 1.0 / 3.0) {
-      this.addMethodCall(sampler, depth);
+    if (prng.nextBoolean(1.0 / 3.0)) {
+      calls = this.addMethodCall(sampler, depth, calls);
       changed = true;
     }
 
-    if (!this.hasMethodCalls()) {
-      this.addMethodCall(sampler, depth);
+    if (!this.calls.length) {
+      calls = this.addMethodCall(sampler, depth, calls);
       changed = true;
     }
 
     if (!changed) {
-      this.replaceMethodCall(sampler, depth);
-      this.addMethodCall(sampler, depth);
+      calls = this.replaceMethodCall(sampler, depth, calls);
+      calls = this.addMethodCall(sampler, depth, calls);
     }
 
-    return this;
+    return new ConstructorCall(this.types, this.id, this.constructorName, args, calls, this.sender.copy());
   }
 
-  protected addMethodCall(sampler: SoliditySampler, depth: number) {
+  protected addMethodCall(sampler: SoliditySampler, depth: number, calls: ActionStatement[]): ActionStatement[] {
     let count = 0;
     while (prng.nextDouble(0, 1) <= Math.pow(0.5, count) && count < 10) {
-      const index = prng.nextInt(0, this._calls.length);
+      const index = prng.nextInt(0, calls.length);
 
-      this._calls.splice(
+      calls.splice(
         index,
         0,
         sampler.sampleObjectFunctionCall(depth + 1, this)
       );
       count++;
     }
+    return calls
   }
 
-  protected replaceMethodCall(sampler: SoliditySampler, depth: number) {
-    if (this.hasMethodCalls()) {
-      const calls = this.getMethodCalls();
+  protected replaceMethodCall(sampler: SoliditySampler, depth: number, calls: ActionStatement[]): ActionStatement[] {
+    if (calls.length) {
       const index = prng.nextInt(0, calls.length - 1);
-      this.setMethodCall(index, calls[index].mutate(sampler, depth));
+      calls[index] = calls[index].mutate(sampler, depth + 1)
     }
+    return calls
   }
 
-  protected deleteMethodCall() {
-    if (this.hasMethodCalls()) {
-      const calls = this.getMethodCalls();
+  protected deleteMethodCall(calls: ActionStatement[]): ActionStatement[] {
+    if (calls.length) {
       const index = prng.nextInt(0, calls.length - 1);
-      this._calls.splice(index, 1);
+      calls.splice(index, 1);
     }
+    return calls
   }
 
   copy() {
@@ -141,23 +146,17 @@ export class ConstructorCall extends ActionStatement {
     );
   }
 
-  getMethodCalls(): ActionStatement[] {
-    return [...this._calls];
+
+  get calls(): ActionStatement[] {
+    return this._calls;
   }
 
-  setMethodCall(index: number, call: ActionStatement) {
-    this._calls[index] = call;
+  // TODO remove this
+  addCall(call: ActionStatement) {
+    this._calls.push(call)
   }
 
-  hasMethodCalls(): boolean {
-    return this._calls.length > 0;
-  }
-
-  setSender(sender: AddressStatement) {
-    this._sender = sender;
-  }
-
-  getSender(): AddressStatement {
+  get sender(): AddressStatement {
     return this._sender;
   }
 }

@@ -121,7 +121,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       const nCalls = prng.nextInt(1, 5);
       for (let index = 0; index <= nCalls; index++) {
         const call = this.sampleObjectFunctionCall(1, root);
-        root.setMethodCall(index, call as ActionStatement);
+        root.addCall(call as ActionStatement);
       }
 
       // constructors do not have return parameters...
@@ -140,7 +140,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       const nCalls = prng.nextInt(1, 5);
       for (let index = 0; index <= nCalls; index++) {
         const call = this.sampleObjectFunctionCall(1, root);
-        root.setMethodCall(index, call as ActionStatement);
+        root.addCall(call as ActionStatement);
       }
 
       return root;

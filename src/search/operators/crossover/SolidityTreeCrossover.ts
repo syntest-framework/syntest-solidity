@@ -48,13 +48,13 @@ export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
 
     for (
       let i = 0;
-      i < (rootA as ConstructorCall).getMethodCalls().length;
+      i < (rootA as ConstructorCall).calls.length;
       i++
     ) {
       queueA.push({
         parent: rootA,
         childIndex: i,
-        child: (rootA as ConstructorCall).getMethodCalls()[i],
+        child: (rootA as ConstructorCall).calls[i],
       });
     }
 

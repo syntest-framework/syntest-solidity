@@ -61,7 +61,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
-    const sender = (statement as ConstructorCall).getSender().getValue();
+    const sender = (statement as ConstructorCall).sender.getValue();
     const senderString =
       formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
     return (
@@ -88,7 +88,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
-    const sender = (statement as ConstructorCall).getSender().getValue();
+    const sender = (statement as ConstructorCall).sender.getValue();
     const senderString =
       formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
@@ -205,7 +205,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       const current: Statement = queue.splice(0, 1)[0];
 
       if (current instanceof ConstructorCall) {
-        for (const call of current.getMethodCalls()) {
+        for (const call of current.calls) {
           queue.push(call);
         }
       } else {

@@ -68,7 +68,7 @@ export class SolidityTestCase extends Encoding {
   }
 
   getLength(): number {
-    return (this.root as ConstructorCall).getMethodCalls().length;
+    return (this.root as ConstructorCall).calls.length;
   }
 
   get root(): ConstructorCall {
