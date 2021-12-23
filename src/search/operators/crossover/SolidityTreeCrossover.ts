@@ -21,7 +21,7 @@ import { prng, Crossover, Properties } from "@syntest/framework";
 import { SolidityTestCase } from "../../../testcase/SolidityTestCase";
 import { ConstructorCall } from "../../../testcase/statements/action/ConstructorCall";
 import { NumericStatement } from "../../../testcase/statements/primitive/NumericStatement";
-import {Statement} from "../../../testcase/statements/Statement";
+import { Statement } from "../../../testcase/statements/Statement";
 
 /**
  * Creates 2 children which are each other's complement with respect to their parents.

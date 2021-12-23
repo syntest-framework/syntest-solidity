@@ -16,14 +16,10 @@
  * limitations under the License.
  */
 
-import {
-  Properties,
-  prng,
-  Parameter,
-} from "@syntest/framework";
+import { Properties, prng, Parameter } from "@syntest/framework";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
-import {PrimitiveStatement} from "./PrimitiveStatement";
+import { PrimitiveStatement } from "./PrimitiveStatement";
 
 /**
  * Special statement specific to solidity contracts

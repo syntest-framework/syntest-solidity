@@ -16,16 +16,12 @@
  * limitations under the License.
  */
 
-import {
-  SearchSubject,
-  Parameter,
-  EncodingSampler,
-} from "@syntest/framework";
+import { SearchSubject, Parameter, EncodingSampler } from "@syntest/framework";
 
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
 import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
-import {Statement} from "../statements/Statement";
+import { Statement } from "../statements/Statement";
 
 /**
  * SolidityRandomSampler class
@@ -65,8 +61,8 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
    * @return Statement a sampled statement
    */
   abstract sampleStatement(
-      depth: number,
-      types: Parameter[],
-      geneType: string
+    depth: number,
+    types: Parameter[],
+    geneType: string
   ): Statement;
 }

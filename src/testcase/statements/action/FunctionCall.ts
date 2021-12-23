@@ -16,14 +16,10 @@
  * limitations under the License.
  */
 
-import {
-  prng,
-  Properties,
-  Parameter,
-} from "@syntest/framework";
+import { prng, Properties, Parameter } from "@syntest/framework";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
-import {ActionStatement} from "./ActionStatement";
-import {Statement} from "../Statement";
+import { ActionStatement } from "./ActionStatement";
+import { Statement } from "../Statement";
 
 /**
  * @author Dimitri Stallenberg

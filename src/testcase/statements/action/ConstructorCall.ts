@@ -17,13 +17,10 @@
  */
 
 import { AddressStatement } from "../primitive/AddressStatement";
-import {
-  prng,
-  Parameter,
-} from "@syntest/framework";
+import { prng, Parameter } from "@syntest/framework";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
-import {ActionStatement} from "./ActionStatement";
-import {Statement} from "../Statement";
+import { ActionStatement } from "./ActionStatement";
+import { Statement } from "../Statement";
 
 /**
  * @author Dimitri Stallenberg

@@ -37,8 +37,8 @@ import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
 import { NumericStatement } from "../statements/primitive/NumericStatement";
 import { BoolStatement } from "../statements/primitive/BoolStatement";
 import { StringStatement } from "../statements/primitive/StringStatement";
-import {Statement} from "../statements/Statement";
-import {ActionStatement} from "../statements/action/ActionStatement";
+import { Statement } from "../statements/Statement";
+import { ActionStatement } from "../statements/action/ActionStatement";
 
 /**
  * SolidityRandomSampler class

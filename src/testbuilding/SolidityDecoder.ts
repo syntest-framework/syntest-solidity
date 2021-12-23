@@ -16,10 +16,7 @@
  * limitations under the License.
  */
 
-import {
-  Properties,
-  Decoder,
-} from "@syntest/framework";
+import { Properties, Decoder } from "@syntest/framework";
 
 import * as path from "path";
 import * as web3_utils from "web3-utils";
@@ -29,8 +26,8 @@ import { ConstructorCall } from "../testcase/statements/action/ConstructorCall";
 import { StringStatement } from "../testcase/statements/primitive/StringStatement";
 import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunctionCall";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
-import {Statement} from "../testcase/statements/Statement";
-import {PrimitiveStatement} from "../testcase/statements/primitive/PrimitiveStatement";
+import { Statement } from "../testcase/statements/Statement";
+import { PrimitiveStatement } from "../testcase/statements/primitive/PrimitiveStatement";
 
 /**
  * @author Dimitri Stallenberg
