@@ -59,7 +59,6 @@ export class ConstructorCall extends ActionStatement {
   }
 
   mutate(sampler: SoliditySampler, depth: number) {
-
     const args = [...this.args.map((a: Statement) => a.copy())];
 
     if (args.length > 0) {
@@ -71,10 +70,7 @@ export class ConstructorCall extends ActionStatement {
     let calls = [...this.calls.map((a: ActionStatement) => a.copy())];
 
     let changed = false;
-    if (
-      prng.nextBoolean(1.0 / 3.0) &&
-      calls.length > 1
-    ) {
+    if (prng.nextBoolean(1.0 / 3.0) && calls.length > 1) {
       calls = this.deleteMethodCall(calls);
       changed = true;
     }
@@ -97,30 +93,41 @@ export class ConstructorCall extends ActionStatement {
       calls = this.addMethodCall(sampler, depth, calls);
     }
 
-    return new ConstructorCall(this.types, this.id, this.constructorName, args, calls, this.sender.copy());
+    return new ConstructorCall(
+      this.types,
+      this.id,
+      this.constructorName,
+      args,
+      calls,
+      this.sender.copy()
+    );
   }
 
-  protected addMethodCall(sampler: SoliditySampler, depth: number, calls: ActionStatement[]): ActionStatement[] {
+  protected addMethodCall(
+    sampler: SoliditySampler,
+    depth: number,
+    calls: ActionStatement[]
+  ): ActionStatement[] {
     let count = 0;
     while (prng.nextDouble(0, 1) <= Math.pow(0.5, count) && count < 10) {
       const index = prng.nextInt(0, calls.length);
 
-      calls.splice(
-        index,
-        0,
-        sampler.sampleObjectFunctionCall(depth + 1, this)
-      );
+      calls.splice(index, 0, sampler.sampleObjectFunctionCall(depth + 1, this));
       count++;
     }
-    return calls
+    return calls;
   }
 
-  protected replaceMethodCall(sampler: SoliditySampler, depth: number, calls: ActionStatement[]): ActionStatement[] {
+  protected replaceMethodCall(
+    sampler: SoliditySampler,
+    depth: number,
+    calls: ActionStatement[]
+  ): ActionStatement[] {
     if (calls.length) {
       const index = prng.nextInt(0, calls.length - 1);
-      calls[index] = calls[index].mutate(sampler, depth + 1)
+      calls[index] = calls[index].mutate(sampler, depth + 1);
     }
-    return calls
+    return calls;
   }
 
   protected deleteMethodCall(calls: ActionStatement[]): ActionStatement[] {
@@ -128,7 +135,7 @@ export class ConstructorCall extends ActionStatement {
       const index = prng.nextInt(0, calls.length - 1);
       calls.splice(index, 1);
     }
-    return calls
+    return calls;
   }
 
   copy() {
@@ -146,14 +153,13 @@ export class ConstructorCall extends ActionStatement {
     );
   }
 
-
   get calls(): ActionStatement[] {
     return this._calls;
   }
 
   // TODO remove this
   addCall(call: ActionStatement) {
-    this._calls.push(call)
+    this._calls.push(call);
   }
 
   get sender(): AddressStatement {
