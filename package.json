@@ -52,7 +52,7 @@
     "@syntest/framework": "file:../syntest-framework",
     "@truffle/config": "^1.2.44",
     "@truffle/provider": "^0.1.17",
-    "bignumber.js": "^9.0.1",
+    "bignumber.js": "9.0.1",
     "chalk": "^2.4.2",
     "clear": "^0.1.0",
     "detect-port": "^1.3.0",
