@@ -31,7 +31,7 @@ import { ConstructorCall } from "../testcase/statements/action/ConstructorCall";
 import { StringStatement } from "../testcase/statements/primitive/StringStatement";
 import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunctionCall";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
-import {Target} from "@syntest/framework";
+import { Target } from "@syntest/framework";
 
 /**
  * @author Dimitri Stallenberg
@@ -242,9 +242,9 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
         const importString: string = this.getImport(dependency.targetName);
 
         // Create link
-        linkings.push(`\t\tconst lib${count} = await ${dependency}.new();`);
+        linkings.push(`\t\tconst lib${count} = await ${dependency.targetName}.new();`);
         linkings.push(
-          `\t\tawait ${contract}.link('${dependency}', lib${count}.address);`
+          `\t\tawait ${contract}.link('${dependency.targetName}', lib${count}.address);`
         );
 
         if (imports.includes(importString) || importString.length === 0) {

@@ -88,7 +88,7 @@ import {
   collectInitialVariables,
   collectStatistics,
 } from "./util/collection";
-import {Target} from "@syntest/framework";
+import { Target } from "@syntest/framework";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
@@ -259,9 +259,7 @@ export class SolidityLauncher {
 
     targetPool.targets.forEach((target) =>
       names.push(
-        `${path.basename(
-          target.canonicalPath
-        )} -> ${target.targetName}`
+        `${path.basename(target.canonicalPath)} -> ${target.targetName}`
       )
     );
     getUserInterface().report("targets", names);
@@ -316,18 +314,18 @@ export class SolidityLauncher {
   ): Promise<
     [Archive<SolidityTestCase>, Map<string, string>, Map<string, Target[]>]
   > {
-    const targetPaths = new Set<string>()
+    const targetPaths = new Set<string>();
 
     for (const target of targetPool.targets) {
-      targetPaths.add(target.canonicalPath)
+      targetPaths.add(target.canonicalPath);
 
       const [importsMap, dependencyMap] = targetPool.getImportDependencies(
-          target.canonicalPath,
-          target.targetName
+        target.canonicalPath,
+        target.targetName
       );
 
       for (const dependency of dependencyMap.get(target.targetName)) {
-        targetPaths.add(dependency.canonicalPath)
+        targetPaths.add(dependency.canonicalPath);
       }
     }
 
@@ -335,7 +333,12 @@ export class SolidityLauncher {
     const instrumented = this.api.instrument(targetPool, targetPaths);
 
     for (const instrumentedTarget of instrumented) {
-      const _path = path.normalize(instrumentedTarget.canonicalPath).replace(this.config.contracts_directory, Properties.temp_instrumented_directory);
+      const _path = path
+        .normalize(instrumentedTarget.canonicalPath)
+        .replace(
+          this.config.contracts_directory,
+          Properties.temp_instrumented_directory
+        );
       await outputFileSync(_path, instrumentedTarget.source);
     }
 
@@ -445,7 +448,7 @@ export class SolidityLauncher {
         cfg,
         path.join(
           Properties.cfg_directory,
-          `${path.basename(targetPath, '.sol')}.svg`
+          `${path.basename(targetPath, ".sol")}.svg`
         )
       );
     }

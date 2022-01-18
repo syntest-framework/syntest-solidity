@@ -28,7 +28,7 @@ import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
 import { LibraryVisitor } from "./dependency/LibraryVisitor";
 import { TargetPool } from "@syntest/framework";
-import {Target} from "@syntest/framework";
+import { Target } from "@syntest/framework";
 const SolidityParser = require("@solidity-parser/parser");
 
 /**
@@ -221,12 +221,14 @@ export class SolidityTargetPool extends TargetPool {
 
         // Import the found libraries
         // TODO: check for duplicates in libraries
-        libraries.push(...libraryVisitor.libraries.map((l) => {
-          return {
-            canonicalPath: pathLib,
-            targetName: l
-          }
-        }));
+        libraries.push(
+          ...libraryVisitor.libraries.map((l) => {
+            return {
+              canonicalPath: pathLib,
+              targetName: l,
+            };
+          })
+        );
       });
 
       // Return the library dependency information

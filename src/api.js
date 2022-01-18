@@ -76,8 +76,8 @@ class API {
     let outputs = [];
     for (let _path of targetPaths) {
       const instrumented = this.instrumenter.instrument(
-          targetPool.getSource(_path),
-          _path
+        targetPool.getSource(_path),
+        _path
       );
       this.coverage.addContract(instrumented, _path);
 
