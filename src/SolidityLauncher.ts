@@ -51,7 +51,6 @@ import {
   getSeed,
   clearDirectory,
   createTempDirectoryStructure,
-  saveTempFiles,
 } from "@syntest/framework";
 
 import * as path from "path";
@@ -89,9 +88,11 @@ import {
   collectInitialVariables,
   collectStatistics,
 } from "./util/collection";
+import {Target} from "@syntest/framework";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
+const { outputFileSync } = require("fs-extra");
 
 export class SolidityLauncher {
   private readonly _program = "syntest-solidity";
@@ -313,22 +314,30 @@ export class SolidityLauncher {
   async search(
     targetPool: SolidityTargetPool
   ): Promise<
-    [Archive<SolidityTestCase>, Map<string, string>, Map<string, string[]>]
+    [Archive<SolidityTestCase>, Map<string, string>, Map<string, Target[]>]
   > {
-    // Instrument
-    const instrumented = this.api.instrument(targetPool.targetFiles);
+    const targetPaths = new Set<string>()
 
-    await saveTempFiles(
-      instrumented,
-      this.config.contracts_directory,
-      Properties.temp_instrumented_directory
-    );
-    // // TODO remove
-    // await saveTempFiles(
-    //   targetPool.excluded,
-    //   this.config.contracts_directory,
-    //   Properties.temp_instrumented_directory
-    // );
+    for (const target of targetPool.targets) {
+      targetPaths.add(target.canonicalPath)
+
+      const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+          target.canonicalPath,
+          target.targetName
+      );
+
+      for (const dependency of dependencyMap.get(target.targetName)) {
+        targetPaths.add(dependency.canonicalPath)
+      }
+    }
+
+    // Instrument
+    const instrumented = this.api.instrument(targetPool, targetPaths);
+
+    for (const instrumentedTarget of instrumented) {
+      const _path = path.normalize(instrumentedTarget.canonicalPath).replace(this.config.contracts_directory, Properties.temp_instrumented_directory);
+      await outputFileSync(_path, instrumentedTarget.source);
+    }
 
     this.config.contracts_directory = Properties.temp_instrumented_directory;
     this.config.build_directory = this.tempArtifactsDir;
@@ -349,7 +358,7 @@ export class SolidityLauncher {
 
     const finalArchive = new Archive<SolidityTestCase>();
     let finalImportsMap: Map<string, string> = new Map();
-    let finalDependencies: Map<string, string[]> = new Map();
+    let finalDependencies: Map<string, Target[]> = new Map();
 
     for (const target of targetPool.targets) {
       const archive = await this.testTarget(
@@ -380,7 +389,7 @@ export class SolidityLauncher {
   async finalize(
     finalArchive: Archive<SolidityTestCase>,
     finalImportsMap: Map<string, string>,
-    finalDependencies: Map<string, string[]>
+    finalDependencies: Map<string, Target[]>
   ): Promise<void> {
     const testDir = path.resolve(Properties.final_suite_directory);
     await clearDirectory(testDir);

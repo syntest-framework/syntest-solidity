@@ -32,7 +32,7 @@ import { Graph } from "./Graph";
  *
  * @author Mitchell Olsthoorn
  */
-export class Target {
+export class SolidityTarget {
   protected readonly _path: string;
   protected readonly _name: string;
 
@@ -85,7 +85,7 @@ export class Target {
     targetPool: SolidityTargetPool,
     targetPath: string,
     targetName: string
-  ): Target {
+  ): SolidityTarget {
     const absoluteTargetPath = path.resolve(targetPath);
 
     // Get source, AST, FunctionMap, and CFG for target under test
@@ -134,7 +134,7 @@ export class Target {
       targetName
     );
 
-    return new Target(
+    return new SolidityTarget(
       absoluteTargetPath,
       targetName,
       sources,
