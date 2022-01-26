@@ -239,7 +239,9 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
         const importString: string = this.getImport(dependency.targetName);
 
         // Create link
-        linkings.push(`\t\tconst lib${count} = await ${dependency.targetName}.new();`);
+        linkings.push(
+          `\t\tconst lib${count} = await ${dependency.targetName}.new();`
+        );
         linkings.push(
           `\t\tawait ${contract}.link('${dependency.targetName}', lib${count}.address);`
         );

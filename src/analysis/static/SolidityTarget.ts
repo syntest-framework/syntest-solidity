@@ -65,7 +65,7 @@ export class SolidityTarget extends Target {
     CFGs: Map<string, any>,
     linkingGraph: Graph<string>
   ) {
-    super()
+    super();
     this._path = path.resolve(targetPath);
     this._name = targetName;
     this._sources = sources;
