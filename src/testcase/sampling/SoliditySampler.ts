@@ -35,6 +35,20 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
     super(subject);
   }
 
+  /**
+   * Should sample any statement based on the type.
+   *
+   * @param depth      the current depth of the statement tree
+   * @param types      the return types of the statement to sample
+   * @param geneType   the type of the statement
+   * @return Statement a sampled statement
+   */
+  abstract sampleStatement(
+      depth: number,
+      types: Parameter[],
+      geneType: string
+  ): Statement;
+
   abstract sampleConstructor(depth: number): ConstructorCall;
   abstract sampleObjectFunctionCall(
     depth: number,
@@ -50,19 +64,5 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
     depth: number,
     type: Parameter,
     bits: number
-  ): Statement;
-
-  /**
-   * Should sample any statement based on the type.
-   *
-   * @param depth      the current depth of the statement tree
-   * @param types      the return types of the statement to sample
-   * @param geneType   the type of the statement
-   * @return Statement a sampled statement
-   */
-  abstract sampleStatement(
-    depth: number,
-    types: Parameter[],
-    geneType: string
   ): Statement;
 }

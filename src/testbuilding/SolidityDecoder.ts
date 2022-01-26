@@ -294,7 +294,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
     return assertions;
   }
 
-  decodeTestCase(
+  decode(
     testCase: SolidityTestCase | SolidityTestCase[],
     targetName: string,
     addLogs = false

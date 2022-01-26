@@ -64,7 +64,7 @@ export class FunctionCall extends ActionStatement {
     }
   }
 
-  copy() {
+  copy(): FunctionCall {
     const deepCopyArgs = [...this.args.map((a: Statement) => a.copy())];
 
     return new FunctionCall(
