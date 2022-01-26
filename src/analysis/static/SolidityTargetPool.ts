@@ -28,6 +28,7 @@ import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
 import { LibraryVisitor } from "./dependency/LibraryVisitor";
 import { TargetPool } from "@syntest/framework";
+import { Target } from "@syntest/framework";
 const SolidityParser = require("@solidity-parser/parser");
 
 /**
@@ -64,7 +65,7 @@ export class SolidityTargetPool extends TargetPool {
   // Mapping: filepath -> target name -> [importsMap, dependencyMap]
   protected _dependencyMaps: Map<
     string,
-    Map<string, [Map<string, string>, Map<string, string[]>]>
+    Map<string, [Map<string, string>, Map<string, Target[]>]>
   >;
 
   constructor(
@@ -175,7 +176,7 @@ export class SolidityTargetPool extends TargetPool {
   getImportDependencies(
     targetPath: string,
     targetName: string
-  ): [Map<string, string>, Map<string, string[]>] {
+  ): [Map<string, string>, Map<string, Target[]>] {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (!this._dependencyMaps.has(absoluteTargetPath))
@@ -193,7 +194,7 @@ export class SolidityTargetPool extends TargetPool {
       SolidityParser.visit(this.getAST(targetPath), importVisitor);
 
       // For each external import scan the file for libraries with public and external functions
-      const libraries: string[] = [];
+      const libraries: Target[] = [];
       importVisitor.getImports().forEach((importPath: string) => {
         // Full path to the imported file
         const pathLib = path.join(path.dirname(targetPath), importPath);
@@ -220,11 +221,18 @@ export class SolidityTargetPool extends TargetPool {
 
         // Import the found libraries
         // TODO: check for duplicates in libraries
-        libraries.push(...libraryVisitor.libraries);
+        libraries.push(
+          ...libraryVisitor.libraries.map((l) => {
+            return {
+              canonicalPath: pathLib,
+              targetName: l,
+            };
+          })
+        );
       });
 
       // Return the library dependency information
-      const dependencyMap = new Map<string, string[]>();
+      const dependencyMap = new Map<string, Target[]>();
       dependencyMap.set(targetName, libraries);
 
       this._dependencyMaps

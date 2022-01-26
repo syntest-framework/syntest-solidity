@@ -28,6 +28,7 @@ import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunction
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
 import { Statement } from "../testcase/statements/Statement";
 import { PrimitiveStatement } from "../testcase/statements/primitive/PrimitiveStatement";
+import { Target } from "@syntest/framework";
 
 /**
  * @author Dimitri Stallenberg
@@ -35,11 +36,11 @@ import { PrimitiveStatement } from "../testcase/statements/primitive/PrimitiveSt
  */
 export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
   private imports: Map<string, string>;
-  private contractDependencies: Map<string, string[]>;
+  private contractDependencies: Map<string, Target[]>;
 
   constructor(
     imports: Map<string, string>,
-    contractDependencies: Map<string, string[]>
+    contractDependencies: Map<string, Target[]>
   ) {
     this.imports = imports;
     this.contractDependencies = contractDependencies;
@@ -235,12 +236,12 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
 
       let count = 0;
       for (const dependency of this.contractDependencies.get(contract)) {
-        const importString: string = this.getImport(dependency);
+        const importString: string = this.getImport(dependency.targetName);
 
         // Create link
-        linkings.push(`\t\tconst lib${count} = await ${dependency}.new();`);
+        linkings.push(`\t\tconst lib${count} = await ${dependency.targetName}.new();`);
         linkings.push(
-          `\t\tawait ${contract}.link('${dependency}', lib${count}.address);`
+          `\t\tawait ${contract}.link('${dependency.targetName}', lib${count}.address);`
         );
 
         if (imports.includes(importString) || importString.length === 0) {

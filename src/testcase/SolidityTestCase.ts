@@ -20,11 +20,9 @@ import {
   getUserInterface,
   Encoding,
   Decoder,
-  EncodingSampler,
 } from "@syntest/framework";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
 import { SoliditySampler } from "./sampling/SoliditySampler";
-import { SolidityDecoder } from "../testbuilding/SolidityDecoder";
 
 /**
  * SolidityTestCase class

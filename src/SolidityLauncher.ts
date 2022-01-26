@@ -46,13 +46,11 @@ import {
   StatisticsSearchListener,
   SummaryWriter,
   TotalTimeBudget,
-  loadTargets,
   setUserInterface,
   getUserInterface,
   getSeed,
   clearDirectory,
   createTempDirectoryStructure,
-  saveTempFiles,
 } from "@syntest/framework";
 
 import * as path from "path";
@@ -90,9 +88,11 @@ import {
   collectInitialVariables,
   collectStatistics,
 } from "./util/collection";
+import { Target } from "@syntest/framework";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
+const { outputFileSync } = require("fs-extra");
 
 export class SolidityLauncher {
   private readonly _program = "syntest-solidity";
@@ -245,9 +245,9 @@ export class SolidityLauncher {
       cfgGenerator
     );
 
-    await loadTargets(targetPool);
+    targetPool.loadTargets();
 
-    if (!targetPool.included.length) {
+    if (!targetPool.targets.length) {
       // Shut server down
       getUserInterface().error(
         `No targets where selected! Try changing the 'include' parameter`
@@ -255,25 +255,14 @@ export class SolidityLauncher {
       await this.exit();
     }
 
-    let names = [];
+    const names = [];
 
-    targetPool.included.forEach((targetFile) =>
+    targetPool.targets.forEach((target) =>
       names.push(
-        `${path.basename(
-          targetFile.canonicalPath
-        )} -> ${targetFile.targets.join(", ")}`
+        `${path.basename(target.canonicalPath)} -> ${target.targetName}`
       )
     );
     getUserInterface().report("targets", names);
-    names = [];
-    targetPool.excluded.forEach((targetFile) =>
-      names.push(
-        `${path.basename(
-          targetFile.canonicalPath
-        )} -> ${targetFile.targets.join(", ")}`
-      )
-    );
-    getUserInterface().report("skip-files", names);
 
     getUserInterface().report("header", ["CONFIGURATION"]);
 
@@ -323,26 +312,35 @@ export class SolidityLauncher {
   async search(
     targetPool: SolidityTargetPool
   ): Promise<
-    [Archive<SolidityTestCase>, Map<string, string>, Map<string, string[]>]
+    [Archive<SolidityTestCase>, Map<string, string>, Map<string, Target[]>]
   > {
-    const excludedSet = new Set(
-      ...targetPool.excluded.map((x) => x.canonicalPath)
-    );
+    const targetPaths = new Set<string>();
+
+    for (const target of targetPool.targets) {
+      targetPaths.add(target.canonicalPath);
+
+      const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+        target.canonicalPath,
+        target.targetName
+      );
+
+      for (const dependency of dependencyMap.get(target.targetName)) {
+        targetPaths.add(dependency.canonicalPath);
+      }
+    }
 
     // Instrument
-    const instrumented = this.api.instrument(targetPool.targetFiles);
+    const instrumented = this.api.instrument(targetPool, targetPaths);
 
-    await saveTempFiles(
-      instrumented,
-      this.config.contracts_directory,
-      Properties.temp_instrumented_directory
-    );
-    // TODO remove
-    await saveTempFiles(
-      targetPool.excluded,
-      this.config.contracts_directory,
-      Properties.temp_instrumented_directory
-    );
+    for (const instrumentedTarget of instrumented) {
+      const _path = path
+        .normalize(instrumentedTarget.canonicalPath)
+        .replace(
+          this.config.contracts_directory,
+          Properties.temp_instrumented_directory
+        );
+      await outputFileSync(_path, instrumentedTarget.source);
+    }
 
     this.config.contracts_directory = Properties.temp_instrumented_directory;
     this.config.build_directory = this.tempArtifactsDir;
@@ -363,55 +361,29 @@ export class SolidityLauncher {
 
     const finalArchive = new Archive<SolidityTestCase>();
     let finalImportsMap: Map<string, string> = new Map();
-    let finalDependencies: Map<string, string[]> = new Map();
+    let finalDependencies: Map<string, Target[]> = new Map();
 
-    for (const targetFile of targetPool.included) {
-      const includedTargets = targetFile.targets;
+    for (const target of targetPool.targets) {
+      const archive = await this.testTarget(
+        targetPool,
+        target.canonicalPath,
+        target.targetName
+      );
+      const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+        target.canonicalPath,
+        target.targetName
+      );
 
-      const targetMap = targetPool.getTargetMap(targetFile.canonicalPath);
-      for (const target of targetMap.keys()) {
-        // check if included
-        if (
-          !includedTargets.includes("*") &&
-          !includedTargets.includes(target)
-        ) {
-          continue;
-        }
+      finalArchive.merge(archive);
 
-        // check if excluded
-        if (excludedSet.has(targetFile.canonicalPath)) {
-          const excludedTargets = targetPool.excluded.find(
-            (x) => x.canonicalPath === targetFile.canonicalPath
-          ).targets;
-          if (
-            excludedTargets.includes("*") ||
-            excludedTargets.includes(target)
-          ) {
-            continue;
-          }
-        }
-
-        const archive = await this.testTarget(
-          targetPool,
-          targetFile.canonicalPath,
-          target
-        );
-        const [importsMap, dependencyMap] = targetPool.getImportDependencies(
-          targetFile.canonicalPath,
-          target
-        );
-
-        finalArchive.merge(archive);
-
-        finalImportsMap = new Map([
-          ...Array.from(finalImportsMap.entries()),
-          ...Array.from(importsMap.entries()),
-        ]);
-        finalDependencies = new Map([
-          ...Array.from(finalDependencies.entries()),
-          ...Array.from(dependencyMap.entries()),
-        ]);
-      }
+      finalImportsMap = new Map([
+        ...Array.from(finalImportsMap.entries()),
+        ...Array.from(importsMap.entries()),
+      ]);
+      finalDependencies = new Map([
+        ...Array.from(finalDependencies.entries()),
+        ...Array.from(dependencyMap.entries()),
+      ]);
     }
 
     return [finalArchive, finalImportsMap, finalDependencies];
@@ -420,7 +392,7 @@ export class SolidityLauncher {
   async finalize(
     finalArchive: Archive<SolidityTestCase>,
     finalImportsMap: Map<string, string>,
-    finalDependencies: Map<string, string[]>
+    finalDependencies: Map<string, Target[]>
   ): Promise<void> {
     const testDir = path.resolve(Properties.final_suite_directory);
     await clearDirectory(testDir);

@@ -68,28 +68,22 @@ class API {
 
   /**
    * Instruments a set of sources to prepare them for running under coverage
-   * @param  {Object[]}  targets (see below)
+   * @param  {TargetPool}  targetPool
+   * @param  {string[]}  targetPaths
    * @return {Object[]}          (see below)
-   * @example of input/output array:
-   * [{
-   *   source:         (required) <solidity-source>,
-   *   canonicalPath:  (required) <absolute path to source file>
-   *   relativePath:   (optional) <rel path to source file for logging>
-   * }]
    */
-  instrument(targets = []) {
+  instrument(targetPool, targetPaths = []) {
     let outputs = [];
-    for (let target of targets) {
+    for (let _path of targetPaths) {
       const instrumented = this.instrumenter.instrument(
-        target.source,
-        target.canonicalPath
+        targetPool.getSource(_path),
+        _path
       );
-      this.coverage.addContract(instrumented, target.canonicalPath);
+      this.coverage.addContract(instrumented, _path);
 
       outputs.push({
-        canonicalPath: target.canonicalPath,
-        relativePath: target.relativePath,
-        actualSource: target.source,
+        canonicalPath: _path,
+        actualSource: targetPool.getSource(_path),
         source: instrumented.contract,
         instrumented: instrumented,
         contracts: [],

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { SearchSubject, CFG, Encoding } from "@syntest/framework";
+import { CFG, Target } from "@syntest/framework";
 
 import { SolidityTargetPool } from "./SolidityTargetPool";
 import * as path from "path";
@@ -24,7 +24,6 @@ import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
 import { TargetContext } from "./dependency/TargetContext";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { Graph } from "./Graph";
-import { SolidityTestCase } from "../../testcase/SolidityTestCase";
 
 /**
  * Target system under test.
@@ -33,7 +32,8 @@ import { SolidityTestCase } from "../../testcase/SolidityTestCase";
  *
  * @author Mitchell Olsthoorn
  */
-export class Target<T extends Encoding> {
+
+export class SolidityTarget extends Target {
   protected readonly _path: string;
   protected readonly _name: string;
 
@@ -53,7 +53,7 @@ export class Target<T extends Encoding> {
 
   protected _linkingGraph: Graph<string>;
 
-  protected _subject: SearchSubject<T>;
+  // protected _subject: SearchSubject<T>;
 
   constructor(
     targetPath: string,
@@ -65,6 +65,7 @@ export class Target<T extends Encoding> {
     CFGs: Map<string, any>,
     linkingGraph: Graph<string>
   ) {
+    super()
     this._path = path.resolve(targetPath);
     this._name = targetName;
     this._sources = sources;
@@ -86,7 +87,7 @@ export class Target<T extends Encoding> {
     targetPool: SolidityTargetPool,
     targetPath: string,
     targetName: string
-  ): Target<SolidityTestCase> {
+  ): SolidityTarget {
     const absoluteTargetPath = path.resolve(targetPath);
 
     // Get source, AST, FunctionMap, and CFG for target under test
@@ -135,7 +136,7 @@ export class Target<T extends Encoding> {
       targetName
     );
 
-    return new Target(
+    return new SolidityTarget(
       absoluteTargetPath,
       targetName,
       sources,
