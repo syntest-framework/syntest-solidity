@@ -78,11 +78,7 @@ export class SoliditySuiteBuilder {
     targetName: string,
     addLogs = false
   ) {
-    const decodedTestCase = this.decoder.decode(
-      testCase,
-      targetName,
-      addLogs
-    );
+    const decodedTestCase = this.decoder.decode(testCase, targetName, addLogs);
     await writeFileSync(filePath, decodedTestCase);
   }
 

@@ -44,9 +44,9 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
    * @return Statement a sampled statement
    */
   abstract sampleStatement(
-      depth: number,
-      types: Parameter[],
-      geneType: string
+    depth: number,
+    types: Parameter[],
+    geneType: string
   ): Statement;
 
   abstract sampleConstructor(depth: number): ConstructorCall;
