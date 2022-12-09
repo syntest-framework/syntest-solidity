@@ -119,12 +119,14 @@ export function collectCoverageData(
   for (const key of archive.getObjectives()) {
     const test = archive.getEncoding(key);
     const result: ExecutionResult = test.getExecutionResult();
+    // TODO this only works if the name of the subject equals the filename
     const contractName = key.getSubject().name.concat(".sol");
 
     result
       .getTraces()
       .filter((element) => element.type.includes(objectiveType))
       .filter((element) => {
+        // TODO should be path instead of contractPath
         const paths = (element as any).contractPath.split("/");
         return paths[paths.length - 1].includes(contractName);
       })
