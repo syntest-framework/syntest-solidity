@@ -19,10 +19,11 @@
 import { ConstructorCall } from "./ConstructorCall";
 import { AddressStatement } from "../primitive/AddressStatement";
 
-import { prng, Properties, Parameter } from "@syntest/framework";
+import { prng, Properties } from "@syntest/framework";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { ActionStatement } from "./ActionStatement";
 import { Statement } from "../Statement";
+import { Parameter } from "../../../analysis/static/parsing/Parameter";
 /**
  * @author Dimitri Stallenberg
  */

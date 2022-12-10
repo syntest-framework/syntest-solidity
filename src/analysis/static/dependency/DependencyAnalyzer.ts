@@ -23,7 +23,7 @@ import * as path from "path";
 import { TargetContext } from "./TargetContext";
 import { ImportVisitor } from "./ImportVisitor";
 import { Graph } from "../Graph";
-import { PublicVisibility } from "@syntest/framework";
+import { PublicVisibility } from "../parsing/Visibility";
 
 const SolidityParser = require("@solidity-parser/parser");
 

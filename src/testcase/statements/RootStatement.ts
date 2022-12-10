@@ -18,9 +18,9 @@
 
 import { Statement } from "./Statement";
 import { EncodingSampler } from "@syntest/framework/dist/search/EncodingSampler";
-import { Parameter } from "@syntest/framework/dist/analysis/static/graph/parsing/Parameter";
 import { Encoding } from "@syntest/framework/dist/search/Encoding";
 import { ActionStatement } from "./action/ActionStatement";
+import { Parameter } from "../../analysis/static/parsing/Parameter";
 
 /**
  * @author Dimitri Stallenberg

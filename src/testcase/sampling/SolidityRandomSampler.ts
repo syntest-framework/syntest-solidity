@@ -17,8 +17,6 @@
  */
 
 import {
-  FunctionDescription,
-  Parameter,
   prng,
   Properties,
 } from "@syntest/framework";
@@ -39,6 +37,8 @@ import { BoolStatement } from "../statements/primitive/BoolStatement";
 import { StringStatement } from "../statements/primitive/StringStatement";
 import { Statement } from "../statements/Statement";
 import { ActionStatement } from "../statements/action/ActionStatement";
+import { FunctionDescription } from "../../analysis/static/parsing/FunctionDescription";
+import { Parameter } from "../../analysis/static/parsing/Parameter";
 
 /**
  * SolidityRandomSampler class
@@ -63,7 +63,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     depth: number,
     root: ConstructorCall
   ): ObjectFunctionCall {
-    const actions = this._subject.getPossibleActions("function");
+    const actions = (<SoliditySubject>this._subject).getPossibleActions("function");
 
     // TODO make sure these actions are available on this root
 
@@ -97,7 +97,7 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleConstructor(depth: number): ConstructorCall {
-    const constructors = this._subject.getPossibleActions("constructor");
+    const constructors = (<SoliditySubject>this._subject).getPossibleActions("constructor");
     if (constructors.length > 0) {
       const action = <FunctionDescription>prng.pickOne(constructors);
 
@@ -159,7 +159,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
 
     if (
-      this._subject.getPossibleActions().filter((a) => a.type === type.type)
+      (<SoliditySubject>this._subject).getPossibleActions().filter((a) => a.type === type.type)
         .length &&
       prng.nextBoolean(Properties.sample_func_as_arg)
     ) {
@@ -262,7 +262,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     types: Parameter[]
   ): ObjectFunctionCall {
     const action = <FunctionDescription>(
-      prng.pickOne(this._subject.getPossibleActions("function", types))
+      prng.pickOne((<SoliditySubject>this._subject).getPossibleActions("function", types))
     );
 
     const args: Statement[] = [];

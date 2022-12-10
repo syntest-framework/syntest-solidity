@@ -17,9 +17,9 @@
  */
 
 import { EncodingSampler } from "@syntest/framework/dist/search/EncodingSampler";
-import { Parameter } from "@syntest/framework/dist/analysis/static/graph/parsing/Parameter";
 import { prng } from "@syntest/framework/dist/util/prng";
 import { Encoding } from "@syntest/framework/dist/search/Encoding";
+import { Parameter } from "../../analysis/static/parsing/Parameter";
 
 /**
  * @author Dimitri Stallenberg

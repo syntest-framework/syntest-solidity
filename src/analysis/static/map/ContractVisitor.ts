@@ -29,11 +29,8 @@ import {
   ExternalVisibility,
   InternalVisibility,
 } from "./ContractFunction";
-import {
-  Parameter,
-  PrivateVisibility,
-  PublicVisibility,
-} from "@syntest/framework";
+import { Parameter } from "../parsing/Parameter";
+import { PublicVisibility, PrivateVisibility } from "../parsing/Visibility";
 
 /**
  * Visits the AST nodes of a contract to find all functions with public or external visibility.

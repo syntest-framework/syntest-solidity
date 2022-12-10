@@ -21,29 +21,38 @@ import {
   BranchObjectiveFunction,
   CFG,
   Encoding,
-  FunctionDescription,
   FunctionObjectiveFunction,
   NodeType,
   ObjectiveFunction,
-  Parameter,
-  PublicVisibility,
   SearchSubject,
 } from "@syntest/framework";
 
 import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 import { ExternalVisibility } from "../analysis/static/map/ContractFunction";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
+import { ActionDescription } from "../analysis/static/parsing/ActionDescription";
+import { FunctionDescription } from "../analysis/static/parsing/FunctionDescription";
+import { Parameter } from "../analysis/static/parsing/Parameter";
+import { PublicVisibility } from "../analysis/static/parsing/Visibility";
 
 export class SoliditySubject extends SearchSubject<SolidityTestCase> {
   private _functionCalls: FunctionDescription[] | null = null;
+  private _functions: ActionDescription[]
+
+
+  get functions(): ActionDescription[] {
+    return this._functions;
+  }
 
   constructor(
     path: string,
     name: string,
     cfg: CFG,
-    functionMap: FunctionDescription[]
+    functions: FunctionDescription[]
   ) {
-    super(path, name, cfg, functionMap);
+    super(path, name, cfg);
+    this._functions = functions
+
   }
 
   protected _extractObjectives(): void {

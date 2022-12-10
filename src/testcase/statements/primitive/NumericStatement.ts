@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-import { prng, Properties, Parameter } from "@syntest/framework";
+import { prng, Properties } from "@syntest/framework";
 
 import BigNumber from "bignumber.js";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { PrimitiveStatement } from "./PrimitiveStatement";
+import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
 /**
  * Generic number class
