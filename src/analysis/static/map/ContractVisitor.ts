@@ -92,7 +92,7 @@ export class ContractVisitor implements SolidityVisitor {
     let name = node.name;
 
     if (name === null && node.isConstructor) {
-      name = this._current.name
+      name = this._current.name;
     }
 
     const parameters = node.parameters.map((param) => {
