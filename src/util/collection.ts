@@ -126,8 +126,7 @@ export function collectCoverageData(
       .getTraces()
       .filter((element) => element.type.includes(objectiveType))
       .filter((element) => {
-        // TODO should be path instead of contractPath
-        const paths = (element as any).contractPath.split("/");
+        const paths = (element as any).path.split("/");
         return paths[paths.length - 1].includes(contractName);
       })
       .forEach((current) => {
@@ -226,7 +225,7 @@ export function collectProbeCoverageData(
 
     // filter by contract
     const traces = result.getTraces().filter((element) => {
-      const paths = (element as any).contractPath.split("/");
+      const paths = (element as any).path.split("/");
       return paths[paths.length - 1].includes(contractName);
     });
 

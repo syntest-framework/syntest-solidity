@@ -457,13 +457,13 @@ export class SolidityLauncher {
 
       const ast = targetPool.getAST(targetPath);
 
-      const functionMap = targetPool.getFunctionMap(targetPath, target)
+      const functionMap = targetPool.getFunctionMap(targetPath, target);
 
       const currentSubject = new SoliditySubject(
         path.basename(targetPath),
         target,
         cfg,
-        [...functionMap.values()],
+        [...functionMap.values()]
       );
 
       if (!currentSubject.getPossibleActions().length) {

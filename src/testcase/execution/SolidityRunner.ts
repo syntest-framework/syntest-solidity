@@ -93,7 +93,7 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
 
     const traces = [];
     for (const key of Object.keys(instrumentationData)) {
-      if (instrumentationData[key].contractPath.includes(subject.name))
+      if (instrumentationData[key].path.includes(subject.name))
         traces.push(instrumentationData[key]);
     }
 

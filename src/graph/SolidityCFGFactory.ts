@@ -35,7 +35,11 @@ import {
 } from "../analysis/static/map/ContractFunction";
 import { ContractVisitor } from "../analysis/static/map/ContractVisitor";
 import { Parameter } from "../analysis/static/parsing/Parameter";
-import { PrivateVisibility, PublicVisibility, Visibility } from "../analysis/static/parsing/Visibility";
+import {
+  PrivateVisibility,
+  PublicVisibility,
+  Visibility,
+} from "../analysis/static/parsing/Visibility";
 
 // TODO break and continue statements
 
@@ -354,7 +358,7 @@ export class SolidityCFGFactory implements CFGFactory {
       lines: lines,
       statements: statements,
       type: NodeType.Root,
-      description: description
+      description: description,
     };
 
     cfg.nodes.push(node);

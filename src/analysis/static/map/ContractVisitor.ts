@@ -89,7 +89,11 @@ export class ContractVisitor implements SolidityVisitor {
     // Skip function if we are not in a contract
     if (!this._current) return;
 
-    const name = node.name;
+    let name = node.name;
+
+    if (name === null && node.isConstructor) {
+      name = this._current.name
+    }
 
     const parameters = node.parameters.map((param) => {
       const functionParameter: Parameter = {

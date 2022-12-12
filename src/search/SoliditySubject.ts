@@ -37,8 +37,7 @@ import { PublicVisibility } from "../analysis/static/parsing/Visibility";
 
 export class SoliditySubject extends SearchSubject<SolidityTestCase> {
   private _functionCalls: FunctionDescription[] | null = null;
-  private _functions: ActionDescription[]
-
+  private _functions: ActionDescription[];
 
   get functions(): ActionDescription[] {
     return this._functions;
@@ -51,8 +50,7 @@ export class SoliditySubject extends SearchSubject<SolidityTestCase> {
     functions: FunctionDescription[]
   ) {
     super(path, name, cfg);
-    this._functions = functions
-
+    this._functions = functions;
   }
 
   protected _extractObjectives(): void {

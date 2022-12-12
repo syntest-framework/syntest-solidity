@@ -16,10 +16,7 @@
  * limitations under the License.
  */
 
-import {
-  prng,
-  Properties,
-} from "@syntest/framework";
+import { prng, Properties } from "@syntest/framework";
 
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/primitive/AddressStatement";
@@ -63,7 +60,9 @@ export class SolidityRandomSampler extends SoliditySampler {
     depth: number,
     root: ConstructorCall
   ): ObjectFunctionCall {
-    const actions = (<SoliditySubject>this._subject).getPossibleActions("function");
+    const actions = (<SoliditySubject>this._subject).getPossibleActions(
+      "function"
+    );
 
     // TODO make sure these actions are available on this root
 
@@ -97,7 +96,10 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleConstructor(depth: number): ConstructorCall {
-    const constructors = (<SoliditySubject>this._subject).getPossibleActions("constructor");
+    const constructors = (<SoliditySubject>this._subject).getPossibleActions(
+      "constructor"
+    );
+
     if (constructors.length > 0) {
       const action = <FunctionDescription>prng.pickOne(constructors);
 
@@ -159,8 +161,9 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
 
     if (
-      (<SoliditySubject>this._subject).getPossibleActions().filter((a) => a.type === type.type)
-        .length &&
+      (<SoliditySubject>this._subject)
+        .getPossibleActions()
+        .filter((a) => a.type === type.type).length &&
       prng.nextBoolean(Properties.sample_func_as_arg)
     ) {
       // Pick function
@@ -262,7 +265,9 @@ export class SolidityRandomSampler extends SoliditySampler {
     types: Parameter[]
   ): ObjectFunctionCall {
     const action = <FunctionDescription>(
-      prng.pickOne((<SoliditySubject>this._subject).getPossibleActions("function", types))
+      prng.pickOne(
+        (<SoliditySubject>this._subject).getPossibleActions("function", types)
+      )
     );
 
     const args: Statement[] = [];

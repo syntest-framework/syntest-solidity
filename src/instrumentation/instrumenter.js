@@ -68,7 +68,6 @@ class Instrumenter {
 
     // First, we run over the original contract to get the source mapping.
     let ast = SolidityParser.parse(contract.source, { loc: true, range: true });
-    //console.log(JSON.stringify(ast, null, ' '))
     parse[ast.type](contract, ast);
     const retValue = JSON.parse(JSON.stringify(contract)); // Possibly apotropaic.
 
