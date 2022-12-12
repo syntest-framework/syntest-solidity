@@ -245,33 +245,30 @@ export class SolidityTargetPool extends TargetPool {
   }
 
   async prepareAndInstrument(api: any): Promise<void> {
-    const absoluteRootPath = path.resolve(Properties.target_root_directory)
+    const absoluteRootPath = path.resolve(Properties.target_root_directory);
 
-    const destinationPath = path.resolve(Properties.temp_instrumented_directory, path.basename(Properties.target_root_directory))
+    const destinationPath = path.resolve(
+      Properties.temp_instrumented_directory,
+      path.basename(Properties.target_root_directory)
+    );
 
     // copy everything
-    await copySync(absoluteRootPath, destinationPath)
+    await copySync(absoluteRootPath, destinationPath);
 
     // overwrite the stuff that needs instrumentation
-    const instrumenter = new Instrumenter();
+    // const instrumenter = new Instrumenter();
 
-    const targetPaths = this.targets.map((x) => x.canonicalPath)
+    const targetPaths = this.targets.map((x) => x.canonicalPath);
 
     for (const targetPath of targetPaths) {
-      const source = this.getSource(targetPath)
-      const instrumented = await instrumenter.instrument(
-        source,
-        targetPath
-      );
+      const source = this.getSource(targetPath);
+      const instrumented = await api.instrumenter.instrument(source, targetPath);
 
-      api.coverage.addContract(instrumented, targetPath)
+      api.coverage.addContract(instrumented, targetPath);
 
       const _path = path
         .normalize(targetPath)
-        .replace(
-          absoluteRootPath,
-          destinationPath
-        )
+        .replace(absoluteRootPath, destinationPath);
 
       await outputFileSync(_path, instrumented.contract);
     }

@@ -328,9 +328,8 @@ export class SolidityLauncher {
       }
     }
 
-
     // Instrument
-    await targetPool.prepareAndInstrument(this.api)
+    await targetPool.prepareAndInstrument(this.api);
     // const instrumented = this.api.instrument(targetPool, targetPaths);
 
     // for (const instrumentedTarget of instrumented) {
