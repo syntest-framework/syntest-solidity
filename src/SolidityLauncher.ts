@@ -130,7 +130,6 @@ export class SolidityLauncher {
   async exit(): Promise<void> {
     // Finish
     await deleteTempDirectories();
-    await tearDownTempFolders(this.tempArtifactsDir);
 
     // Shut server down
     await this.api.finish();
