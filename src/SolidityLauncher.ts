@@ -328,18 +328,20 @@ export class SolidityLauncher {
       }
     }
 
-    // Instrument
-    const instrumented = this.api.instrument(targetPool, targetPaths);
 
-    for (const instrumentedTarget of instrumented) {
-      const _path = path
-        .normalize(instrumentedTarget.canonicalPath)
-        .replace(
-          this.config.contracts_directory,
-          Properties.temp_instrumented_directory
-        );
-      await outputFileSync(_path, instrumentedTarget.source);
-    }
+    // Instrument
+    await targetPool.prepareAndInstrument(this.api)
+    // const instrumented = this.api.instrument(targetPool, targetPaths);
+
+    // for (const instrumentedTarget of instrumented) {
+    //   const _path = path
+    //     .normalize(instrumentedTarget.canonicalPath)
+    //     .replace(
+    //       this.config.contracts_directory,
+    //       Properties.temp_instrumented_directory
+    //     );
+    //   await outputFileSync(_path, instrumentedTarget.source);
+    // }
 
     this.config.contracts_directory = Properties.temp_instrumented_directory;
     this.config.build_directory = this.tempArtifactsDir;
