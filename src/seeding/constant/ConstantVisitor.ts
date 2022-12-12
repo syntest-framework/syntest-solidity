@@ -27,7 +27,7 @@ import {
   MemberAccess,
   HexNumber,
   DecimalNumber,
-} from "@solidity-parser/parser";
+} from "@solidity-parser/parser/dist/src/ast-types";
 import { ConstantPool } from "./ConstantPool";
 
 /**
