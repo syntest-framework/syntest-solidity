@@ -154,7 +154,9 @@ class API {
 
     return new Promise((resolve, reject) => {
       try {
-        this.coverage.generate(this.instrumenter.instrumentationData);
+        // the string replacement is necessary because the istanbul reporter expects contractPath...
+        // should be fixed by a custom made reporter specific to this project
+        this.coverage.generate(JSON.parse(JSON.stringify(this.instrumenter.instrumentationData).replaceAll('path', 'contractPath')));
 
         const mapping = this.makeKeysRelative(this.coverage.data, this.cwd);
         this.saveCoverage(mapping);
