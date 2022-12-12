@@ -67,32 +67,6 @@ class API {
   }
 
   /**
-   * Instruments a set of sources to prepare them for running under coverage
-   * @param  {TargetPool}  targetPool
-   * @param  {string[]}  targetPaths
-   * @return {Object[]}          (see below)
-   */
-  instrument(targetPool, targetPaths = []) {
-    let outputs = [];
-    for (let _path of targetPaths) {
-      const instrumented = this.instrumenter.instrument(
-        targetPool.getSource(_path),
-        _path
-      );
-      this.coverage.addContract(instrumented, _path);
-
-      outputs.push({
-        canonicalPath: _path,
-        actualSource: targetPool.getSource(_path),
-        source: instrumented.contract,
-        instrumented: instrumented,
-        contracts: [],
-      });
-    }
-    return outputs;
-  }
-
-  /**
    * Returns a copy of the hit map created during instrumentation.
    * Useful if you'd like to delegate coverage collection to multiple processes.
    * @return {Object} instrumentationData

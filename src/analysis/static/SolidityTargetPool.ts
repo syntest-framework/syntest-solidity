@@ -23,13 +23,15 @@ import { TargetMapGenerator } from "./map/TargetMapGenerator";
 import { SolidityCFGFactory } from "../../graph/SolidityCFGFactory";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { ContractFunction } from "./map/ContractFunction";
-import { CFG } from "@syntest/framework";
+import { CFG, Properties } from "@syntest/framework";
 import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
 import { LibraryVisitor } from "./dependency/LibraryVisitor";
 import { TargetPool } from "@syntest/framework";
 import { Target } from "@syntest/framework";
 const SolidityParser = require("@solidity-parser/parser");
+const { outputFileSync, copySync } = require("fs-extra");
+const Instrumenter = require("../../../src/instrumentation/instrumenter"); // Local version
 
 /**
  * Pool for retrieving and caching expensive processing calls.
@@ -239,6 +241,39 @@ export class SolidityTargetPool extends TargetPool {
         .get(targetPath)
         .set(targetName, [importsMap, dependencyMap]);
       return [importsMap, dependencyMap];
+    }
+  }
+
+  async prepareAndInstrument(api: any): Promise<void> {
+    const absoluteRootPath = path.resolve(Properties.target_root_directory);
+
+    const destinationPath = path.resolve(
+      Properties.temp_instrumented_directory,
+      path.basename(Properties.target_root_directory)
+    );
+
+    // copy everything
+    await copySync(absoluteRootPath, destinationPath);
+
+    // overwrite the stuff that needs instrumentation
+    // const instrumenter = new Instrumenter();
+
+    const targetPaths = this.targets.map((x) => x.canonicalPath);
+
+    for (const targetPath of targetPaths) {
+      const source = this.getSource(targetPath);
+      const instrumented = await api.instrumenter.instrument(
+        source,
+        targetPath
+      );
+
+      api.coverage.addContract(instrumented, targetPath);
+
+      const _path = path
+        .normalize(targetPath)
+        .replace(absoluteRootPath, destinationPath);
+
+      await outputFileSync(_path, instrumented.contract);
     }
   }
 }
