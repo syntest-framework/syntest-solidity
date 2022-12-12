@@ -345,7 +345,6 @@ export class SolidityLauncher {
     this.config.contracts_directory = Properties.temp_instrumented_directory;
     this.config.build_directory = this.tempArtifactsDir;
 
-    // TODO what?
     this.config.contracts_build_directory = path.join(
       this.tempArtifactsDir,
       path.basename(this.config.contracts_build_directory)
