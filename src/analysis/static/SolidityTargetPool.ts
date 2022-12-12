@@ -262,7 +262,10 @@ export class SolidityTargetPool extends TargetPool {
 
     for (const targetPath of targetPaths) {
       const source = this.getSource(targetPath);
-      const instrumented = await api.instrumenter.instrument(source, targetPath);
+      const instrumented = await api.instrumenter.instrument(
+        source,
+        targetPath
+      );
 
       api.coverage.addContract(instrumented, targetPath);
 

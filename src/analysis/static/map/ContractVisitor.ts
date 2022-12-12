@@ -78,10 +78,7 @@ export class ContractVisitor implements SolidityVisitor {
 
     this._contracts.set(name, contract);
     if (!this._functions.has(name))
-      this._functions.set(
-        name,
-        new Map<string, ContractFunction>()
-      );
+      this._functions.set(name, new Map<string, ContractFunction>());
     this._current = contract;
   }
 
@@ -188,7 +185,6 @@ export class ContractVisitor implements SolidityVisitor {
         return param.type;
       })
       .join(",")}`;
-
 
     this._functions
       .get(this._current.name)

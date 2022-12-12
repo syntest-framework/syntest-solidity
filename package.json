@@ -49,7 +49,7 @@
   },
   "dependencies": {
     "@solidity-parser/parser": "^0.6.0",
-    "@syntest/framework": "file:../syntest-framework",
+    "@syntest/framework": "^0.1.2",
     "@truffle/config": "^1.2.44",
     "@truffle/provider": "^0.1.17",
     "bignumber.js": "9.0.1",
