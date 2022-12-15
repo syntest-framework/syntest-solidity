@@ -65,8 +65,7 @@ import {
   createTruffleConfig,
   getTestFilePaths,
   loadLibrary,
-  setupTempFolders,
-  tearDownTempFolders,
+  setupTempFolders
 } from "./util/fileSystem";
 
 import Messages from "./ui/Messages";
@@ -139,7 +138,13 @@ export class SolidityLauncher {
 
   async setup(): Promise<SolidityTargetPool> {
     // Filesystem & Compiler Re-configuration
-    const additionalOptions = {}; // TODO
+    const additionalOptions = {
+      solc_compiler_version: {
+        description: "Solc compiler version",
+        type: "string",
+        required: true,
+      },
+    }; // TODO
     setupOptions(this._program, additionalOptions);
 
     const index = process.argv.indexOf(
@@ -185,6 +190,18 @@ export class SolidityLauncher {
     getUserInterface().report("asciiArt", ["Syntest"]);
     getUserInterface().report("version", [require("../package.json").version]);
 
+    this.config.compilers = {
+      solc: {
+        version: Properties['solc_compiler_version'],
+        parser: "solcjs",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 2
+          }
+        }
+      }
+    }
     this.truffle = loadLibrary(this.config);
     this.api = new API(myConfig);
 
