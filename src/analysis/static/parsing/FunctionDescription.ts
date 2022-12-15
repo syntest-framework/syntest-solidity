@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,17 +16,27 @@
  * limitations under the License.
  */
 
-export * from "./testcase/execution/SolidityRunner";
+import { ActionDescription } from "./ActionDescription";
+import { Parameter } from "./Parameter";
 
-export * from "./search/SoliditySubject";
-export * from "./testcase/sampling/SolidityRandomSampler";
-export * from "./testcase/sampling/SoliditySampler";
+/**
+ * Interface for a Function Description.
+ *
+ * @author Dimitri Stallenberg
+ */
+export interface FunctionDescription extends ActionDescription {
+  /**
+   * If the function is a constructor.
+   */
+  isConstructor: boolean;
 
-export * from "./testbuilding/SoliditySuiteBuilder";
-export * from "./testbuilding/SolidityDecoder";
+  /**
+   * Parameters of the function.
+   */
+  parameters: Parameter[];
 
-export * from "./testcase/statements/primitive/AddressStatement";
-
-export * from "./graph/SolidityCFGFactory";
-
-export * from "./SolidityLauncher";
+  /**
+   * Return parameters of the function
+   */
+  returnParameters: Parameter[];
+}

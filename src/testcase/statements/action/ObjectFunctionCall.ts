@@ -17,17 +17,13 @@
  */
 
 import { ConstructorCall } from "./ConstructorCall";
-import { AddressStatement } from "../AddressStatement";
+import { AddressStatement } from "../primitive/AddressStatement";
 
-import {
-  Statement,
-  ActionStatement,
-  TestCaseSampler,
-  prng,
-  Properties,
-  Parameter,
-} from "@syntest/framework";
-
+import { prng, Properties } from "@syntest/framework";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { ActionStatement } from "./ActionStatement";
+import { Statement } from "../Statement";
+import { Parameter } from "../../../analysis/static/parsing/Parameter";
 /**
  * @author Dimitri Stallenberg
  */
@@ -59,7 +55,7 @@ export class ObjectFunctionCall extends ActionStatement {
     this._sender = sender;
   }
 
-  mutate(sampler: TestCaseSampler, depth: number): ObjectFunctionCall {
+  mutate(sampler: SoliditySampler, depth: number): ObjectFunctionCall {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       // resample the gene
       return <ObjectFunctionCall>(

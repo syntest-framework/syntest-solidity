@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-import { SearchSubject, AbstractTestCase, CFG } from "@syntest/framework";
+import { CFG, Target } from "@syntest/framework";
 
-import { TargetPool } from "./TargetPool";
+import { SolidityTargetPool } from "./SolidityTargetPool";
 import * as path from "path";
 import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
 import { TargetContext } from "./dependency/TargetContext";
@@ -32,7 +32,8 @@ import { Graph } from "./Graph";
  *
  * @author Mitchell Olsthoorn
  */
-export class Target {
+
+export class SolidityTarget extends Target {
   protected readonly _path: string;
   protected readonly _name: string;
 
@@ -52,7 +53,7 @@ export class Target {
 
   protected _linkingGraph: Graph<string>;
 
-  protected _subject: SearchSubject<AbstractTestCase>;
+  // protected _subject: SearchSubject<T>;
 
   constructor(
     targetPath: string,
@@ -64,6 +65,7 @@ export class Target {
     CFGs: Map<string, any>,
     linkingGraph: Graph<string>
   ) {
+    super();
     this._path = path.resolve(targetPath);
     this._name = targetName;
     this._sources = sources;
@@ -82,17 +84,17 @@ export class Target {
    * @param targetName the name of the target
    */
   static fromPool(
-    targetPool: TargetPool,
+    targetPool: SolidityTargetPool,
     targetPath: string,
     targetName: string
-  ): Target {
+  ): SolidityTarget {
     const absoluteTargetPath = path.resolve(targetPath);
 
     // Get source, AST, FunctionMap, and CFG for target under test
     const sources = new Map<string, string>();
     const abstractSyntaxTrees = new Map<string, any>();
     const functionMaps = new Map<string, Map<string, any>>();
-    const controlFlowGraphs = new Map<string, any>();
+    const controlFlowGraphs = new Map<string, CFG>();
 
     sources.set(absoluteTargetPath, targetPool.getSource(absoluteTargetPath));
     abstractSyntaxTrees.set(
@@ -134,7 +136,7 @@ export class Target {
       targetName
     );
 
-    return new Target(
+    return new SolidityTarget(
       absoluteTargetPath,
       targetName,
       sources,

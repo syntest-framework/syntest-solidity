@@ -22,14 +22,10 @@ import {
   RootNode,
   BranchNode,
   PlaceholderNode,
-  Visibility,
   Operation,
   Edge,
   CFGFactory,
   Properties,
-  Parameter,
-  PrivateVisibility,
-  PublicVisibility,
   NodeType,
 } from "@syntest/framework";
 
@@ -38,6 +34,12 @@ import {
   InternalVisibility,
 } from "../analysis/static/map/ContractFunction";
 import { ContractVisitor } from "../analysis/static/map/ContractVisitor";
+import { Parameter } from "../analysis/static/parsing/Parameter";
+import {
+  PrivateVisibility,
+  PublicVisibility,
+  Visibility,
+} from "../analysis/static/parsing/Visibility";
 
 // TODO break and continue statements
 
@@ -349,26 +351,14 @@ export class SolidityCFGFactory implements CFGFactory {
     cfg: CFG,
     lines: number[],
     statements: string[],
-    contractName: string,
-    functionName: string,
-    isConstructor: boolean,
-    parameters: Parameter[],
-    returnParameters: Parameter[],
-    visibility: string
+    description?: string
   ): RootNode {
     const node: RootNode = {
-      contractName: contractName,
-      functionName: functionName,
       id: `${this.count++}`,
-      isConstructor: isConstructor,
       lines: lines,
       statements: statements,
       type: NodeType.Root,
-
-      parameters: parameters,
-      returnParameters: returnParameters,
-
-      visibility: this.getVisibility(visibility),
+      description: description,
     };
 
     cfg.nodes.push(node);
@@ -514,12 +504,7 @@ export class SolidityCFGFactory implements CFGFactory {
       cfg,
       [AST.loc.start.line],
       [],
-      contractName,
-      AST.name || contractName,
-      AST.isConstructor,
-      AST.parameters.map(this.parseParameter),
-      AST.returnParameters ? AST.returnParameters.map(this.parseParameter) : [],
-      AST.visibility
+      `${contractName} ${AST.name}`
     );
 
     // TODO parameters

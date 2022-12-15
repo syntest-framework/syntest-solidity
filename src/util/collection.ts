@@ -34,7 +34,7 @@ import { SoliditySubject } from "../search/SoliditySubject";
 
 export function collectInitialVariables(
   collector: StatisticsCollector<any>,
-  currentSubject: SoliditySubject<any>,
+  currentSubject: SoliditySubject,
   targetPath: string
 ) {
   collector.recordVariable(RuntimeVariable.VERSION, 1);
@@ -61,7 +61,7 @@ export function collectInitialVariables(
 
 export function collectStatistics(
   collector: StatisticsCollector<any>,
-  currentSubject: SoliditySubject<any>,
+  currentSubject: SoliditySubject,
   archive: Archive<any>,
   totalTimeBudget: TotalTimeBudget<any>,
   searchBudget: SearchTimeBudget<any>,
@@ -119,13 +119,14 @@ export function collectCoverageData(
   for (const key of archive.getObjectives()) {
     const test = archive.getEncoding(key);
     const result: ExecutionResult = test.getExecutionResult();
+    // TODO this only works if the name of the subject equals the filename
     const contractName = key.getSubject().name.concat(".sol");
 
     result
       .getTraces()
       .filter((element) => element.type.includes(objectiveType))
       .filter((element) => {
-        const paths = (element as any).contractPath.split("/");
+        const paths = (element as any).path.split("/");
         return paths[paths.length - 1].includes(contractName);
       })
       .forEach((current) => {
@@ -224,7 +225,7 @@ export function collectProbeCoverageData(
 
     // filter by contract
     const traces = result.getTraces().filter((element) => {
-      const paths = (element as any).contractPath.split("/");
+      const paths = (element as any).path.split("/");
       return paths[paths.length - 1].includes(contractName);
     });
 

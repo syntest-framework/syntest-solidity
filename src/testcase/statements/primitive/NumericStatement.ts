@@ -16,16 +16,13 @@
  * limitations under the License.
  */
 
-import {
-  PrimitiveStatement,
-  TestCaseSampler,
-  prng,
-  Properties,
-  Parameter,
-} from "@syntest/framework";
+import { prng, Properties } from "@syntest/framework";
 
 import BigNumber from "bignumber.js";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { PrimitiveStatement } from "./PrimitiveStatement";
+import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
 /**
  * Generic number class
@@ -62,7 +59,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     this._lower_bound = lower_bound;
   }
 
-  mutate(sampler: TestCaseSampler, depth: number): NumericStatement {
+  mutate(sampler: SoliditySampler, depth: number): NumericStatement {
     if (prng.nextBoolean(Properties.delta_mutation_probability)) {
       return this.deltaMutation();
     }

@@ -16,14 +16,11 @@
  * limitations under the License.
  */
 
-import {
-  Statement,
-  ActionStatement,
-  TestCaseSampler,
-  prng,
-  Properties,
-  Parameter,
-} from "@syntest/framework";
+import { prng, Properties } from "@syntest/framework";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { ActionStatement } from "./ActionStatement";
+import { Statement } from "../Statement";
+import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
 /**
  * @author Dimitri Stallenberg
@@ -52,7 +49,7 @@ export class FunctionCall extends ActionStatement {
     this._functionName = functionName;
   }
 
-  mutate(sampler: TestCaseSampler, depth: number) {
+  mutate(sampler: SoliditySampler, depth: number) {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       // resample the gene
       return sampler.sampleStatement(depth, this.types, "functionCall");
@@ -68,7 +65,7 @@ export class FunctionCall extends ActionStatement {
     }
   }
 
-  copy() {
+  copy(): FunctionCall {
     const deepCopyArgs = [...this.args.map((a: Statement) => a.copy())];
 
     return new FunctionCall(

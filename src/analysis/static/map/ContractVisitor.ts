@@ -29,11 +29,8 @@ import {
   ExternalVisibility,
   InternalVisibility,
 } from "./ContractFunction";
-import {
-  Parameter,
-  PrivateVisibility,
-  PublicVisibility,
-} from "@syntest/framework";
+import { Parameter } from "../parsing/Parameter";
+import { PublicVisibility, PrivateVisibility } from "../parsing/Visibility";
 
 /**
  * Visits the AST nodes of a contract to find all functions with public or external visibility.
@@ -80,6 +77,8 @@ export class ContractVisitor implements SolidityVisitor {
     };
 
     this._contracts.set(name, contract);
+    if (!this._functions.has(name))
+      this._functions.set(name, new Map<string, ContractFunction>());
     this._current = contract;
   }
 
@@ -92,7 +91,11 @@ export class ContractVisitor implements SolidityVisitor {
     // Skip function if we are not in a contract
     if (!this._current) return;
 
-    const name = node.name;
+    let name = node.name;
+
+    if (name === null && node.isConstructor) {
+      name = this._current.name;
+    }
 
     const parameters = node.parameters.map((param) => {
       const functionParameter: Parameter = {
@@ -182,12 +185,6 @@ export class ContractVisitor implements SolidityVisitor {
         return param.type;
       })
       .join(",")}`;
-
-    if (!this._functions.has(this._current.name))
-      this._functions.set(
-        this._current.name,
-        new Map<string, ContractFunction>()
-      );
 
     this._functions
       .get(this._current.name)

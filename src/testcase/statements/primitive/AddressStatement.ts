@@ -16,14 +16,11 @@
  * limitations under the License.
  */
 
-import {
-  Properties,
-  PrimitiveStatement,
-  prng,
-  TestCaseSampler,
-  Parameter,
-} from "@syntest/framework";
-import { ConstantPool } from "../../seeding/constant/ConstantPool";
+import { Properties, prng } from "@syntest/framework";
+import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { ConstantPool } from "../../../seeding/constant/ConstantPool";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { PrimitiveStatement } from "./PrimitiveStatement";
 
 /**
  * Special statement specific to solidity contracts
@@ -42,7 +39,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
     this._account = account;
   }
 
-  mutate(sampler: TestCaseSampler, depth: number): AddressStatement {
+  mutate(sampler: SoliditySampler, depth: number): AddressStatement {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       return <AddressStatement>(
         sampler.sampleStatement(depth, this.types, "primitive")

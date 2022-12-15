@@ -16,33 +16,31 @@
  * limitations under the License.
  */
 
-import {
-  Properties,
-  PrimitiveStatement,
-  Statement,
-  TestCaseDecoder,
-} from "@syntest/framework";
+import { Properties, Decoder } from "@syntest/framework";
 
 import * as path from "path";
 import * as web3_utils from "web3-utils";
-import { ByteStatement } from "../testcase/statements/ByteStatement";
-import { AddressStatement } from "../testcase/statements/AddressStatement";
+import { ByteStatement } from "../testcase/statements/primitive/ByteStatement";
+import { AddressStatement } from "../testcase/statements/primitive/AddressStatement";
 import { ConstructorCall } from "../testcase/statements/action/ConstructorCall";
 import { StringStatement } from "../testcase/statements/primitive/StringStatement";
 import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunctionCall";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
+import { Statement } from "../testcase/statements/Statement";
+import { PrimitiveStatement } from "../testcase/statements/primitive/PrimitiveStatement";
+import { Target } from "@syntest/framework";
 
 /**
  * @author Dimitri Stallenberg
  * @author Mitchell Olsthoorn
  */
-export class SolidityTruffleStringifier implements TestCaseDecoder {
+export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
   private imports: Map<string, string>;
-  private contractDependencies: Map<string, string[]>;
+  private contractDependencies: Map<string, Target[]>;
 
   constructor(
     imports: Map<string, string>,
-    contractDependencies: Map<string, string[]>
+    contractDependencies: Map<string, Target[]>
   ) {
     this.imports = imports;
     this.contractDependencies = contractDependencies;
@@ -238,12 +236,14 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
 
       let count = 0;
       for (const dependency of this.contractDependencies.get(contract)) {
-        const importString: string = this.getImport(dependency);
+        const importString: string = this.getImport(dependency.targetName);
 
         // Create link
-        linkings.push(`\t\tconst lib${count} = await ${dependency}.new();`);
         linkings.push(
-          `\t\tawait ${contract}.link('${dependency}', lib${count}.address);`
+          `\t\tconst lib${count} = await ${dependency.targetName}.new();`
+        );
+        linkings.push(
+          `\t\tawait ${contract}.link('${dependency.targetName}', lib${count}.address);`
         );
 
         if (imports.includes(importString) || importString.length === 0) {
@@ -294,7 +294,7 @@ export class SolidityTruffleStringifier implements TestCaseDecoder {
     return assertions;
   }
 
-  decodeTestCase(
+  decode(
     testCase: SolidityTestCase | SolidityTestCase[],
     targetName: string,
     addLogs = false

@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
+import { TargetMetaData } from "@syntest/framework";
+
 /**
  * Interface for Solidity contract metadata.
  *
  * @author Mitchell Olsthoorn
  */
-export interface ContractMetadata {
+export interface ContractMetadata extends TargetMetaData {
   /**
    * Name of the contract.
    */

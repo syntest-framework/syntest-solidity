@@ -21,7 +21,8 @@
  *
  * @author Mitchell Olsthoorn
  */
-import { FunctionDescription, Visibility } from "@syntest/framework";
+import { FunctionDescription } from "../parsing/FunctionDescription";
+import { Visibility } from "../parsing/Visibility";
 
 export interface ContractFunction extends FunctionDescription {
   /**

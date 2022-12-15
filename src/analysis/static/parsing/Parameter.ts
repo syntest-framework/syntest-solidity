@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,8 +16,19 @@
  * limitations under the License.
  */
 
-export default interface TargetFile {
-  source: string;
-  canonicalPath: string;
-  relativePath: string;
+/**
+ * Interface for a Parameter Description.
+ *
+ * @author Dimitri Stallenberg
+ */
+export interface Parameter {
+  /**
+   * Name of the parameter.
+   */
+  name: string;
+
+  /**
+   * Type of the parameter.
+   */
+  type: string;
 }

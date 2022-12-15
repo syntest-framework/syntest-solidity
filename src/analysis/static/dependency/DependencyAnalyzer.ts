@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 
-import { TargetPool } from "../TargetPool";
+import { SolidityTargetPool } from "../SolidityTargetPool";
 import { ContractMetadata, ContractKind } from "../map/ContractMetadata";
 import { ContractFunction, ExternalVisibility } from "../map/ContractFunction";
 import * as path from "path";
 import { TargetContext } from "./TargetContext";
 import { ImportVisitor } from "./ImportVisitor";
 import { Graph } from "../Graph";
-import { PublicVisibility } from "@syntest/framework";
+import { PublicVisibility } from "../parsing/Visibility";
 
 const SolidityParser = require("@solidity-parser/parser");
 
@@ -33,9 +33,9 @@ const SolidityParser = require("@solidity-parser/parser");
  * @author Mitchell Olsthoorn
  */
 export class DependencyAnalyzer {
-  protected _targetPool: TargetPool;
+  protected _targetPool: SolidityTargetPool;
 
-  constructor(targetPool: TargetPool) {
+  constructor(targetPool: SolidityTargetPool) {
     this._targetPool = targetPool;
   }
 

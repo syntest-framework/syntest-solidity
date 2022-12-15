@@ -17,7 +17,7 @@
  */
 
 import { SoliditySubject } from "./search/SoliditySubject";
-import { SolidityTruffleStringifier } from "./testbuilding/SolidityTruffleStringifier";
+import { SolidityDecoder } from "./testbuilding/SolidityDecoder";
 import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
@@ -46,7 +46,6 @@ import {
   StatisticsSearchListener,
   SummaryWriter,
   TotalTimeBudget,
-  loadTargets,
   setUserInterface,
   getUserInterface,
   getSeed,
@@ -66,7 +65,6 @@ import {
   createTruffleConfig,
   getTestFilePaths,
   loadLibrary,
-  save,
   setupTempFolders,
   tearDownTempFolders,
 } from "./util/fileSystem";
@@ -80,37 +78,32 @@ import { ConstantVisitor } from "./seeding/constant/ConstantVisitor";
 import { SolidityTestCase } from "./testcase/SolidityTestCase";
 import { SolidityTreeCrossover } from "./search/operators/crossover/SolidityTreeCrossover";
 
-import { TargetPool } from "./analysis/static/TargetPool";
+import { SolidityTargetPool } from "./analysis/static/SolidityTargetPool";
 import { SourceGenerator } from "./analysis/static/source/SourceGenerator";
 import { ASTGenerator } from "./analysis/static/ast/ASTGenerator";
 import { TargetMapGenerator } from "./analysis/static/map/TargetMapGenerator";
-import TargetFile from "./targetting/TargetFile";
 import {
   collectCoverageData,
   collectProbeCoverageData,
   collectInitialVariables,
   collectStatistics,
 } from "./util/collection";
+import { Target } from "@syntest/framework";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
+const { outputFileSync } = require("fs-extra");
 
 export class SolidityLauncher {
   private readonly _program = "syntest-solidity";
-  private readonly tempContractsDir = path.join(
-    process.cwd(),
-    ".syntest_coverage"
-  );
   private readonly tempArtifactsDir = path.join(
     process.cwd(),
-    ".syntest_artifacts"
+    ".syntest/artifacts"
   );
 
   private api;
   private config;
   private truffle;
-
-  private targetPool: TargetPool;
 
   /**
    * Truffle Plugin: `truffle run coverage [options]`
@@ -124,11 +117,8 @@ export class SolidityLauncher {
       this.config = normalizeConfig(config);
 
       await guessCWD(this.config.workingDir);
-      const [included, excluded] = await this.setup();
-      const [archive, imports, dependencies] = await this.search(
-        included,
-        excluded
-      );
+      const targetPool = await this.setup();
+      const [archive, imports, dependencies] = await this.search(targetPool);
       await this.finalize(archive, imports, dependencies);
     } catch (e) {
       console.trace(e);
@@ -139,7 +129,7 @@ export class SolidityLauncher {
 
   async exit(): Promise<void> {
     // Finish
-    await tearDownTempFolders(this.tempContractsDir, this.tempArtifactsDir);
+    await deleteTempDirectories();
 
     // Shut server down
     await this.api.finish();
@@ -147,7 +137,7 @@ export class SolidityLauncher {
     process.exit(0);
   }
 
-  async setup(): Promise<[Map<string, string[]>, Map<string, string[]>]> {
+  async setup(): Promise<SolidityTargetPool> {
     // Filesystem & Compiler Re-configuration
     const additionalOptions = {}; // TODO
     setupOptions(this._program, additionalOptions);
@@ -162,6 +152,9 @@ export class SolidityLauncher {
 
     processConfig(myConfig, args);
     setupLogger();
+    await createDirectoryStructure();
+    await createTempDirectoryStructure();
+    await setupTempFolders(this.tempArtifactsDir);
 
     const messages = new Messages();
 
@@ -240,31 +233,35 @@ export class SolidityLauncher {
     // Run post-launch server hook;
     await this.api.onServerReady(this.config);
 
-    const [included, excluded] = await loadTargets();
+    const sourceGenerator = new SourceGenerator();
+    const astGenerator = new ASTGenerator();
+    const targetMapGenerator = new TargetMapGenerator();
+    const cfgGenerator = new SolidityCFGFactory();
+    const targetPool = new SolidityTargetPool(
+      sourceGenerator,
+      astGenerator,
+      targetMapGenerator,
+      cfgGenerator
+    );
 
-    if (!included.size) {
-      // Finish
-      await tearDownTempFolders(this.tempContractsDir, this.tempArtifactsDir);
+    targetPool.loadTargets();
 
+    if (!targetPool.targets.length) {
       // Shut server down
-      await this.api.finish();
       getUserInterface().error(
         `No targets where selected! Try changing the 'include' parameter`
       );
-      process.exit(1);
+      await this.exit();
     }
 
-    let names = [];
+    const names = [];
 
-    included.forEach((value, key) =>
-      names.push(`${path.basename(key)} -> ${value.join(", ")}`)
+    targetPool.targets.forEach((target) =>
+      names.push(
+        `${path.basename(target.canonicalPath)} -> ${target.targetName}`
+      )
     );
     getUserInterface().report("targets", names);
-    names = [];
-    excluded.forEach((value, key) =>
-      names.push(`${path.basename(key)} -> ${value.join(", ")}`)
-    );
-    getUserInterface().report("skip-files", names);
 
     getUserInterface().report("header", ["CONFIGURATION"]);
 
@@ -308,57 +305,44 @@ export class SolidityLauncher {
       ],
     ]);
 
-    const sourceGenerator = new SourceGenerator();
-    const astGenerator = new ASTGenerator();
-    const targetMapGenerator = new TargetMapGenerator();
-    const cfgGenerator = new SolidityCFGFactory();
-    this.targetPool = new TargetPool(
-      sourceGenerator,
-      astGenerator,
-      targetMapGenerator,
-      cfgGenerator
-    );
-
-    return [included, excluded];
+    return targetPool;
   }
 
   async search(
-    included: Map<string, string[]>,
-    excluded: Map<string, string[]>
+    targetPool: SolidityTargetPool
   ): Promise<
-    [Archive<SolidityTestCase>, Map<string, string>, Map<string, string[]>]
+    [Archive<SolidityTestCase>, Map<string, string>, Map<string, Target[]>]
   > {
-    const targets: TargetFile[] = [];
-    const skipped: TargetFile[] = [];
+    const targetPaths = new Set<string>();
 
-    for (const _path of included.keys()) {
-      targets.push({
-        source: this.targetPool.getSource(_path),
-        canonicalPath: _path,
-        relativePath: path.basename(_path),
-      });
-    }
+    for (const target of targetPool.targets) {
+      targetPaths.add(target.canonicalPath);
 
-    for (const _path of excluded.keys()) {
-      targets.push({
-        source: this.targetPool.getSource(_path),
-        canonicalPath: _path,
-        relativePath: path.basename(_path),
-      });
+      const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+        target.canonicalPath,
+        target.targetName
+      );
+
+      for (const dependency of dependencyMap.get(target.targetName)) {
+        targetPaths.add(dependency.canonicalPath);
+      }
     }
 
     // Instrument
-    const instrumented = this.api.instrument(targets);
+    await targetPool.prepareAndInstrument(this.api);
+    // const instrumented = this.api.instrument(targetPool, targetPaths);
 
-    await setupTempFolders(this.tempContractsDir, this.tempArtifactsDir);
-    await save(
-      instrumented,
-      this.config.contracts_directory,
-      this.tempContractsDir
-    );
-    await save(skipped, this.config.contracts_directory, this.tempContractsDir);
+    // for (const instrumentedTarget of instrumented) {
+    //   const _path = path
+    //     .normalize(instrumentedTarget.canonicalPath)
+    //     .replace(
+    //       this.config.contracts_directory,
+    //       Properties.temp_instrumented_directory
+    //     );
+    //   await outputFileSync(_path, instrumentedTarget.source);
+    // }
 
-    this.config.contracts_directory = this.tempContractsDir;
+    this.config.contracts_directory = Properties.temp_instrumented_directory;
     this.config.build_directory = this.tempArtifactsDir;
 
     this.config.contracts_build_directory = path.join(
@@ -376,51 +360,29 @@ export class SolidityLauncher {
 
     const finalArchive = new Archive<SolidityTestCase>();
     let finalImportsMap: Map<string, string> = new Map();
-    let finalDependencies: Map<string, string[]> = new Map();
+    let finalDependencies: Map<string, Target[]> = new Map();
 
-    for (const targetPath of included.keys()) {
-      const includedTargets = included.get(targetPath);
+    for (const target of targetPool.targets) {
+      const archive = await this.testTarget(
+        targetPool,
+        target.canonicalPath,
+        target.targetName
+      );
+      const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+        target.canonicalPath,
+        target.targetName
+      );
 
-      const targetMap = this.targetPool.getTargetMap(targetPath);
-      for (const target of targetMap.keys()) {
-        // check if included
-        if (
-          !includedTargets.includes("*") &&
-          !includedTargets.includes(target)
-        ) {
-          continue;
-        }
+      finalArchive.merge(archive);
 
-        // check if excluded
-        if (excluded.has(targetPath)) {
-          const excludedTargets = excluded.get(targetPath);
-          if (
-            excludedTargets.includes("*") ||
-            excludedTargets.includes(target)
-          ) {
-            continue;
-          }
-        }
-
-        const archive = await this.testTarget(
-          this.targetPool,
-          targetPath,
-          target
-        );
-        const [importsMap, dependencyMap] =
-          this.targetPool.getImportDependencies(targetPath, target);
-
-        finalArchive.merge(archive);
-
-        finalImportsMap = new Map([
-          ...Array.from(finalImportsMap.entries()),
-          ...Array.from(importsMap.entries()),
-        ]);
-        finalDependencies = new Map([
-          ...Array.from(finalDependencies.entries()),
-          ...Array.from(dependencyMap.entries()),
-        ]);
-      }
+      finalImportsMap = new Map([
+        ...Array.from(finalImportsMap.entries()),
+        ...Array.from(importsMap.entries()),
+      ]);
+      finalDependencies = new Map([
+        ...Array.from(finalDependencies.entries()),
+        ...Array.from(dependencyMap.entries()),
+      ]);
     }
 
     return [finalArchive, finalImportsMap, finalDependencies];
@@ -429,18 +391,12 @@ export class SolidityLauncher {
   async finalize(
     finalArchive: Archive<SolidityTestCase>,
     finalImportsMap: Map<string, string>,
-    finalDependencies: Map<string, string[]>
+    finalDependencies: Map<string, Target[]>
   ): Promise<void> {
-    await createDirectoryStructure();
-    await createTempDirectoryStructure();
-
     const testDir = path.resolve(Properties.final_suite_directory);
     await clearDirectory(testDir);
 
-    const stringifier = new SolidityTruffleStringifier(
-      finalImportsMap,
-      finalDependencies
-    );
+    const stringifier = new SolidityDecoder(finalImportsMap, finalDependencies);
 
     const suiteBuilder = new SoliditySuiteBuilder(
       stringifier,
@@ -450,8 +406,6 @@ export class SolidityLauncher {
     );
 
     await suiteBuilder.createSuite(finalArchive as Archive<SolidityTestCase>);
-
-    await deleteTempDirectories();
 
     this.config.test_files = await getTestFilePaths({
       testDir: testDir,
@@ -479,43 +433,36 @@ export class SolidityLauncher {
   }
 
   async testTarget(
-    targetPool: TargetPool,
+    targetPool: SolidityTargetPool,
     targetPath: string,
     target: string
   ): Promise<Archive<SolidityTestCase>> {
-    await createDirectoryStructure();
-
     const cfg = targetPool.getCFG(targetPath, target);
 
     if (Properties.draw_cfg) {
-      // TODO dot's in the the name of a file will give issues
       drawGraph(
         cfg,
         path.join(
           Properties.cfg_directory,
-          `${path.basename(targetPath).split(".")[0]}.svg`
+          `${path.basename(targetPath, ".sol")}.svg`
         )
       );
     }
 
     try {
-      await createDirectoryStructure();
-      await createTempDirectoryStructure();
-
       getUserInterface().report("header", [
         `SEARCHING: "${path.basename(targetPath)}": "${target}"`,
       ]);
 
       const ast = targetPool.getAST(targetPath);
-      const cfg = targetPool.getCFG(targetPath, target);
 
-      const functionDescriptions = cfg.getFunctionDescriptions(target);
+      const functionMap = targetPool.getFunctionMap(targetPath, target);
 
       const currentSubject = new SoliditySubject(
         path.basename(targetPath),
         target,
         cfg,
-        functionDescriptions
+        [...functionMap.values()]
       );
 
       if (!currentSubject.getPossibleActions().length) {
@@ -528,10 +475,7 @@ export class SolidityLauncher {
         target
       );
 
-      const stringifier = new SolidityTruffleStringifier(
-        importsMap,
-        dependencyMap
-      );
+      const stringifier = new SolidityDecoder(importsMap, dependencyMap);
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
         this.api,
@@ -611,7 +555,8 @@ export class SolidityLauncher {
       const coverageWriter = new CoverageWriter();
       coverageWriter.write(collector, statisticsDirectory + "/coverage.csv");
 
-      await deleteTempDirectories();
+      await clearDirectory(Properties.temp_test_directory);
+      await clearDirectory(Properties.temp_log_directory);
 
       return archive;
     } catch (e) {

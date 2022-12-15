@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,17 +16,20 @@
  * limitations under the License.
  */
 
-export * from "./testcase/execution/SolidityRunner";
+export interface Visibility {
+  name: string;
+}
 
-export * from "./search/SoliditySubject";
-export * from "./testcase/sampling/SolidityRandomSampler";
-export * from "./testcase/sampling/SoliditySampler";
+/**
+ * Function can be called from both inside and outside the contract.
+ */
+export const PublicVisibility: Visibility = {
+  name: "public",
+};
 
-export * from "./testbuilding/SoliditySuiteBuilder";
-export * from "./testbuilding/SolidityDecoder";
-
-export * from "./testcase/statements/primitive/AddressStatement";
-
-export * from "./graph/SolidityCFGFactory";
-
-export * from "./SolidityLauncher";
+/**
+ * Function can only be called from within the contract where it is defined.
+ */
+export const PrivateVisibility: Visibility = {
+  name: "private",
+};
