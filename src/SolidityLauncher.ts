@@ -65,8 +65,7 @@ import {
   createTruffleConfig,
   getTestFilePaths,
   loadLibrary,
-  setupTempFolders,
-  tearDownTempFolders,
+  setupTempFolders
 } from "./util/fileSystem";
 
 import Messages from "./ui/Messages";
@@ -89,7 +88,6 @@ import {
   collectStatistics,
 } from "./util/collection";
 import { Target } from "@syntest/framework";
-import { settings } from "cluster";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");
