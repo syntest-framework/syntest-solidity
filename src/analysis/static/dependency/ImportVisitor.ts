@@ -17,7 +17,7 @@
  */
 
 import { SolidityVisitor } from "../SolidityVisitor";
-import { ImportDirective } from "@solidity-parser/parser";
+import { ImportDirective } from "@solidity-parser/parser/dist/src/ast-types";
 
 /**
  * Visits the AST nodes of a contract to find all import statements

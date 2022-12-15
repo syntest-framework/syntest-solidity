@@ -1,5 +1,4 @@
 import {
-  Visitor,
   SourceUnit,
   PragmaDirective,
   ImportDirective,
@@ -48,7 +47,6 @@ import {
   AssemblyLiteral,
   SubAssembly,
   TupleExpression,
-  TypeNameExpression,
   StringLiteral,
   NumberLiteral,
   BooleanLiteral,
@@ -61,9 +59,11 @@ import {
   HexNumber,
   DecimalNumber,
   Continue,
-} from "@solidity-parser/parser";
+} from "@solidity-parser/parser/dist/src/ast-types";
 
-export interface SolidityVisitor extends Visitor {
+import { ASTVisitor } from "@solidity-parser/parser/dist/src/ast-types";
+
+export interface SolidityVisitor extends ASTVisitor {
   SourceUnit?: (node: SourceUnit) => void;
   PragmaDirective?: (node: PragmaDirective) => void;
   ImportDirective?: (node: ImportDirective) => void;
@@ -112,7 +112,6 @@ export interface SolidityVisitor extends Visitor {
   AssemblyLiteral?: (node: AssemblyLiteral) => void;
   SubAssembly?: (node: SubAssembly) => void;
   TupleExpression?: (node: TupleExpression) => void;
-  TypeNameExpression?: (node: TypeNameExpression) => void;
   StringLiteral?: (node: StringLiteral) => void;
   NumberLiteral?: (node: NumberLiteral) => void;
   BooleanLiteral?: (node: BooleanLiteral) => void;
@@ -178,7 +177,6 @@ export interface SolidityVisitor extends Visitor {
   "AssemblyLiteral:exit"?: (node: AssemblyLiteral) => void;
   "SubAssembly:exit"?: (node: SubAssembly) => void;
   "TupleExpression:exit"?: (node: TupleExpression) => void;
-  "TypeNameExpression:exit"?: (node: TypeNameExpression) => void;
   "NumberLiteral:exit"?: (node: NumberLiteral) => void;
   "BooleanLiteral:exit"?: (node: BooleanLiteral) => void;
   "Identifier:exit"?: (node: Identifier) => void;

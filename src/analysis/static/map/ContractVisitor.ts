@@ -21,7 +21,7 @@ import {
   ContractDefinition,
   FunctionDefinition,
   TypeName,
-} from "@solidity-parser/parser";
+} from "@solidity-parser/parser/dist/src/ast-types";
 import { ContractMetadata, ContractKind } from "./ContractMetadata";
 import {
   ContractFunction,
@@ -209,9 +209,15 @@ export class ContractVisitor implements SolidityVisitor {
         break;
       }
       case "Mapping": {
-        paramType = `Map<${type.keyType.name},${this.resolveTypes(
-          type.valueType
-        )}>`;
+        if (type.keyType.type === 'ElementaryTypeName') {
+          paramType = `Map<${type.keyType.name},${this.resolveTypes(
+            type.valueType
+          )}>`;
+        } else {
+          paramType = `Map<${type.keyType.namePath},${this.resolveTypes(
+            type.valueType
+          )}>`;
+        }
         break;
       }
       case "ArrayTypeName": {
@@ -221,13 +227,13 @@ export class ContractVisitor implements SolidityVisitor {
       case "FunctionTypeName": {
         const parameterTypes = type.parameterTypes
           .map((param) => {
-            return this.resolveTypes(param);
+            return param.name;
           })
           .join(",");
 
         const returnTypes = type.returnTypes
           .map((param) => {
-            return this.resolveTypes(param);
+            return param.name;
           })
           .join(",");
 
