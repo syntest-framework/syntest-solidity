@@ -23,12 +23,10 @@ import { TargetMapGenerator } from "./map/TargetMapGenerator";
 import { SolidityCFGFactory } from "../../graph/SolidityCFGFactory";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { ContractFunction } from "./map/ContractFunction";
-import { CFG, Properties } from "@syntest/framework";
+import { CFG, Properties, TargetPool, Target } from "@syntest/core";
 import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
 import { LibraryVisitor } from "./dependency/LibraryVisitor";
-import { TargetPool } from "@syntest/framework";
-import { Target } from "@syntest/framework";
 const SolidityParser = require("@solidity-parser/parser");
 const { outputFileSync, copySync } = require("fs-extra");
 const Instrumenter = require("../../../src/instrumentation/instrumenter"); // Local version

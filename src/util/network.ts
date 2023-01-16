@@ -1,4 +1,4 @@
-import { getUserInterface } from "@syntest/framework";
+import { getUserInterface } from "@syntest/core";
 
 const TruffleProvider = require("@truffle/provider");
 

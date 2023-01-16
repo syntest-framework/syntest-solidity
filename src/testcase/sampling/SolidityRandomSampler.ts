@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { prng, Properties } from "@syntest/framework";
+import { prng, Properties } from "@syntest/core";
 
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/primitive/AddressStatement";

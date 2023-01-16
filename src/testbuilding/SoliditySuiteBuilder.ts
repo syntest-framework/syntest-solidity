@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { Properties, Archive, getUserInterface } from "@syntest/framework";
+import { Properties, Archive, getUserInterface } from "@syntest/core";
 
 import {
   readdirSync,

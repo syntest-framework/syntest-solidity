@@ -19,7 +19,7 @@
 import { ConstructorCall } from "./ConstructorCall";
 import { AddressStatement } from "../primitive/AddressStatement";
 
-import { prng, Properties } from "@syntest/framework";
+import { prng, Properties } from "@syntest/core";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { ActionStatement } from "./ActionStatement";
 import { Statement } from "../Statement";

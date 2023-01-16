@@ -17,8 +17,8 @@
  */
 
 import { Statement } from "../Statement";
-import { EncodingSampler } from "@syntest/framework";
-import { Encoding } from "@syntest/framework";
+import { EncodingSampler } from "@syntest/core";
+import { Encoding } from "@syntest/core";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
 /**

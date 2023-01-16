@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { CommandLineInterface, yargs } from "@syntest/framework";
+import { CommandLineInterface, yargs } from "@syntest/core";
 
 import Messages from "./Messages";
 

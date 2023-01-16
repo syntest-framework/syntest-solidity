@@ -77,7 +77,7 @@ jobs:
         run: npm install
         working-directory: syntest-solidity
       - name: Solidity - Link Local Framework
-        run: npm link @syntest/framework
+        run: npm link @syntest/core
         working-directory: syntest-solidity
 
       # Building
