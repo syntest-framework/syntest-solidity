@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { getUserInterface, Encoding, Decoder } from "@syntest/framework";
+import { getUserInterface, Encoding, Decoder } from "@syntest/core";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
 import { SoliditySampler } from "./sampling/SoliditySampler";
 

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { CFG, Target } from "@syntest/framework";
+import { CFG, Target } from "@syntest/core";
 
 import { SolidityTargetPool } from "./SolidityTargetPool";
 import * as path from "path";

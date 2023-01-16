@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { MonitorCommandLineInterface, yargs } from "@syntest/framework";
+import { MonitorCommandLineInterface, yargs } from "@syntest/core";
 import Messages from "./Messages";
 
 const clear = require("clear");

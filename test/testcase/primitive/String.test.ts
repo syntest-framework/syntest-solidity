@@ -6,7 +6,7 @@ import {
   TestCaseSampler,
   setupLogger,
   setupOptions,
-} from "@syntest/framework";
+} from "@syntest/core";
 import { StringStatement } from "../../../dist/testcase/statements/primitive/StringStatement";
 
 const expect = chai.expect;

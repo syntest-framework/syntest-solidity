@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-import { EncodingSampler } from "@syntest/framework/dist/search/EncodingSampler";
-import { prng } from "@syntest/framework/dist/util/prng";
-import { Encoding } from "@syntest/framework/dist/search/Encoding";
+import { EncodingSampler } from "@syntest/core/dist/search/EncodingSampler";
+import { prng } from "@syntest/core/dist/util/prng";
+import { Encoding } from "@syntest/core/dist/search/Encoding";
 import { Parameter } from "../../analysis/static/parsing/Parameter";
 
 /**

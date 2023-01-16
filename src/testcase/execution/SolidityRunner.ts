@@ -21,7 +21,7 @@ import {
   Properties,
   getUserInterface,
   EncodingRunner,
-} from "@syntest/framework";
+} from "@syntest/core";
 
 import * as path from "path";
 import {

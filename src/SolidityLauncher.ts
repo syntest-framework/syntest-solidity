@@ -51,7 +51,8 @@ import {
   getSeed,
   clearDirectory,
   createTempDirectoryStructure,
-} from "@syntest/framework";
+  Target
+} from "@syntest/core";
 
 import * as path from "path";
 import TruffleConfig = require("@truffle/config");
@@ -87,7 +88,6 @@ import {
   collectInitialVariables,
   collectStatistics,
 } from "./util/collection";
-import { Target } from "@syntest/framework";
 
 const pkg = require("../package.json");
 const Web3 = require("web3");

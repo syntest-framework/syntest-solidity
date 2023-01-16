@@ -17,7 +17,7 @@
  */
 
 import { AddressStatement } from "../primitive/AddressStatement";
-import { prng } from "@syntest/framework";
+import { prng } from "@syntest/core";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { ActionStatement } from "./ActionStatement";
 import { Statement } from "../Statement";

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { Properties, prng } from "@syntest/framework";
+import { Properties, prng } from "@syntest/core";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
