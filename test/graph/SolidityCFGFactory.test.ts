@@ -46,7 +46,7 @@ contract MetaCoin {
     const cfg = factory.convertAST(ast);
     expect(cfg.edges.length === 12);
     expect(cfg.nodes.length === 11);
-    console.log(cfg);
+    // console.log(cfg);
 
     // drawGraph(cfg, "./temp/graph.svg");
     // expect(statement != null);
