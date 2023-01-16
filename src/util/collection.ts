@@ -99,12 +99,17 @@ export function collectStatistics(
       (objective) => objective instanceof ExceptionObjectiveFunction
     ).length;
 
-  collector.recordVariable(RuntimeVariable.COVERED_EXCEPTIONS, `${numOfExceptions}`);
+  collector.recordVariable(
+    RuntimeVariable.COVERED_EXCEPTIONS,
+    `${numOfExceptions}`
+  );
 
   collector.recordVariable(
     RuntimeVariable.COVERAGE,
-    `${(archive.getObjectives().length - numOfExceptions) /
-      currentSubject.getObjectives().length}`
+    `${
+      (archive.getObjectives().length - numOfExceptions) /
+      currentSubject.getObjectives().length
+    }`
   );
 }
 
@@ -148,7 +153,10 @@ export function collectCoverageData(
           RuntimeVariable.COVERED_BRANCHES,
           `${covered.size}`
         );
-        collector.recordVariable(RuntimeVariable.TOTAL_BRANCHES, `${total.size}`);
+        collector.recordVariable(
+          RuntimeVariable.TOTAL_BRANCHES,
+          `${total.size}`
+        );
 
         if (total.size > 0.0) {
           collector.recordVariable(
@@ -162,7 +170,10 @@ export function collectCoverageData(
       break;
     case "statement":
       {
-        collector.recordVariable(RuntimeVariable.COVERED_LINES, `${covered.size}`);
+        collector.recordVariable(
+          RuntimeVariable.COVERED_LINES,
+          `${covered.size}`
+        );
         collector.recordVariable(RuntimeVariable.TOTAL_LINES, `${total.size}`);
 
         if (total.size > 0.0) {
@@ -171,7 +182,7 @@ export function collectCoverageData(
             `${covered.size / total.size}`
           );
         } else {
-          collector.recordVariable(RuntimeVariable.LINE_COVERAGE, '0');
+          collector.recordVariable(RuntimeVariable.LINE_COVERAGE, "0");
         }
       }
       break;
@@ -181,7 +192,10 @@ export function collectCoverageData(
           RuntimeVariable.COVERED_FUNCTIONS,
           `${covered.size}`
         );
-        collector.recordVariable(RuntimeVariable.TOTAL_FUNCTIONS, `${total.size}`);
+        collector.recordVariable(
+          RuntimeVariable.TOTAL_FUNCTIONS,
+          `${total.size}`
+        );
 
         if (total.size > 0.0) {
           collector.recordVariable(
@@ -189,13 +203,16 @@ export function collectCoverageData(
             `${covered.size / total.size}`
           );
         } else {
-          collector.recordVariable(RuntimeVariable.FUNCTION_COVERAGE, '0');
+          collector.recordVariable(RuntimeVariable.FUNCTION_COVERAGE, "0");
         }
       }
       break;
     case "probe":
       {
-        collector.recordVariable(RuntimeVariable.COVERED_PROBES, `${covered.size}`);
+        collector.recordVariable(
+          RuntimeVariable.COVERED_PROBES,
+          `${covered.size}`
+        );
         collector.recordVariable(RuntimeVariable.TOTAL_PROBES, `${total.size}`);
 
         if (total.size > 0.0) {
@@ -204,7 +221,7 @@ export function collectCoverageData(
             `${covered.size / total.size}`
           );
         } else {
-          collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, '0');
+          collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, "0");
         }
       }
       break;
@@ -257,6 +274,6 @@ export function collectProbeCoverageData(
       `${covered.size / total}`
     );
   } else {
-    collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, '0');
+    collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, "0");
   }
 }

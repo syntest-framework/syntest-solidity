@@ -13,7 +13,7 @@ const expect = chai.expect;
 describe("AddressStatement", () => {
   before(async () => {
     await guessCWD(null);
-    await setupOptions("", "");
+    await setupOptions("", []);
     await loadConfig();
     await processConfig({}, "");
     await setupLogger();

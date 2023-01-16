@@ -209,7 +209,7 @@ export class ContractVisitor implements SolidityVisitor {
         break;
       }
       case "Mapping": {
-        if (type.keyType.type === 'ElementaryTypeName') {
+        if (type.keyType.type === "ElementaryTypeName") {
           paramType = `Map<${type.keyType.name},${this.resolveTypes(
             type.valueType
           )}>`;

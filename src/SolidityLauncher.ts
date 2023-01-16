@@ -51,7 +51,7 @@ import {
   getSeed,
   clearDirectory,
   createTempDirectoryStructure,
-  Target
+  Target,
 } from "@syntest/core";
 
 import * as path from "path";
@@ -66,7 +66,7 @@ import {
   createTruffleConfig,
   getTestFilePaths,
   loadLibrary,
-  setupTempFolders
+  setupTempFolders,
 } from "./util/fileSystem";
 
 import Messages from "./ui/Messages";
@@ -145,7 +145,10 @@ export class SolidityLauncher {
         required: true,
       },
     }; // TODO
-    setupOptions(this._program, <Record<string, unknown>[]><unknown>additionalOptions);
+    setupOptions(
+      this._program,
+      <Record<string, unknown>[]>(<unknown>additionalOptions)
+    );
 
     const index = process.argv.indexOf(
       process.argv.find((a) => a.includes(this._program))
@@ -192,16 +195,16 @@ export class SolidityLauncher {
 
     this.config.compilers = {
       solc: {
-        version: Properties['solc_compiler_version'],
+        version: Properties["solc_compiler_version"],
         parser: "solcjs",
         settings: {
           optimizer: {
             enabled: true,
-            runs: 2
-          }
-        }
-      }
-    }
+            runs: 2,
+          },
+        },
+      },
+    };
     this.truffle = loadLibrary(this.config);
     this.api = new API(myConfig);
 
@@ -236,14 +239,13 @@ export class SolidityLauncher {
 
     getUserInterface().report("header", ["GENERAL INFO"]);
 
-    getUserInterface().report("property-set", [
-      "Network Info",
-      <string><unknown>[
+    getUserInterface().report("property-set", ["Network Info", <string>(<
+        unknown
+      >[
         ["id", this.config.network],
         ["port", this.config.networks[this.config.network].network_id],
         ["network", this.config.networks[this.config.network].port],
-      ],
-    ]);
+      ])]);
 
     getUserInterface().report("header", ["TARGETS"]);
 
@@ -283,25 +285,19 @@ export class SolidityLauncher {
     getUserInterface().report("header", ["CONFIGURATION"]);
 
     getUserInterface().report("single-property", ["Seed", getSeed()]);
-    getUserInterface().report("property-set", [
-      "Budgets",
-      <string><unknown>[
+    getUserInterface().report("property-set", ["Budgets", <string>(<unknown>[
         ["Iteration Budget", `${Properties.iteration_budget} iterations`],
         ["Evaluation Budget", `${Properties.evaluation_budget} evaluations`],
         ["Search Time Budget", `${Properties.search_time} seconds`],
         ["Total Time Budget", `${Properties.total_time} seconds`],
-      ],
-    ]);
-    getUserInterface().report("property-set", [
-      "Algorithm",
-      <string><unknown>[
+      ])]);
+    getUserInterface().report("property-set", ["Algorithm", <string>(<unknown>[
         ["Algorithm", Properties.algorithm],
         ["Population Size", Properties.population_size],
-      ],
-    ]);
+      ])]);
     getUserInterface().report("property-set", [
       "Variation Probabilities",
-      <string><unknown>[
+      <string>(<unknown>[
         ["Resampling", Properties.resample_gene_probability],
         ["Delta mutation", Properties.delta_mutation_probability],
         [
@@ -309,18 +305,15 @@ export class SolidityLauncher {
           Properties.sample_existing_value_probability,
         ],
         ["Crossover", Properties.crossover_probability],
-      ],
+      ]),
     ]);
 
-    getUserInterface().report("property-set", [
-      "Sampling",
-      <string><unknown>[
+    getUserInterface().report("property-set", ["Sampling", <string>(<unknown>[
         ["Max Depth", Properties.max_depth],
         ["Explore Illegal Values", Properties.explore_illegal_values],
         ["Sample Function Result as Argument", Properties.sample_func_as_arg],
         ["Crossover", Properties.crossover_probability],
-      ],
-    ]);
+      ])]);
 
     return targetPool;
   }

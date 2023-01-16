@@ -75,7 +75,7 @@ export class StringStatement extends PrimitiveStatement<string> {
 
   addMutation(): StringStatement {
     const position = prng.nextInt(0, this.value.length - 1);
-    const addedChar = prng.pickOne(this.alphabet.split(''));
+    const addedChar = prng.pickOne(this.alphabet.split(""));
 
     let newValue = "";
 
@@ -120,7 +120,7 @@ export class StringStatement extends PrimitiveStatement<string> {
 
   replaceMutation(): StringStatement {
     const position = prng.nextInt(0, this.value.length - 1);
-    const newChar = prng.pickOne(this.alphabet.split(''));
+    const newChar = prng.pickOne(this.alphabet.split(""));
 
     let newValue = "";
 
@@ -195,7 +195,7 @@ export class StringStatement extends PrimitiveStatement<string> {
     let value = "";
 
     for (let i = 0; i < valueLength; i++) {
-      value += prng.pickOne(alphabet.split(''));
+      value += prng.pickOne(alphabet.split(""));
     }
 
     return new StringStatement(
