@@ -6,8 +6,8 @@ import {
   setupLogger,
   setupOptions,
 } from "@syntest/core";
-import { StringStatement } from "../../../dist/testcase/statements/primitive/StringStatement";
-import { SoliditySampler } from "../../../dist/testcase/sampling/SoliditySampler";
+import { StringStatement } from "../../../src/testcase/statements/primitive/StringStatement";
+import { SoliditySampler } from "../../../src/testcase/sampling/SoliditySampler";
 
 const expect = chai.expect;
 
