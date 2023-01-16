@@ -37,7 +37,7 @@ export function collectInitialVariables(
   currentSubject: SoliditySubject,
   targetPath: string
 ) {
-  collector.recordVariable(RuntimeVariable.VERSION, `${1}`);
+  collector.recordVariable(RuntimeVariable.VERSION, `1`);
   collector.recordVariable(
     RuntimeVariable.CONFIGURATION,
     Properties.configuration
@@ -156,7 +156,7 @@ export function collectCoverageData(
             `${covered.size / total.size}`
           );
         } else {
-          collector.recordVariable(RuntimeVariable.BRANCH_COVERAGE, `${0}`);
+          collector.recordVariable(RuntimeVariable.BRANCH_COVERAGE, `0`);
         }
       }
       break;
@@ -171,7 +171,7 @@ export function collectCoverageData(
             `${covered.size / total.size}`
           );
         } else {
-          collector.recordVariable(RuntimeVariable.LINE_COVERAGE, `${0}`);
+          collector.recordVariable(RuntimeVariable.LINE_COVERAGE, '0');
         }
       }
       break;
@@ -189,7 +189,7 @@ export function collectCoverageData(
             `${covered.size / total.size}`
           );
         } else {
-          collector.recordVariable(RuntimeVariable.FUNCTION_COVERAGE, `${0}`);
+          collector.recordVariable(RuntimeVariable.FUNCTION_COVERAGE, '0');
         }
       }
       break;
@@ -204,7 +204,7 @@ export function collectCoverageData(
             `${covered.size / total.size}`
           );
         } else {
-          collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, `${0}`);
+          collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, '0');
         }
       }
       break;
@@ -257,6 +257,6 @@ export function collectProbeCoverageData(
       `${covered.size / total}`
     );
   } else {
-    collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, `${0}`);
+    collector.recordVariable(RuntimeVariable.PROBE_COVERAGE, '0');
   }
 }
