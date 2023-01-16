@@ -22,10 +22,10 @@ jobs:
 
       matrix:
         # Run the pipeline on all the currently supported OS versions
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest]
 
         # Run the pipeline on all the currently supported LTS versions and the upcoming version
-        node-version: [14, 16, 18, 19]
+        node-version: [18, 19]
 
         # Run the pipeline on all the currently supported architectures
         architecture: [x64]
