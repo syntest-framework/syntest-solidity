@@ -125,14 +125,7 @@ class API {
         : true;
 
     // Attach to vm step of supplied client
-    try {
-      if (this.config.forceBackupServer) throw new Error();
-      await this.attachToVM(client);
-    } catch (err) {
-      // Fallback to ganache-cli)
-      const _ganache = require("ganache-cli");
-      await this.attachToVM(_ganache);
-    }
+    await this.attachToVM(client);
 
     if (autoLaunchServer === false || this.autoLaunchServer === false) {
       return this.server;

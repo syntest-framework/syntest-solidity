@@ -219,6 +219,7 @@ export class SolidityLauncher {
     const client = this.api.client || this.truffle.ganache;
     const address = await this.api.ganache(client);
 
+    console.log(client)
     const web3 = new Web3(address);
     const accounts = await web3.eth.getAccounts();
     const nodeInfo = await web3.eth.getNodeInfo();
