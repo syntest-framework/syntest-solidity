@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { SearchSubject, EncodingSampler } from "@syntest/framework";
+import { SearchSubject, EncodingSampler } from "@syntest/core";
 import { Parameter } from "../../analysis/static/parsing/Parameter";
 
 import { SolidityTestCase } from "../SolidityTestCase";

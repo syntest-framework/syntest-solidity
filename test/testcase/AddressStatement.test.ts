@@ -5,7 +5,7 @@ import {
   processConfig,
   setupLogger,
   setupOptions,
-} from "@syntest/framework";
+} from "@syntest/core";
 import { AddressStatement } from "../../src";
 
 const expect = chai.expect;
@@ -13,7 +13,7 @@ const expect = chai.expect;
 describe("AddressStatement", () => {
   before(async () => {
     await guessCWD(null);
-    await setupOptions("", "");
+    await setupOptions("", []);
     await loadConfig();
     await processConfig({}, "");
     await setupLogger();

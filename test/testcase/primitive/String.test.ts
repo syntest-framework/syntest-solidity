@@ -3,18 +3,18 @@ import {
   guessCWD,
   loadConfig,
   processConfig,
-  TestCaseSampler,
   setupLogger,
   setupOptions,
-} from "@syntest/framework";
-import { StringStatement } from "../../../dist/testcase/statements/primitive/StringStatement";
+} from "@syntest/core";
+import { StringStatement } from "../../../src/testcase/statements/primitive/StringStatement";
+import { SoliditySampler } from "../../../src/testcase/sampling/SoliditySampler";
 
 const expect = chai.expect;
 
 describe("StringStatement", () => {
   before(async () => {
     await guessCWD(null);
-    await setupOptions("", "");
+    await setupOptions("", []);
     await loadConfig();
     await processConfig({}, "");
     await setupLogger();
@@ -56,9 +56,9 @@ describe("StringStatement", () => {
   });
 
   it("Mutate gives exact other value", () => {
-    const mockedSampler = <TestCaseSampler>{};
+    const mockedSampler = <SoliditySampler>{};
     const statement = StringStatement.getRandom();
-    const mutation = statement.mutate(mockedSampler as TestCaseSampler, 0);
+    const mutation = statement.mutate(mockedSampler as SoliditySampler, 0);
 
     expect(statement.value != mutation.value);
   });

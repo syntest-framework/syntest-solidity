@@ -25,7 +25,7 @@ import {
   NodeType,
   ObjectiveFunction,
   SearchSubject,
-} from "@syntest/framework";
+} from "@syntest/core";
 
 import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 import { ExternalVisibility } from "../analysis/static/map/ContractFunction";

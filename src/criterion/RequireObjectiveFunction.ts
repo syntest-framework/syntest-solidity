@@ -24,7 +24,7 @@ import {
   NodeType,
   ProbeObjectiveFunction,
   SearchSubject,
-} from "@syntest/framework";
+} from "@syntest/core";
 
 export class RequireObjectiveFunction<
   T extends Encoding

@@ -19,7 +19,7 @@
 import { existsSync, mkdirSync, rmdirSync, writeFileSync } from "fs";
 import * as path from "path";
 
-import { getUserInterface, Properties } from "@syntest/framework";
+import { getUserInterface, Properties } from "@syntest/core";
 const globby = require("globby");
 const recursive = require("recursive-readdir");
 const globalModules = require("global-modules");

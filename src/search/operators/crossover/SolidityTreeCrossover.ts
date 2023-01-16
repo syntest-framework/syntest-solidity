@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { prng, Crossover, Properties } from "@syntest/framework";
+import { prng, Crossover, Properties } from "@syntest/core";
 
 import { SolidityTestCase } from "../../../testcase/SolidityTestCase";
 import { ConstructorCall } from "../../../testcase/statements/action/ConstructorCall";

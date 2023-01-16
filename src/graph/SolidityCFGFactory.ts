@@ -27,7 +27,7 @@ import {
   CFGFactory,
   Properties,
   NodeType,
-} from "@syntest/framework";
+} from "@syntest/core";
 
 import {
   ExternalVisibility,
