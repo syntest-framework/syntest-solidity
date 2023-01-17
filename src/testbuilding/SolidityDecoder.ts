@@ -59,6 +59,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       }
     }
     const formattedArgs = args
+      // eslint-disable-next-line
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
@@ -86,6 +87,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       }
     }
     const formattedArgs = args
+      // eslint-disable-next-line
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
@@ -106,7 +108,9 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       throw new Error(`${statement} is not a primitive statement`);
     }
 
+    // eslint-disable-next-line
     const primitive: PrimitiveStatement<any> =
+      // eslint-disable-next-line
       statement as PrimitiveStatement<any>;
     // TODO what happened to float support?
     if (
@@ -339,7 +343,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
 
       let count = 1;
       while (stack.length) {
-        const gene: Statement = stack.pop()!;
+        const gene: Statement = stack.pop();
 
         if (gene instanceof ConstructorCall) {
           if (count === stopAfter) {

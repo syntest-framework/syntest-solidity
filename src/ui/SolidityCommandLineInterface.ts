@@ -20,7 +20,7 @@ import { CommandLineInterface, yargs } from "@syntest/core";
 
 import Messages from "./Messages";
 
-const clear = require("clear");
+import clear = require("clear");
 
 /**
  * A solidity specific command line interface.

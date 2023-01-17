@@ -22,7 +22,7 @@ import { SoliditySuiteBuilder } from "./testbuilding/SoliditySuiteBuilder";
 import { SolidityRunner } from "./testcase/execution/SolidityRunner";
 import { SolidityRandomSampler } from "./testcase/sampling/SolidityRandomSampler";
 import { SolidityCFGFactory } from "./graph/SolidityCFGFactory";
-const SolidityParser = require("@solidity-parser/parser");
+import SolidityParser = require("@solidity-parser/parser");
 
 import {
   Archive,
@@ -65,7 +65,6 @@ import { setNetwork, setNetworkFrom } from "./util/network";
 import {
   createTruffleConfig,
   getTestFilePaths,
-  loadLibrary,
   setupTempFolders,
 } from "./util/fileSystem";
 
@@ -88,8 +87,9 @@ import {
   collectInitialVariables,
   collectStatistics,
 } from "./util/collection";
-
+// eslint-disable-next-line
 const pkg = require("../package.json");
+// eslint-disable-next-line
 const Web3 = require("web3");
 
 export class SolidityLauncher {
@@ -190,7 +190,7 @@ export class SolidityLauncher {
 
     getUserInterface().report("clear", []);
     getUserInterface().report("asciiArt", ["Syntest"]);
-    getUserInterface().report("version", [require("../package.json").version]);
+    getUserInterface().report("version", [pkg.version]);
 
     this.config.compilers = {
       solc: {
@@ -204,7 +204,7 @@ export class SolidityLauncher {
         },
       },
     };
-    this.truffle = loadLibrary(this.config);
+    this.truffle = require("truffle");
     this.api = new API(myConfig);
 
     if (args.includes("--help") || args.includes("-h")) {
@@ -327,7 +327,7 @@ export class SolidityLauncher {
     for (const target of targetPool.targets) {
       targetPaths.add(target.canonicalPath);
 
-      const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+      const { dependencyMap } = targetPool.getImportDependencies(
         target.canonicalPath,
         target.targetName
       );
@@ -366,7 +366,7 @@ export class SolidityLauncher {
         target.canonicalPath,
         target.targetName
       );
-      const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+      const { importMap, dependencyMap } = targetPool.getImportDependencies(
         target.canonicalPath,
         target.targetName
       );
@@ -375,7 +375,7 @@ export class SolidityLauncher {
 
       finalImportsMap = new Map([
         ...Array.from(finalImportsMap.entries()),
-        ...Array.from(importsMap.entries()),
+        ...Array.from(importMap.entries()),
       ]);
       finalDependencies = new Map([
         ...Array.from(finalDependencies.entries()),
@@ -454,7 +454,7 @@ export class SolidityLauncher {
 
       const ast = targetPool.getAST(targetPath);
 
-      const functionMap = targetPool.getFunctionMap(targetPath, target);
+      const functionMap = targetPool.getFunctionMapSpecific(targetPath, target);
 
       const currentSubject = new SoliditySubject(
         path.basename(targetPath),
@@ -468,12 +468,12 @@ export class SolidityLauncher {
         return new Archive();
       }
 
-      const [importsMap, dependencyMap] = targetPool.getImportDependencies(
+      const { importMap, dependencyMap } = targetPool.getImportDependencies(
         targetPath,
         target
       );
 
-      const stringifier = new SolidityDecoder(importsMap, dependencyMap);
+      const stringifier = new SolidityDecoder(importMap, dependencyMap);
       const suiteBuilder = new SoliditySuiteBuilder(
         stringifier,
         this.api,

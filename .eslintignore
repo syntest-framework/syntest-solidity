@@ -8,3 +8,5 @@ syntest/
 .*
 *.json
 *.md
+
+src/**/*.js

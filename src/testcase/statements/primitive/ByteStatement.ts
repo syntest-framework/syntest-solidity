@@ -17,7 +17,6 @@
  */
 
 import { Properties, prng } from "@syntest/core";
-import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
@@ -37,7 +36,7 @@ export class ByteStatement extends PrimitiveStatement<number[]> {
     return new ByteStatement(this.type, prng.uniqueId(), [...this.value]);
   }
 
-  mutate(sampler: SoliditySampler, depth: number): ByteStatement {
+  mutate(): ByteStatement {
     if (prng.nextBoolean(Properties.delta_mutation_probability)) {
       const index = prng.nextInt(0, this.value.length - 1);
 

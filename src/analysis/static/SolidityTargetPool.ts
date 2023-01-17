@@ -27,9 +27,10 @@ import { CFG, Properties, TargetPool, Target } from "@syntest/core";
 import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
 import { LibraryVisitor } from "./dependency/LibraryVisitor";
-const SolidityParser = require("@solidity-parser/parser");
+import SolidityParser = require("@solidity-parser/parser");
+import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
+// eslint-disable-next-line
 const { outputFileSync, copySync } = require("fs-extra");
-const Instrumenter = require("../../../src/instrumentation/instrumenter"); // Local version
 
 /**
  * Pool for retrieving and caching expensive processing calls.
@@ -48,7 +49,7 @@ export class SolidityTargetPool extends TargetPool {
   protected _sources: Map<string, string>;
 
   // Mapping: filepath -> AST
-  protected _abstractSyntaxTrees: Map<string, any>;
+  protected _abstractSyntaxTrees: Map<string, SourceUnit>;
 
   // Mapping: filepath -> target name -> target
   protected _targetMap: Map<string, Map<string, ContractMetadata>>;
@@ -62,10 +63,13 @@ export class SolidityTargetPool extends TargetPool {
   // Mapping: filepath -> target name -> (function name -> CFG)
   protected _controlFlowGraphs: Map<string, Map<string, CFG>>;
 
-  // Mapping: filepath -> target name -> [importsMap, dependencyMap]
+  // Mapping: filepath -> target name -> {importsMap, dependencyMap}
   protected _dependencyMaps: Map<
     string,
-    Map<string, [Map<string, string>, Map<string, Target[]>]>
+    Map<
+      string,
+      { importMap: Map<string, string>; dependencyMap: Map<string, Target[]> }
+    >
   >;
 
   constructor(
@@ -81,7 +85,7 @@ export class SolidityTargetPool extends TargetPool {
     this._controlFlowGraphGenerator = controlFlowGraphGenerator;
 
     this._sources = new Map<string, string>();
-    this._abstractSyntaxTrees = new Map<string, any>();
+    this._abstractSyntaxTrees = new Map<string, SourceUnit>();
     this._targetMap = new Map<string, Map<string, ContractMetadata>>();
     this._functionMaps = new Map<
       string,
@@ -104,7 +108,7 @@ export class SolidityTargetPool extends TargetPool {
     }
   }
 
-  getAST(targetPath: string): any {
+  getAST(targetPath: string): SourceUnit {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (this._abstractSyntaxTrees.has(absoluteTargetPath)) {
@@ -118,7 +122,7 @@ export class SolidityTargetPool extends TargetPool {
     }
   }
 
-  getTargetMap(targetPath: string): Map<string, any> {
+  getTargetMap(targetPath: string): Map<string, ContractMetadata> {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (this._targetMap.has(absoluteTargetPath)) {
@@ -133,7 +137,26 @@ export class SolidityTargetPool extends TargetPool {
     }
   }
 
-  getFunctionMap(targetPath: string, targetName: string): Map<string, any> {
+  getFunctionMap(
+    targetPath: string
+  ): Map<string, Map<string, ContractFunction>> {
+    const absoluteTargetPath = path.resolve(targetPath);
+
+    if (!this._functionMaps.has(absoluteTargetPath)) {
+      const targetAST = this.getAST(absoluteTargetPath);
+      const { targetMap, functionMap } =
+        this._targetMapGenerator.generate(targetAST);
+      this._targetMap.set(absoluteTargetPath, targetMap);
+      this._functionMaps.set(absoluteTargetPath, functionMap);
+    }
+
+    return this._functionMaps.get(absoluteTargetPath);
+  }
+
+  getFunctionMapSpecific(
+    targetPath: string,
+    targetName: string
+  ): Map<string, ContractFunction> {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (!this._functionMaps.has(absoluteTargetPath)) {
@@ -176,7 +199,7 @@ export class SolidityTargetPool extends TargetPool {
   getImportDependencies(
     targetPath: string,
     targetName: string
-  ): [Map<string, string>, Map<string, Target[]>] {
+  ): { importMap: Map<string, string>; dependencyMap: Map<string, Target[]> } {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (!this._dependencyMaps.has(absoluteTargetPath))
@@ -186,8 +209,8 @@ export class SolidityTargetPool extends TargetPool {
       return this._dependencyMaps.get(absoluteTargetPath).get(targetName);
     } else {
       // Import the contract under test
-      const importsMap = new Map<string, string>();
-      importsMap.set(targetName, targetName);
+      const importMap = new Map<string, string>();
+      importMap.set(targetName, targetName);
 
       // Find all external imports in the contract under test
       const importVisitor = new ImportVisitor();
@@ -214,7 +237,7 @@ export class SolidityTargetPool extends TargetPool {
         SolidityParser.visit(astLib, libraryVisitor);
 
         // Import the external file in the test
-        importsMap.set(
+        importMap.set(
           path.basename(importPath).split(".")[0],
           path.basename(importPath).split(".")[0]
         );
@@ -237,11 +260,12 @@ export class SolidityTargetPool extends TargetPool {
 
       this._dependencyMaps
         .get(targetPath)
-        .set(targetName, [importsMap, dependencyMap]);
-      return [importsMap, dependencyMap];
+        .set(targetName, { importMap, dependencyMap });
+      return { importMap, dependencyMap };
     }
   }
 
+  // eslint-disable-next-line
   async prepareAndInstrument(api: any): Promise<void> {
     const absoluteRootPath = path.resolve(Properties.target_root_directory);
 

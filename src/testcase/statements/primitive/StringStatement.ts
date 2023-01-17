@@ -18,7 +18,6 @@
 
 import { prng, Properties } from "@syntest/core";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
-import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
@@ -41,7 +40,7 @@ export class StringStatement extends PrimitiveStatement<string> {
     this.maxlength = maxlength;
   }
 
-  mutate(sampler: SoliditySampler, depth: number): StringStatement {
+  mutate(): StringStatement {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       return StringStatement.getRandom();
     }

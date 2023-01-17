@@ -19,6 +19,7 @@
 import { Statement } from "../Statement";
 import { EncodingSampler } from "@syntest/core";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { SolidityTestCase } from "../../SolidityTestCase";
 
 /**
  * @author Dimitri Stallenberg
@@ -35,7 +36,7 @@ export abstract class PrimitiveStatement<T> extends Statement {
   get value(): T {
     return this._value;
   }
-  private _value: any;
+  private _value: T;
 
   constructor(type: Parameter, uniqueId: string, value: T) {
     super([type], uniqueId);
@@ -43,7 +44,7 @@ export abstract class PrimitiveStatement<T> extends Statement {
   }
 
   abstract mutate(
-    sampler: EncodingSampler<any>,
+    sampler: EncodingSampler<SolidityTestCase>,
     depth: number
   ): PrimitiveStatement<T>;
 
@@ -57,7 +58,7 @@ export abstract class PrimitiveStatement<T> extends Statement {
     return [];
   }
 
-  static getRandom(): PrimitiveStatement<any> {
+  static getRandom() {
     throw new Error("Unimplemented function!");
   }
 }

@@ -122,7 +122,7 @@ export class SolidityRandomSampler extends SoliditySampler {
 
       const nCalls = prng.nextInt(1, 5);
       for (let index = 0; index <= nCalls; index++) {
-        const call = this.sampleObjectFunctionCall(1, root);
+        const call = this.sampleObjectFunctionCall(depth + 1, root);
         root.setMethodCall(index, call as ActionStatement);
       }
 
@@ -141,7 +141,7 @@ export class SolidityRandomSampler extends SoliditySampler {
 
       const nCalls = prng.nextInt(1, 5);
       for (let index = 0; index <= nCalls; index++) {
-        const call = this.sampleObjectFunctionCall(1, root);
+        const call = this.sampleObjectFunctionCall(depth + 1, root);
         root.setMethodCall(index, call as ActionStatement);
       }
 
