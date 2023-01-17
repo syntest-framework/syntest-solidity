@@ -84,6 +84,7 @@
     "eslint": "8.29.0",
     "eslint-config-prettier": "8.5.0",
     "husky": "^8.0.3",
+    "lint-staged": "^13.1.0",
     "mocha": "10.2.0",
     "nyc": "15.1.0",
     "prettier": "2.8.1",
@@ -93,5 +94,11 @@
   },
   "engines": {
     "node": ">=10.24.0"
+  },
+  "lint-staged":{
+    "**/*.{js,jsx,ts,tsx}":[
+      "npx prettier --write",
+      "npx eslint --fix"
+    ]
   }
 }
