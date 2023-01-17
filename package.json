@@ -97,8 +97,8 @@
   },
   "lint-staged":{
     "**/*.{js,jsx,ts,tsx}":[
-      "npx prettier --config .prettierrc.json --ignore-path .prettierignore --write",
-      "npx eslint --config .eslintrc.json --ignore-path .eslintignore --fix"
+      "npx format",
+      "npx lint:fix"
     ]
   }
 }
