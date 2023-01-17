@@ -33,7 +33,6 @@ export class RequireObjectiveFunction<
     subject: SearchSubject<T>,
     id: string,
     line: number,
-
     type: boolean
   ) {
     super(subject, id, line, type);
