@@ -20,7 +20,6 @@ import { prng, Properties } from "@syntest/core";
 
 import BigNumber from "bignumber.js";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
-import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
@@ -59,7 +58,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     this._lower_bound = lower_bound;
   }
 
-  mutate(sampler: SoliditySampler, depth: number): NumericStatement {
+  mutate(): NumericStatement {
     if (prng.nextBoolean(Properties.delta_mutation_probability)) {
       return this.deltaMutation();
     }
@@ -125,7 +124,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     signed = Properties.numeric_signed,
     upper_bound = new BigNumber(Number.MAX_SAFE_INTEGER),
     lower_bound = new BigNumber(Number.MAX_SAFE_INTEGER)
-  ) {
+  ): NumericStatement {
     // by default we create small numbers (do we need very large numbers?)
     const max = BigNumber.min(upper_bound, new BigNumber(Math.pow(2, 11) - 1));
     const min: BigNumber = signed ? max.negated() : this._zero;

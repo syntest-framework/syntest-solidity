@@ -18,8 +18,7 @@
 
 import { MonitorCommandLineInterface, yargs } from "@syntest/core";
 import Messages from "./Messages";
-
-const clear = require("clear");
+import clear = require("clear");
 
 /**
  * A solidity specific monitor command line interface.

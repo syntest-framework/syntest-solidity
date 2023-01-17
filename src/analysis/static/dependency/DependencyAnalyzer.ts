@@ -25,7 +25,7 @@ import { ImportVisitor } from "./ImportVisitor";
 import { Graph } from "../Graph";
 import { PublicVisibility } from "../parsing/Visibility";
 
-const SolidityParser = require("@solidity-parser/parser");
+import SolidityParser = require("@solidity-parser/parser");
 
 /**
  * Analyzer that discovers all dependencies in the target.
@@ -183,7 +183,7 @@ export class DependencyAnalyzer {
         const contracts = this._targetPool.getTargetMap(importedFilePath);
         contracts.forEach((contractMetadata: ContractMetadata) => {
           if (contractMetadata.kind === ContractKind.Library) {
-            const functions = this._targetPool.getFunctionMap(
+            const functions = this._targetPool.getFunctionMapSpecific(
               importedFilePath,
               contractMetadata.name
             );

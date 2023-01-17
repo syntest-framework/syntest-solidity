@@ -18,7 +18,6 @@
 
 import { prng, Properties } from "@syntest/core";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
-import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 
 /**
@@ -29,7 +28,7 @@ export class BoolStatement extends PrimitiveStatement<boolean> {
     super(type, uniqueId, value);
   }
 
-  mutate(sampler: SoliditySampler, depth: number) {
+  mutate() {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       return BoolStatement.getRandom(this.type);
     }
@@ -43,7 +42,7 @@ export class BoolStatement extends PrimitiveStatement<boolean> {
 
   static getRandom(
     type: Parameter = { type: "bool", name: "noname" }
-  ): PrimitiveStatement<any> {
+  ): BoolStatement {
     return new BoolStatement(type, prng.uniqueId(), prng.nextBoolean());
   }
 }

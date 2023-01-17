@@ -1,6 +1,6 @@
 import { SolidityCFGFactory } from "../../src";
 import * as chai from "chai";
-const SolidityParser = require("@solidity-parser/parser");
+import SolidityParser = require("@solidity-parser/parser");
 
 const expect = chai.expect;
 

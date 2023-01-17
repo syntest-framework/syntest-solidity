@@ -35,10 +35,14 @@ import { SolidityDecoder } from "./SolidityDecoder";
  */
 export class SoliditySuiteBuilder {
   private decoder: SolidityDecoder;
+  // eslint-disable-next-line
   private api: any;
+  // eslint-disable-next-line
   private truffle: any;
+  // eslint-disable-next-line
   private readonly config: any;
 
+  // eslint-disable-next-line
   constructor(decoder: SolidityDecoder, api: any, truffle: any, config: any) {
     this.decoder = decoder;
     this.api = api;
@@ -91,8 +95,8 @@ export class SoliditySuiteBuilder {
       const targetName = objective
         .getSubject()
         .name.split("/")
-        .pop()!
-        .split(".")[0]!;
+        .pop()
+        .split(".")[0];
 
       if (!reducedArchive.has(targetName)) {
         reducedArchive.set(targetName, []);
@@ -120,7 +124,7 @@ export class SoliditySuiteBuilder {
 
     // write the test cases with logs to know what to assert
     for (const key of reducedArchive.keys()) {
-      for (const testCase of reducedArchive.get(key)!) {
+      for (const testCase of reducedArchive.get(key)) {
         const testPath = path.join(
           Properties.temp_test_directory,
           `test${key}${testCase.id}.js`

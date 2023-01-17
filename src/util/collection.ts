@@ -19,6 +19,8 @@
 import * as path from "path";
 import {
   Archive,
+  Datapoint,
+  Encoding,
   EvaluationBudget,
   ExceptionObjectiveFunction,
   ExecutionResult,
@@ -32,8 +34,8 @@ import {
 } from "@syntest/core";
 import { SoliditySubject } from "../search/SoliditySubject";
 
-export function collectInitialVariables(
-  collector: StatisticsCollector<any>,
+export function collectInitialVariables<T extends Encoding>(
+  collector: StatisticsCollector<T>,
   currentSubject: SoliditySubject,
   targetPath: string
 ) {
@@ -59,14 +61,14 @@ export function collectInitialVariables(
   );
 }
 
-export function collectStatistics(
-  collector: StatisticsCollector<any>,
+export function collectStatistics<T extends Encoding>(
+  collector: StatisticsCollector<T>,
   currentSubject: SoliditySubject,
-  archive: Archive<any>,
-  totalTimeBudget: TotalTimeBudget<any>,
-  searchBudget: SearchTimeBudget<any>,
-  iterationBudget: IterationBudget<any>,
-  evaluationBudget: EvaluationBudget<any>
+  archive: Archive<T>,
+  totalTimeBudget: TotalTimeBudget<T>,
+  searchBudget: SearchTimeBudget<T>,
+  iterationBudget: IterationBudget<T>,
+  evaluationBudget: EvaluationBudget<T>
 ) {
   collector.recordVariable(
     RuntimeVariable.COVERED_OBJECTIVES,
@@ -113,9 +115,9 @@ export function collectStatistics(
   );
 }
 
-export function collectCoverageData(
-  collector: StatisticsCollector<any>,
-  archive: Archive<any>,
+export function collectCoverageData<T extends Encoding>(
+  collector: StatisticsCollector<T>,
+  archive: Archive<T>,
   objectiveType: string
 ): void {
   const total = new Set();
@@ -131,7 +133,7 @@ export function collectCoverageData(
       .getTraces()
       .filter((element) => element.type.includes(objectiveType))
       .filter((element) => {
-        const paths = (element as any).path.split("/");
+        const paths = (element as Datapoint).path.split("/");
         return paths[paths.length - 1].includes(contractName);
       })
       .forEach((current) => {
@@ -228,9 +230,9 @@ export function collectCoverageData(
   }
 }
 
-export function collectProbeCoverageData(
-  collector: StatisticsCollector<any>,
-  archive: Archive<any>
+export function collectProbeCoverageData<T extends Encoding>(
+  collector: StatisticsCollector<T>,
+  archive: Archive<T>
 ): void {
   let total = 0;
   const covered = new Set();
@@ -242,7 +244,7 @@ export function collectProbeCoverageData(
 
     // filter by contract
     const traces = result.getTraces().filter((element) => {
-      const paths = (element as any).path.split("/");
+      const paths = (element as Datapoint).path.split("/");
       return paths[paths.length - 1].includes(contractName);
     });
 

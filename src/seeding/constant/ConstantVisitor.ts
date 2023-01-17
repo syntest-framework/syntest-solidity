@@ -23,7 +23,6 @@ import {
   StringLiteral,
   NumberLiteral,
   Identifier,
-  IndexAccess,
   MemberAccess,
   HexNumber,
   DecimalNumber,
@@ -76,7 +75,7 @@ export class ConstantVisitor implements SolidityVisitor {
     if (!["require", "_"].includes(node.name)) this.pool.addString(node.name);
   }
 
-  IndexAccess(node: IndexAccess): void {
+  IndexAccess(): void {
     // TODO: check for index numbers
   }
 

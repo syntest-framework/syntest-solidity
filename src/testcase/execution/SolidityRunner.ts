@@ -36,14 +36,20 @@ import { SoliditySuiteBuilder } from "../../testbuilding/SoliditySuiteBuilder";
 
 export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
   protected suiteBuilder: SoliditySuiteBuilder;
+  // eslint-disable-next-line
   protected api: any;
+  // eslint-disable-next-line
   protected truffle: any;
+  // eslint-disable-next-line
   protected config: any;
 
   constructor(
     suiteBuilder: SoliditySuiteBuilder,
+    // eslint-disable-next-line
     api: any,
+    // eslint-disable-next-line
     truffle: any,
+    // eslint-disable-next-line
     config: any
   ) {
     this.suiteBuilder = suiteBuilder;

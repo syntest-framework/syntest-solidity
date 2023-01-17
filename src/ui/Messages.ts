@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-const chalk = require("chalk");
-const figlet = require("figlet");
+import chalk = require("chalk");
+import figlet = require("figlet");
 
 /**
  * This class contains standardized functions that create colored and formatted messages to be used by the user-interface.

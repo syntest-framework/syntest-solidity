@@ -20,7 +20,6 @@ import {
   BranchNode,
   BranchObjectiveFunction,
   CFG,
-  Encoding,
   FunctionObjectiveFunction,
   NodeType,
   ObjectiveFunction,
@@ -195,7 +194,7 @@ export class SoliditySubject extends SearchSubject<SolidityTestCase> {
       this.parseActions();
     }
 
-    return this._functionCalls!.filter((f) => {
+    return this._functionCalls.filter((f) => {
       // TODO
       // Currently we require the return parameters to be exactly equal.
       // However, if the required returnTypes are a superset of the return parameters of the function then it should also work!

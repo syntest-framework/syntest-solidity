@@ -133,11 +133,11 @@ class API {
     await new Promise((resolve, reject) => {
       this.server.listen(this.port, (err) => {
         if (err) {
-          return reject()
+          return reject();
         }
-        resolve()
-      })
-    })
+        resolve();
+      });
+    });
 
     return `http://${this.host}:${this.port}`;
   }
@@ -191,9 +191,9 @@ class API {
     if (this.server && this.server.close) {
       await new Promise((resolve) => {
         this.server.close(() => {
-          resolve()
-        })
-      })
+          resolve();
+        });
+      });
     }
   }
   // ------------------------------------------ Utils ----------------------------------------------

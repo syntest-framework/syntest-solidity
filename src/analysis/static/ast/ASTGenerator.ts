@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-const SolidityParser = require("@solidity-parser/parser");
+import SolidityParser = require("@solidity-parser/parser");
+import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
 
 /**
  * Abstract Syntax Trees (AST) generator for targets.
@@ -29,8 +30,8 @@ export class ASTGenerator {
    *
    * @param targetSource The source of the target
    */
-  generate(targetSource: string): string {
-    return SolidityParser.parse(targetSource, {
+  generate(targetSource: string): SourceUnit {
+    return <SourceUnit>SolidityParser.parse(targetSource, {
       loc: true,
       range: true,
     });

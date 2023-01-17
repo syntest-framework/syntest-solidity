@@ -1,9 +1,11 @@
+import TruffleConfig = require("@truffle/config");
+
 /**
  * Maps truffle specific keys for the paths to things like sources to the generic
  * keys required by the plugin utils
  * @return {Object} truffle-config.js
  */
-export function normalizeConfig(config: any): any {
+export function normalizeConfig(config: TruffleConfig): TruffleConfig {
   config.workingDir = config.working_directory;
   config.contractsDir = config.contracts_directory;
   config.testDir = config.test_directory;

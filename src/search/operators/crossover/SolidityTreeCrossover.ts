@@ -23,6 +23,12 @@ import { ConstructorCall } from "../../../testcase/statements/action/Constructor
 import { NumericStatement } from "../../../testcase/statements/primitive/NumericStatement";
 import { Statement } from "../../../testcase/statements/Statement";
 
+interface QueueEntry {
+  parent: Statement;
+  childIndex: number;
+  child: Statement;
+}
+
 /**
  * Creates 2 children which are each other's complement with respect to their parents.
  * i.e. given parents 000000 and 111111 a possible pair of children would be 001111 and 110000.
@@ -44,7 +50,7 @@ export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
     const rootA = parentA.copy().root;
     const rootB = parentB.copy().root;
 
-    const queueA: any = [];
+    const queueA: QueueEntry[] = [];
 
     for (
       let i = 0;
@@ -113,7 +119,7 @@ export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
    * @author Dimitri Stallenberg
    */
   protected findSimilarSubtree(wanted: Statement, tree: Statement) {
-    const queue: any = [];
+    const queue: QueueEntry[] = [];
     const similar = [];
 
     for (let i = 0; i < tree.getChildren().length; i++) {
@@ -137,7 +143,7 @@ export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
         });
       }
 
-      if (wanted.types === pair.child.type) {
+      if (wanted.types === pair.child.types) {
         if (wanted instanceof NumericStatement) {
           if (
             wanted.upper_bound ==

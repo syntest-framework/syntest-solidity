@@ -18,7 +18,10 @@
 
 import { ContractVisitor } from "./ContractVisitor";
 
-const SolidityParser = require("@solidity-parser/parser");
+import SolidityParser = require("@solidity-parser/parser");
+import { ContractMetadata } from "./ContractMetadata";
+import { ContractFunction } from "./ContractFunction";
+import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
 
 /**
  * Function map generator for targets.
@@ -31,9 +34,9 @@ export class TargetMapGenerator {
    *
    * @param targetAST The AST of the target
    */
-  generate(targetAST: any): {
-    targetMap: Map<string, any>;
-    functionMap: Map<string, Map<string, any>>;
+  generate(targetAST: SourceUnit): {
+    targetMap: Map<string, ContractMetadata>;
+    functionMap: Map<string, Map<string, ContractFunction>>;
   } {
     const visitor = new ContractVisitor();
     SolidityParser.visit(targetAST, visitor);
