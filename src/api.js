@@ -11,7 +11,6 @@ const Instrumenter = require("./instrumentation/instrumenter"); // Local version
 const Coverage = require("solidity-coverage/lib/coverage");
 const DataCollector = require("./instrumentation/collector"); // Local version
 const { AppUI } = require("solidity-coverage/lib/ui");
-const { reject } = require("lodash");
 
 /**
  * Coverage Runner
