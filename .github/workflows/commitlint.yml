@@ -33,6 +33,8 @@ jobs:
     steps:
       # Cloning
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       # Setup
       - name: Use Node.js ${{ matrix.node-version }}
