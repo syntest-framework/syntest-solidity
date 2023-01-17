@@ -95,10 +95,10 @@
   "engines": {
     "node": ">=10.24.0"
   },
-  "lint-staged":{
-    "**/*.{js,jsx,ts,tsx}":[
-      "npx format",
-      "npx lint:fix"
+  "lint-staged": {
+    "**/*.{js,jsx,ts,tsx,json}": [
+      "npx prettier --config .prettierrc.json --ignore-path .prettierignore --write",
+      "npx eslint --config .eslintrc.json --ignore-path .eslintignore --fix"
     ]
   }
 }
