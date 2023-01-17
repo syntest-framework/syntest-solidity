@@ -79,7 +79,9 @@ export function setNetwork(config: TruffleConfig, api: any): void {
 // eslint-disable-next-line
 export function setOuterConfigKeys(
   config: TruffleConfig,
+  // eslint-disable-next-line
   api: any,
+  // eslint-disable-next-line
   id: any
 ): void {
   try {
