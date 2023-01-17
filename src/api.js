@@ -1,4 +1,3 @@
-const pify = require("pify");
 const fs = require("fs");
 const path = require("path");
 const istanbul = require("sc-istanbul");
@@ -125,20 +124,20 @@ class API {
         : true;
 
     // Attach to vm step of supplied client
-    try {
-      if (this.config.forceBackupServer) throw new Error();
-      await this.attachToVM(client);
-    } catch (err) {
-      // Fallback to ganache-cli)
-      const _ganache = require("ganache-cli");
-      await this.attachToVM(_ganache);
-    }
+    await this.attachToVM(client);
 
     if (autoLaunchServer === false || this.autoLaunchServer === false) {
       return this.server;
     }
 
-    await pify(this.server.listen)(this.port);
+    await new Promise((resolve, reject) => {
+      this.server.listen(this.port, (err) => {
+        if (err) {
+          return reject()
+        }
+        resolve()
+      })
+    })
 
     return `http://${this.host}:${this.port}`;
   }
@@ -190,7 +189,11 @@ class API {
    */
   async finish() {
     if (this.server && this.server.close) {
-      await pify(this.server.close)();
+      await new Promise((resolve) => {
+        this.server.close(() => {
+          resolve()
+        })
+      })
     }
   }
   // ------------------------------------------ Utils ----------------------------------------------
