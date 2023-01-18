@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,34 +16,51 @@
  * limitations under the License.
  */
 
-import {
-  TestCaseSampler,
-  Statement,
-  SearchSubject,
-  Parameter,
-} from "@syntest/framework";
+import { SearchSubject, EncodingSampler } from "@syntest/core";
+import { Parameter } from "../../analysis/static/parsing/Parameter";
 
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
 import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
+import { Statement } from "../statements/Statement";
 
 /**
  * SolidityRandomSampler class
  *
  * @author Dimitri Stallenberg
  */
-export abstract class SoliditySampler extends TestCaseSampler {
+export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> {
   protected readonly POOL_PROB = 0.5;
 
   protected constructor(subject: SearchSubject<SolidityTestCase>) {
     super(subject);
   }
 
+  /**
+   * Should sample any statement based on the type.
+   *
+   * @param depth      the current depth of the statement tree
+   * @param types      the return types of the statement to sample
+   * @param geneType   the type of the statement
+   * @return Statement a sampled statement
+   */
+  abstract sampleStatement(
+    depth: number,
+    types: Parameter[],
+    geneType: string
+  ): Statement;
+
   abstract sampleConstructor(depth: number): ConstructorCall;
   abstract sampleObjectFunctionCall(
     depth: number,
+    root: ConstructorCall
+  ): ObjectFunctionCall;
+
+  abstract sampleObjectFunctionCallTypeBased(
+    depth: number,
     types: Parameter[]
   ): ObjectFunctionCall;
+
   abstract sampleArgument(
     depth: number,
     type: Parameter,

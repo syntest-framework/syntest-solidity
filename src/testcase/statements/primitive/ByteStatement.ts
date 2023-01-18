@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,13 +16,9 @@
  * limitations under the License.
  */
 
-import {
-  Properties,
-  PrimitiveStatement,
-  prng,
-  TestCaseSampler,
-  Parameter,
-} from "@syntest/framework";
+import { Properties, prng } from "@syntest/core";
+import { PrimitiveStatement } from "./PrimitiveStatement";
+import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
 /**
  * Special statement specific to solidity contracts
@@ -40,7 +36,7 @@ export class ByteStatement extends PrimitiveStatement<number[]> {
     return new ByteStatement(this.type, prng.uniqueId(), [...this.value]);
   }
 
-  mutate(sampler: TestCaseSampler, depth: number): ByteStatement {
+  mutate(): ByteStatement {
     if (prng.nextBoolean(Properties.delta_mutation_probability)) {
       const index = prng.nextInt(0, this.value.length - 1);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -23,9 +23,9 @@ export * from "./testcase/sampling/SolidityRandomSampler";
 export * from "./testcase/sampling/SoliditySampler";
 
 export * from "./testbuilding/SoliditySuiteBuilder";
-export * from "./testbuilding/SolidityTruffleStringifier";
+export * from "./testbuilding/SolidityDecoder";
 
-export * from "./testcase/statements/AddressStatement";
+export * from "./testcase/statements/primitive/AddressStatement";
 
 export * from "./graph/SolidityCFGFactory";
 

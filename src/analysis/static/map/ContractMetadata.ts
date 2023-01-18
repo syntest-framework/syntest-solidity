@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
+import { TargetMetaData } from "@syntest/core";
+
 /**
  * Interface for Solidity contract metadata.
  *
  * @author Mitchell Olsthoorn
  */
-export interface ContractMetadata {
+export interface ContractMetadata extends TargetMetaData {
   /**
    * Name of the contract.
    */

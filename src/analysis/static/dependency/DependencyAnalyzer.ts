@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-import { TargetPool } from "../TargetPool";
+import { SolidityTargetPool } from "../SolidityTargetPool";
 import { ContractMetadata, ContractKind } from "../map/ContractMetadata";
 import { ContractFunction, ExternalVisibility } from "../map/ContractFunction";
 import * as path from "path";
 import { TargetContext } from "./TargetContext";
 import { ImportVisitor } from "./ImportVisitor";
 import { Graph } from "../Graph";
-import { PublicVisibility } from "@syntest/framework";
+import { PublicVisibility } from "../parsing/Visibility";
 
-const SolidityParser = require("@solidity-parser/parser");
+import SolidityParser = require("@solidity-parser/parser");
 
 /**
  * Analyzer that discovers all dependencies in the target.
@@ -33,9 +33,9 @@ const SolidityParser = require("@solidity-parser/parser");
  * @author Mitchell Olsthoorn
  */
 export class DependencyAnalyzer {
-  protected _targetPool: TargetPool;
+  protected _targetPool: SolidityTargetPool;
 
-  constructor(targetPool: TargetPool) {
+  constructor(targetPool: SolidityTargetPool) {
     this._targetPool = targetPool;
   }
 
@@ -183,7 +183,7 @@ export class DependencyAnalyzer {
         const contracts = this._targetPool.getTargetMap(importedFilePath);
         contracts.forEach((contractMetadata: ContractMetadata) => {
           if (contractMetadata.kind === ContractKind.Library) {
-            const functions = this._targetPool.getFunctionMap(
+            const functions = this._targetPool.getFunctionMapSpecific(
               importedFilePath,
               contractMetadata.name
             );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -21,7 +21,7 @@ import {
   ContractDefinition,
   FunctionDefinition,
   TypeName,
-} from "@solidity-parser/parser";
+} from "@solidity-parser/parser/dist/src/ast-types";
 import { ContractMetadata, ContractKind } from "./ContractMetadata";
 import {
   ContractFunction,
@@ -29,11 +29,8 @@ import {
   ExternalVisibility,
   InternalVisibility,
 } from "./ContractFunction";
-import {
-  Parameter,
-  PrivateVisibility,
-  PublicVisibility,
-} from "@syntest/framework";
+import { Parameter } from "../parsing/Parameter";
+import { PublicVisibility, PrivateVisibility } from "../parsing/Visibility";
 
 /**
  * Visits the AST nodes of a contract to find all functions with public or external visibility.
@@ -80,6 +77,8 @@ export class ContractVisitor implements SolidityVisitor {
     };
 
     this._contracts.set(name, contract);
+    if (!this._functions.has(name))
+      this._functions.set(name, new Map<string, ContractFunction>());
     this._current = contract;
   }
 
@@ -92,7 +91,11 @@ export class ContractVisitor implements SolidityVisitor {
     // Skip function if we are not in a contract
     if (!this._current) return;
 
-    const name = node.name;
+    let name = node.name;
+
+    if (name === null && node.isConstructor) {
+      name = this._current.name;
+    }
 
     const parameters = node.parameters.map((param) => {
       const functionParameter: Parameter = {
@@ -183,12 +186,6 @@ export class ContractVisitor implements SolidityVisitor {
       })
       .join(",")}`;
 
-    if (!this._functions.has(this._current.name))
-      this._functions.set(
-        this._current.name,
-        new Map<string, ContractFunction>()
-      );
-
     this._functions
       .get(this._current.name)
       .set(functionSignature, contractFunction);
@@ -212,9 +209,15 @@ export class ContractVisitor implements SolidityVisitor {
         break;
       }
       case "Mapping": {
-        paramType = `Map<${type.keyType.name},${this.resolveTypes(
-          type.valueType
-        )}>`;
+        if (type.keyType.type === "ElementaryTypeName") {
+          paramType = `Map<${type.keyType.name},${this.resolveTypes(
+            type.valueType
+          )}>`;
+        } else {
+          paramType = `Map<${type.keyType.namePath},${this.resolveTypes(
+            type.valueType
+          )}>`;
+        }
         break;
       }
       case "ArrayTypeName": {
@@ -224,13 +227,13 @@ export class ContractVisitor implements SolidityVisitor {
       case "FunctionTypeName": {
         const parameterTypes = type.parameterTypes
           .map((param) => {
-            return this.resolveTypes(param);
+            return param.name;
           })
           .join(",");
 
         const returnTypes = type.returnTypes
           .map((param) => {
-            return this.resolveTypes(param);
+            return param.name;
           })
           .join(",");
 

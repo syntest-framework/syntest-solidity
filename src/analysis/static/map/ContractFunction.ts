@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -21,7 +21,8 @@
  *
  * @author Mitchell Olsthoorn
  */
-import { FunctionDescription, Visibility } from "@syntest/framework";
+import { FunctionDescription } from "../parsing/FunctionDescription";
+import { Visibility } from "../parsing/Visibility";
 
 export interface ContractFunction extends FunctionDescription {
   /**

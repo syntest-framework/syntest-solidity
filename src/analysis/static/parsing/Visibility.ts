@@ -16,32 +16,20 @@
  * limitations under the License.
  */
 
-import { SolidityVisitor } from "../SolidityVisitor";
-import { ImportDirective } from "@solidity-parser/parser/dist/src/ast-types";
+export interface Visibility {
+  name: string;
+}
 
 /**
- * Visits the AST nodes of a contract to find all import statements
- *
- * @author Mitchell Olsthoorn
+ * Function can be called from both inside and outside the contract.
  */
-export class ImportVisitor implements SolidityVisitor {
-  protected _imports: Set<string>;
+export const PublicVisibility: Visibility = {
+  name: "public",
+};
 
-  constructor() {
-    this._imports = new Set<string>();
-  }
-
-  /**
-   * @inheritDoc
-   */
-  ImportDirective(node: ImportDirective): void {
-    this._imports.add(node.path);
-  }
-
-  /**
-   * Return the found imports.
-   */
-  getImports(): string[] {
-    return Array.from(this._imports);
-  }
-}
+/**
+ * Function can only be called from within the contract where it is defined.
+ */
+export const PrivateVisibility: Visibility = {
+  name: "private",
+};

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,11 +16,18 @@
  * limitations under the License.
  */
 
-import { prng, Statement, Crossover, Properties } from "@syntest/framework";
+import { prng, Crossover, Properties } from "@syntest/core";
 
 import { SolidityTestCase } from "../../../testcase/SolidityTestCase";
 import { ConstructorCall } from "../../../testcase/statements/action/ConstructorCall";
 import { NumericStatement } from "../../../testcase/statements/primitive/NumericStatement";
+import { Statement } from "../../../testcase/statements/Statement";
+
+interface QueueEntry {
+  parent: Statement;
+  childIndex: number;
+  child: Statement;
+}
 
 /**
  * Creates 2 children which are each other's complement with respect to their parents.
@@ -35,7 +42,7 @@ import { NumericStatement } from "../../../testcase/statements/primitive/Numeric
  * @author Annibale Panichella
  * @author Dimitri Stallenberg
  */
-export class SolidityTreeCrossover implements Crossover {
+export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
   public crossOver(
     parentA: SolidityTestCase,
     parentB: SolidityTestCase
@@ -43,7 +50,7 @@ export class SolidityTreeCrossover implements Crossover {
     const rootA = parentA.copy().root;
     const rootB = parentB.copy().root;
 
-    const queueA: any = [];
+    const queueA: QueueEntry[] = [];
 
     for (
       let i = 0;
@@ -94,8 +101,9 @@ export class SolidityTreeCrossover implements Crossover {
       donorTree.parent.setChild(donorTree.childIndex, pair.child.copy());
     }
 
-    rootA.args = [...parentA.root.args];
-    rootB.args = [...parentB.root.args];
+    // TODO i think those are not necceasry
+    // rootA.args = [...parentA.root.args];
+    // rootB.args = [...parentB.root.args];
     return [
       new SolidityTestCase(rootA as ConstructorCall),
       new SolidityTestCase(rootB as ConstructorCall),
@@ -111,7 +119,7 @@ export class SolidityTreeCrossover implements Crossover {
    * @author Dimitri Stallenberg
    */
   protected findSimilarSubtree(wanted: Statement, tree: Statement) {
-    const queue: any = [];
+    const queue: QueueEntry[] = [];
     const similar = [];
 
     for (let i = 0; i < tree.getChildren().length; i++) {
@@ -135,7 +143,7 @@ export class SolidityTreeCrossover implements Crossover {
         });
       }
 
-      if (wanted.types === pair.child.type) {
+      if (wanted.types === pair.child.types) {
         if (wanted instanceof NumericStatement) {
           if (
             wanted.upper_bound ==

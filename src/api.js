@@ -1,4 +1,3 @@
-const pify = require("pify");
 const fs = require("fs");
 const path = require("path");
 const istanbul = require("sc-istanbul");
@@ -67,38 +66,6 @@ class API {
   }
 
   /**
-   * Instruments a set of sources to prepare them for running under coverage
-   * @param  {Object[]}  targets (see below)
-   * @return {Object[]}          (see below)
-   * @example of input/output array:
-   * [{
-   *   source:         (required) <solidity-source>,
-   *   canonicalPath:  (required) <absolute path to source file>
-   *   relativePath:   (optional) <rel path to source file for logging>
-   * }]
-   */
-  instrument(targets = []) {
-    let outputs = [];
-    for (let target of targets) {
-      const instrumented = this.instrumenter.instrument(
-        target.source,
-        target.canonicalPath
-      );
-      this.coverage.addContract(instrumented, target.canonicalPath);
-
-      outputs.push({
-        canonicalPath: target.canonicalPath,
-        relativePath: target.relativePath,
-        actualSource: target.source,
-        source: instrumented.contract,
-        instrumented: instrumented,
-        contracts: [],
-      });
-    }
-    return outputs;
-  }
-
-  /**
    * Returns a copy of the hit map created during instrumentation.
    * Useful if you'd like to delegate coverage collection to multiple processes.
    * @return {Object} instrumentationData
@@ -157,20 +124,20 @@ class API {
         : true;
 
     // Attach to vm step of supplied client
-    try {
-      if (this.config.forceBackupServer) throw new Error();
-      await this.attachToVM(client);
-    } catch (err) {
-      // Fallback to ganache-cli)
-      const _ganache = require("ganache-cli");
-      await this.attachToVM(_ganache);
-    }
+    await this.attachToVM(client);
 
     if (autoLaunchServer === false || this.autoLaunchServer === false) {
       return this.server;
     }
 
-    await pify(this.server.listen)(this.port);
+    await new Promise((resolve, reject) => {
+      this.server.listen(this.port, (err) => {
+        if (err) {
+          return reject();
+        }
+        resolve();
+      });
+    });
 
     return `http://${this.host}:${this.port}`;
   }
@@ -186,7 +153,16 @@ class API {
 
     return new Promise((resolve, reject) => {
       try {
-        this.coverage.generate(this.instrumenter.instrumentationData);
+        // the string replacement is necessary because the istanbul reporter expects contractPath...
+        // should be fixed by a custom made reporter specific to this project
+        this.coverage.generate(
+          JSON.parse(
+            JSON.stringify(this.instrumenter.instrumentationData).replaceAll(
+              "path",
+              "contractPath"
+            )
+          )
+        );
 
         const mapping = this.makeKeysRelative(this.coverage.data, this.cwd);
         this.saveCoverage(mapping);
@@ -213,7 +189,11 @@ class API {
    */
   async finish() {
     if (this.server && this.server.close) {
-      await pify(this.server.close)();
+      await new Promise((resolve) => {
+        this.server.close(() => {
+          resolve();
+        });
+      });
     }
   }
   // ------------------------------------------ Utils ----------------------------------------------

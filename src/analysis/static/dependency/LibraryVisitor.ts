@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -20,7 +20,7 @@ import { SolidityVisitor } from "../SolidityVisitor";
 import {
   ContractDefinition,
   FunctionDefinition,
-} from "@solidity-parser/parser";
+} from "@solidity-parser/parser/dist/src/ast-types";
 
 /**
  * Visits the AST nodes of a contract to find all libraries with public and external functions.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,10 +16,9 @@
  * limitations under the License.
  */
 
-import { MonitorCommandLineInterface, yargs } from "@syntest/framework";
+import { MonitorCommandLineInterface, yargs } from "@syntest/core";
 import Messages from "./Messages";
-
-const clear = require("clear");
+import clear = require("clear");
 
 /**
  * A solidity specific monitor command line interface.

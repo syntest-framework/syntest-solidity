@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,20 +16,12 @@
  * limitations under the License.
  */
 
-import {
-  AbstractTestCase,
-  ActionStatement,
-  FunctionDescription,
-  Parameter,
-  prng,
-  Properties,
-  Statement,
-} from "@syntest/framework";
+import { prng, Properties } from "@syntest/core";
 
 import { SoliditySampler } from "./SoliditySampler";
-import { AddressStatement } from "../statements/AddressStatement";
+import { AddressStatement } from "../statements/primitive/AddressStatement";
 import BigNumber from "bignumber.js";
-import { ByteStatement } from "../statements/ByteStatement";
+import { ByteStatement } from "../statements/primitive/ByteStatement";
 import {
   SolidityParameter,
   SoliditySubject,
@@ -40,6 +32,10 @@ import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
 import { NumericStatement } from "../statements/primitive/NumericStatement";
 import { BoolStatement } from "../statements/primitive/BoolStatement";
 import { StringStatement } from "../statements/primitive/StringStatement";
+import { Statement } from "../statements/Statement";
+import { ActionStatement } from "../statements/action/ActionStatement";
+import { FunctionDescription } from "../../analysis/static/parsing/FunctionDescription";
+import { Parameter } from "../../analysis/static/parsing/Parameter";
 
 /**
  * SolidityRandomSampler class
@@ -50,23 +46,25 @@ export class SolidityRandomSampler extends SoliditySampler {
   /**
    * Constructor
    */
-  constructor(subject: SoliditySubject<AbstractTestCase>) {
+  constructor(subject: SoliditySubject) {
     super(subject);
   }
 
   sample(): SolidityTestCase {
     const root = this.sampleConstructor(0);
 
-    const nCalls = prng.nextInt(1, 5);
-    for (let index = 0; index <= nCalls; index++) {
-      const call = this.sampleMethodCall(root);
-      root.setMethodCall(index, call as ActionStatement);
-    }
     return new SolidityTestCase(root);
   }
 
-  sampleMethodCall(root: ConstructorCall): ObjectFunctionCall {
-    const actions = this._subject.getPossibleActions("function");
+  sampleObjectFunctionCall(
+    depth: number,
+    root: ConstructorCall
+  ): ObjectFunctionCall {
+    const actions = (<SoliditySubject>this._subject).getPossibleActions(
+      "function"
+    );
+
+    // TODO make sure these actions are available on this root
 
     if (!actions.length) {
       throw new Error("There are no functions to test!");
@@ -79,7 +77,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     for (const param of action.parameters) {
       if (param.type != "")
         args.push(
-          this.sampleArgument(1, param, (<SolidityParameter>param).bits)
+          this.sampleArgument(depth + 1, param, (<SolidityParameter>param).bits)
         );
     }
 
@@ -98,11 +96,12 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sampleConstructor(depth: number): ConstructorCall {
-    const constructors = this._subject.getPossibleActions("constructor");
+    const constructors = (<SoliditySubject>this._subject).getPossibleActions(
+      "constructor"
+    );
+
     if (constructors.length > 0) {
-      const action = <FunctionDescription>(
-        prng.pickOne(this._subject.getPossibleActions("constructor"))
-      );
+      const action = <FunctionDescription>prng.pickOne(constructors);
 
       const args: Statement[] = [];
       for (const param of action.parameters) {
@@ -112,8 +111,7 @@ export class SolidityRandomSampler extends SoliditySampler {
           );
       }
 
-      // constructors do not have return parameters...
-      return new ConstructorCall(
+      const root = new ConstructorCall(
         [{ type: action.name, name: "contract" }],
         prng.uniqueId(),
         `${action.name}`,
@@ -121,10 +119,18 @@ export class SolidityRandomSampler extends SoliditySampler {
         [],
         AddressStatement.getRandom()
       );
+
+      const nCalls = prng.nextInt(1, 5);
+      for (let index = 0; index <= nCalls; index++) {
+        const call = this.sampleObjectFunctionCall(depth + 1, root);
+        root.setMethodCall(index, call as ActionStatement);
+      }
+
+      // constructors do not have return parameters...
+      return root;
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
-      // TODO empty name because there is no name?
-      return new ConstructorCall(
+      const root = new ConstructorCall(
         [{ type: this._subject.name, name: "contract" }],
         prng.uniqueId(),
         `${this._subject.name}`,
@@ -132,6 +138,14 @@ export class SolidityRandomSampler extends SoliditySampler {
         [],
         AddressStatement.getRandom()
       );
+
+      const nCalls = prng.nextInt(1, 5);
+      for (let index = 0; index <= nCalls; index++) {
+        const call = this.sampleObjectFunctionCall(depth + 1, root);
+        root.setMethodCall(index, call as ActionStatement);
+      }
+
+      return root;
     }
   }
 
@@ -147,14 +161,15 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
 
     if (
-      this._subject.getPossibleActions().filter((a) => a.type === type.type)
-        .length &&
+      (<SoliditySubject>this._subject)
+        .getPossibleActions()
+        .filter((a) => a.type === type.type).length &&
       prng.nextBoolean(Properties.sample_func_as_arg)
     ) {
       // Pick function
       // TODO or take an already available functionCall
 
-      return this.sampleObjectFunctionCall(depth, [type]);
+      return this.sampleObjectFunctionCallTypeBased(depth, [type]);
     } else {
       // Pick variable
       // TODO or take an already available variable
@@ -225,7 +240,7 @@ export class SolidityRandomSampler extends SoliditySampler {
         );
       }
     } else if (geneType === "functionCall") {
-      return this.sampleObjectFunctionCall(depth, types);
+      return this.sampleObjectFunctionCallTypeBased(depth, types);
     } else if (geneType === "constructor") {
       return this.sampleConstructor(depth);
     }
@@ -245,12 +260,14 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
   }
 
-  sampleObjectFunctionCall(
+  sampleObjectFunctionCallTypeBased(
     depth: number,
     types: Parameter[]
   ): ObjectFunctionCall {
     const action = <FunctionDescription>(
-      prng.pickOne(this._subject.getPossibleActions("function", types))
+      prng.pickOne(
+        (<SoliditySubject>this._subject).getPossibleActions("function", types)
+      )
     );
 
     const args: Statement[] = [];

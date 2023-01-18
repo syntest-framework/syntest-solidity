@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -20,29 +20,36 @@ import {
   BranchNode,
   BranchObjectiveFunction,
   CFG,
-  Encoding,
-  FunctionDescription,
   FunctionObjectiveFunction,
   NodeType,
   ObjectiveFunction,
-  Parameter,
-  PublicVisibility,
   SearchSubject,
-} from "@syntest/framework";
+} from "@syntest/core";
 
 import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 import { ExternalVisibility } from "../analysis/static/map/ContractFunction";
+import { SolidityTestCase } from "../testcase/SolidityTestCase";
+import { ActionDescription } from "../analysis/static/parsing/ActionDescription";
+import { FunctionDescription } from "../analysis/static/parsing/FunctionDescription";
+import { Parameter } from "../analysis/static/parsing/Parameter";
+import { PublicVisibility } from "../analysis/static/parsing/Visibility";
 
-export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
+export class SoliditySubject extends SearchSubject<SolidityTestCase> {
   private _functionCalls: FunctionDescription[] | null = null;
+  private _functions: ActionDescription[];
+
+  get functions(): ActionDescription[] {
+    return this._functions;
+  }
 
   constructor(
     path: string,
     name: string,
     cfg: CFG,
-    functionMap: FunctionDescription[]
+    functions: FunctionDescription[]
   ) {
-    super(path, name, cfg, functionMap);
+    super(path, name, cfg);
+    this._functions = functions;
   }
 
   protected _extractObjectives(): void {
@@ -132,7 +139,9 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
       });
   }
 
-  findChildren(obj: ObjectiveFunction<T>): ObjectiveFunction<T>[] {
+  findChildren(
+    obj: ObjectiveFunction<SolidityTestCase>
+  ): ObjectiveFunction<SolidityTestCase>[] {
     let childrenObj = [];
 
     let edges2Visit = this._cfg.edges.filter(
@@ -185,7 +194,7 @@ export class SoliditySubject<T extends Encoding> extends SearchSubject<T> {
       this.parseActions();
     }
 
-    return this._functionCalls!.filter((f) => {
+    return this._functionCalls.filter((f) => {
       // TODO
       // Currently we require the return parameters to be exactly equal.
       // However, if the required returnTypes are a superset of the return parameters of the function then it should also work!

@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.2.0] - 2023-01-18
+
+### Added
+
+- Solc compiler version picking through configuration
+- Language specific parsing interfaces from the core
+
 ## [0.1.2] - 2021-11-29
 
 ### Fixed
@@ -42,7 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Solidity instrumentation
 - Solidity specific search criteria (i.e., probe coverage)
 
-[unreleased]: https://github.com/syntest-framework/syntest-solidity/compare/v0.1.2...HEAD
+[unreleased]: https://github.com/syntest-framework/syntest-solidity/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/syntest-framework/syntest-solidity/releases/tag/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/syntest-framework/syntest-solidity/releases/tag/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/syntest-framework/syntest-solidity/releases/tag/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/syntest-framework/syntest-solidity/releases/tag/v0.1.0

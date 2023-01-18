@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,32 +16,64 @@
  * limitations under the License.
  */
 
-import {
-  Properties,
-  TestCaseDecoder,
-  SuiteBuilder,
-  Archive,
-  getUserInterface,
-} from "@syntest/framework";
+import { Properties, Archive, getUserInterface } from "@syntest/core";
 
-import { readdirSync, readFileSync, rmdirSync, writeFileSync } from "fs";
+import {
+  readdirSync,
+  readFileSync,
+  rmdirSync,
+  unlinkSync,
+  writeFileSync,
+} from "fs";
 import * as path from "path";
 import { getTestFilePaths } from "../util/fileSystem";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
+import { SolidityDecoder } from "./SolidityDecoder";
 
 /**
  * @author Dimitri Stallenberg
  */
-export class SoliditySuiteBuilder extends SuiteBuilder {
+export class SoliditySuiteBuilder {
+  private decoder: SolidityDecoder;
+  // eslint-disable-next-line
   private api: any;
+  // eslint-disable-next-line
   private truffle: any;
+  // eslint-disable-next-line
   private readonly config: any;
 
-  constructor(decoder: TestCaseDecoder, api: any, truffle: any, config: any) {
-    super(decoder);
+  // eslint-disable-next-line
+  constructor(decoder: SolidityDecoder, api: any, truffle: any, config: any) {
+    this.decoder = decoder;
     this.api = api;
     this.truffle = truffle;
     this.config = config;
+  }
+
+  /**
+   * Deletes a certain file.
+   *
+   * @param filepath  the filepath of the file to delete
+   */
+  async deleteTestCase(filepath: string) {
+    try {
+      await unlinkSync(filepath);
+    } catch (error) {
+      getUserInterface().debug(error);
+    }
+  }
+
+  /**
+   * Removes all files that match the given regex within a certain directory
+   * @param dirPath   the directory to clear
+   * @param match     the regex to which the files must match
+   */
+  async clearDirectory(dirPath: string, match = /.*\.(js)/g) {
+    const dirContent = await readdirSync(dirPath);
+
+    for (const file of dirContent.filter((el: string) => el.match(match))) {
+      await unlinkSync(path.resolve(dirPath, file));
+    }
   }
 
   async writeTestCase(
@@ -50,11 +82,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
     targetName: string,
     addLogs = false
   ) {
-    const decodedTestCase = this.decoder.decodeTestCase(
-      testCase,
-      targetName,
-      addLogs
-    );
+    const decodedTestCase = this.decoder.decode(testCase, targetName, addLogs);
     await writeFileSync(filePath, decodedTestCase);
   }
 
@@ -67,8 +95,8 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       const targetName = objective
         .getSubject()
         .name.split("/")
-        .pop()!
-        .split(".")[0]!;
+        .pop()
+        .split(".")[0];
 
       if (!reducedArchive.has(targetName)) {
         reducedArchive.set(targetName, []);
@@ -96,7 +124,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
 
     // write the test cases with logs to know what to assert
     for (const key of reducedArchive.keys()) {
-      for (const testCase of reducedArchive.get(key)!) {
+      for (const testCase of reducedArchive.get(key)) {
         const testPath = path.join(
           Properties.temp_test_directory,
           `test${key}${testCase.id}.js`
@@ -131,7 +159,7 @@ export class SoliditySuiteBuilder extends SuiteBuilder {
       );
       await writeFileSync(
         testPath,
-        this.decoder.decodeTestCase(reducedArchive.get(key), `${key}`, false)
+        this.decoder.decode(reducedArchive.get(key), `${key}`, false)
       );
     }
 

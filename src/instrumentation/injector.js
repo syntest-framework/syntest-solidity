@@ -26,7 +26,7 @@ class SyntestInjector extends Injector {
     instrumentation[hash] = {
       id: linecount,
       type: type,
-      contractPath: fileName,
+      path: fileName,
       line: injection.line,
       hits: 0,
     };
@@ -54,7 +54,7 @@ class SyntestInjector extends Injector {
     instrumentation[hash] = {
       id: injection.statementId,
       type: type,
-      contractPath: fileName,
+      path: fileName,
       line: injection.line,
       hits: 0,
     };
@@ -82,7 +82,7 @@ class SyntestInjector extends Injector {
     instrumentation[hash] = {
       id: injection.fnId,
       type: type,
-      contractPath: fileName,
+      path: fileName,
       line: injection.line,
       hits: 0,
     };
@@ -106,7 +106,7 @@ class SyntestInjector extends Injector {
       locationIdx: injection.locationIdx,
       branchType: injection.branchType,
       type: type,
-      contractPath: fileName,
+      path: fileName,
       line: injection.line,
       hits: 0,
     };
@@ -136,7 +136,7 @@ class SyntestInjector extends Injector {
       locationIdx: injection.locationIdx,
       branchType: injection.branchType,
       type: type,
-      contractPath: fileName,
+      path: fileName,
       line: injection.line,
       hits: 0,
     };
@@ -166,7 +166,7 @@ class SyntestInjector extends Injector {
       locationIdx: injection.locationIdx,
       branchType: injection.branchType,
       type: type,
-      contractPath: fileName,
+      path: fileName,
       line: injection.line,
       hits: 0,
     };
@@ -199,7 +199,7 @@ class SyntestInjector extends Injector {
       locationIdx: injection.locationIdx,
       branchType: injection.branchType,
       type: type,
-      contractPath: fileName,
+      path: fileName,
       line: injection.line,
       hits: 0,
     };

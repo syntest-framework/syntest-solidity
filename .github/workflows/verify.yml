@@ -1,4 +1,4 @@
-name: build
+name: verify
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
         os: [ubuntu-latest]
 
         # Run the pipeline on all the currently supported LTS versions and the upcoming version
-        node-version: [18, 19]
+        node-version: [19]
 
         # Run the pipeline on all the currently supported architectures
         architecture: [x64]
@@ -49,7 +49,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ steps.npm-cache-dir.outputs.dir }}
-          key: ${{ runner.os }}-node-${{ hashFiles('*/package.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('package.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
             ${{ runner.os }}-
@@ -58,10 +58,10 @@ jobs:
       - name: Solidity - Install Dependencies
         run: npm install
 
-      # Building
-      - name: Solidity - Build
-        run: npm run build
+      # Format
+      - name: Solidity - Run Formatter
+        run: npm run format:check
 
-      # Testing
-      - name: Solidity - Run Tests
-        run: npm test
+      # Linting
+      - name: Solidity - Run Linter
+        run: npm run lint

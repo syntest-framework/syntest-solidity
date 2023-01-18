@@ -16,33 +16,42 @@
  * limitations under the License.
  */
 
-import { prng, Properties } from "@syntest/core";
+import { Statement } from "../Statement";
+import { EncodingSampler } from "@syntest/core";
+import { Encoding } from "@syntest/core";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
-import { PrimitiveStatement } from "./PrimitiveStatement";
 
 /**
  * @author Dimitri Stallenberg
  */
-export class BoolStatement extends PrimitiveStatement<boolean> {
-  constructor(type: Parameter, uniqueId: string, value: boolean) {
-    super(type, uniqueId, value);
+export abstract class ActionStatement extends Statement {
+  private _args: Statement[];
+
+  protected constructor(
+    types: Parameter[],
+    uniqueId: string,
+    args: Statement[]
+  ) {
+    super(types, uniqueId);
+    this._args = args;
   }
 
-  mutate() {
-    if (prng.nextBoolean(Properties.resample_gene_probability)) {
-      return BoolStatement.getRandom(this.type);
-    }
+  abstract mutate(
+    sampler: EncodingSampler<Encoding>,
+    depth: number
+  ): ActionStatement;
 
-    return new BoolStatement(this.type, this.id, !this.value);
+  abstract copy(): ActionStatement;
+
+  hasChildren(): boolean {
+    return !!this._args.length;
   }
 
-  copy() {
-    return new BoolStatement(this.type, this.id, this.value);
+  getChildren(): Statement[] {
+    return [...this._args];
   }
 
-  static getRandom(
-    type: Parameter = { type: "bool", name: "noname" }
-  ): BoolStatement {
-    return new BoolStatement(type, prng.uniqueId(), prng.nextBoolean());
+  get args(): Statement[] {
+    return this._args;
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,14 +16,16 @@
  * limitations under the License.
  */
 
-import { SearchSubject, AbstractTestCase, CFG } from "@syntest/framework";
+import { CFG, Target } from "@syntest/core";
 
-import { TargetPool } from "./TargetPool";
+import { SolidityTargetPool } from "./SolidityTargetPool";
 import * as path from "path";
 import { DependencyAnalyzer } from "./dependency/DependencyAnalyzer";
 import { TargetContext } from "./dependency/TargetContext";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { Graph } from "./Graph";
+import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
+import { ContractFunction } from "./map/ContractFunction";
 
 /**
  * Target system under test.
@@ -32,7 +34,8 @@ import { Graph } from "./Graph";
  *
  * @author Mitchell Olsthoorn
  */
-export class Target {
+
+export class SolidityTarget extends Target {
   protected readonly _path: string;
   protected readonly _name: string;
 
@@ -40,30 +43,31 @@ export class Target {
   protected _sources: Map<string, string>;
 
   // Mapping: filepath -> AST
-  protected _abstractSyntaxTrees: Map<string, any>;
+  protected _abstractSyntaxTrees: Map<string, SourceUnit>;
 
   protected _context: TargetContext<ContractMetadata>;
 
   // Mapping: target name -> function name -> function
-  protected _functions: Map<string, Map<string, any>>;
+  protected _functions: Map<string, Map<string, ContractFunction>>;
 
   // Mapping: target name -> (function name -> CFG)
   protected _controlFlowGraphs: Map<string, CFG>;
 
   protected _linkingGraph: Graph<string>;
 
-  protected _subject: SearchSubject<AbstractTestCase>;
+  // protected _subject: SearchSubject<T>;
 
   constructor(
     targetPath: string,
     targetName: string,
     sources: Map<string, string>,
-    ASTs: Map<string, any>,
+    ASTs: Map<string, SourceUnit>,
     context: TargetContext<ContractMetadata>,
-    functions: Map<string, Map<string, any>>,
-    CFGs: Map<string, any>,
+    functions: Map<string, Map<string, ContractFunction>>,
+    CFGs: Map<string, CFG>,
     linkingGraph: Graph<string>
   ) {
+    super();
     this._path = path.resolve(targetPath);
     this._name = targetName;
     this._sources = sources;
@@ -82,17 +86,17 @@ export class Target {
    * @param targetName the name of the target
    */
   static fromPool(
-    targetPool: TargetPool,
+    targetPool: SolidityTargetPool,
     targetPath: string,
     targetName: string
-  ): Target {
+  ): SolidityTarget {
     const absoluteTargetPath = path.resolve(targetPath);
 
     // Get source, AST, FunctionMap, and CFG for target under test
     const sources = new Map<string, string>();
-    const abstractSyntaxTrees = new Map<string, any>();
-    const functionMaps = new Map<string, Map<string, any>>();
-    const controlFlowGraphs = new Map<string, any>();
+    const abstractSyntaxTrees = new Map<string, SourceUnit>();
+    const functionMaps = new Map<string, Map<string, ContractFunction>>();
+    const controlFlowGraphs = new Map<string, CFG>();
 
     sources.set(absoluteTargetPath, targetPool.getSource(absoluteTargetPath));
     abstractSyntaxTrees.set(
@@ -101,7 +105,7 @@ export class Target {
     );
     functionMaps.set(
       targetName,
-      targetPool.getFunctionMap(absoluteTargetPath, targetName)
+      targetPool.getFunctionMapSpecific(absoluteTargetPath, targetName)
     );
     controlFlowGraphs.set(
       targetName,
@@ -123,7 +127,7 @@ export class Target {
       context.getTargets(filePath).forEach((contractMetadata) => {
         functionMaps.set(
           contractMetadata.name,
-          targetPool.getFunctionMap(filePath, contractMetadata.name)
+          targetPool.getFunctionMapSpecific(filePath, contractMetadata.name)
         );
       });
     });
@@ -134,7 +138,7 @@ export class Target {
       targetName
     );
 
-    return new Target(
+    return new SolidityTarget(
       absoluteTargetPath,
       targetName,
       sources,
@@ -158,7 +162,7 @@ export class Target {
     return this._sources.get(targetPath);
   }
 
-  getAST(targetPath: string): any {
+  getAST(targetPath: string): SourceUnit {
     return this._abstractSyntaxTrees.get(targetPath);
   }
 
@@ -166,7 +170,7 @@ export class Target {
     return this._context;
   }
 
-  getFunctions(targetName: string): Map<string, any> {
+  getFunctions(targetName: string): Map<string, ContractFunction> {
     return this._functions.get(targetName);
   }
 

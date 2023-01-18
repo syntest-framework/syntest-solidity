@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -23,11 +23,14 @@ import { TargetMapGenerator } from "./map/TargetMapGenerator";
 import { SolidityCFGFactory } from "../../graph/SolidityCFGFactory";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { ContractFunction } from "./map/ContractFunction";
-import { CFG } from "@syntest/framework";
+import { CFG, Properties, TargetPool, Target } from "@syntest/core";
 import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
 import { LibraryVisitor } from "./dependency/LibraryVisitor";
-const SolidityParser = require("@solidity-parser/parser");
+import SolidityParser = require("@solidity-parser/parser");
+import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
+// eslint-disable-next-line
+const { outputFileSync, copySync } = require("fs-extra");
 
 /**
  * Pool for retrieving and caching expensive processing calls.
@@ -36,7 +39,7 @@ const SolidityParser = require("@solidity-parser/parser");
  *
  * @author Mitchell Olsthoorn
  */
-export class TargetPool {
+export class SolidityTargetPool extends TargetPool {
   protected _sourceGenerator: SourceGenerator;
   protected _abstractSyntaxTreeGenerator: ASTGenerator;
   protected _targetMapGenerator: TargetMapGenerator;
@@ -46,7 +49,7 @@ export class TargetPool {
   protected _sources: Map<string, string>;
 
   // Mapping: filepath -> AST
-  protected _abstractSyntaxTrees: Map<string, any>;
+  protected _abstractSyntaxTrees: Map<string, SourceUnit>;
 
   // Mapping: filepath -> target name -> target
   protected _targetMap: Map<string, Map<string, ContractMetadata>>;
@@ -60,10 +63,13 @@ export class TargetPool {
   // Mapping: filepath -> target name -> (function name -> CFG)
   protected _controlFlowGraphs: Map<string, Map<string, CFG>>;
 
-  // Mapping: filepath -> target name -> [importsMap, dependencyMap]
+  // Mapping: filepath -> target name -> {importsMap, dependencyMap}
   protected _dependencyMaps: Map<
     string,
-    Map<string, [Map<string, string>, Map<string, string[]>]>
+    Map<
+      string,
+      { importMap: Map<string, string>; dependencyMap: Map<string, Target[]> }
+    >
   >;
 
   constructor(
@@ -72,13 +78,14 @@ export class TargetPool {
     targetMapGenerator: TargetMapGenerator,
     controlFlowGraphGenerator: SolidityCFGFactory
   ) {
+    super();
     this._sourceGenerator = sourceGenerator;
     this._abstractSyntaxTreeGenerator = abtractSyntaxTreeGenerator;
     this._targetMapGenerator = targetMapGenerator;
     this._controlFlowGraphGenerator = controlFlowGraphGenerator;
 
     this._sources = new Map<string, string>();
-    this._abstractSyntaxTrees = new Map<string, any>();
+    this._abstractSyntaxTrees = new Map<string, SourceUnit>();
     this._targetMap = new Map<string, Map<string, ContractMetadata>>();
     this._functionMaps = new Map<
       string,
@@ -101,7 +108,7 @@ export class TargetPool {
     }
   }
 
-  getAST(targetPath: string): string {
+  getAST(targetPath: string): SourceUnit {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (this._abstractSyntaxTrees.has(absoluteTargetPath)) {
@@ -115,7 +122,7 @@ export class TargetPool {
     }
   }
 
-  getTargetMap(targetPath: string): Map<string, any> {
+  getTargetMap(targetPath: string): Map<string, ContractMetadata> {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (this._targetMap.has(absoluteTargetPath)) {
@@ -130,7 +137,26 @@ export class TargetPool {
     }
   }
 
-  getFunctionMap(targetPath: string, targetName: string): Map<string, any> {
+  getFunctionMap(
+    targetPath: string
+  ): Map<string, Map<string, ContractFunction>> {
+    const absoluteTargetPath = path.resolve(targetPath);
+
+    if (!this._functionMaps.has(absoluteTargetPath)) {
+      const targetAST = this.getAST(absoluteTargetPath);
+      const { targetMap, functionMap } =
+        this._targetMapGenerator.generate(targetAST);
+      this._targetMap.set(absoluteTargetPath, targetMap);
+      this._functionMaps.set(absoluteTargetPath, functionMap);
+    }
+
+    return this._functionMaps.get(absoluteTargetPath);
+  }
+
+  getFunctionMapSpecific(
+    targetPath: string,
+    targetName: string
+  ): Map<string, ContractFunction> {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (!this._functionMaps.has(absoluteTargetPath)) {
@@ -173,7 +199,7 @@ export class TargetPool {
   getImportDependencies(
     targetPath: string,
     targetName: string
-  ): [Map<string, string>, Map<string, string[]>] {
+  ): { importMap: Map<string, string>; dependencyMap: Map<string, Target[]> } {
     const absoluteTargetPath = path.resolve(targetPath);
 
     if (!this._dependencyMaps.has(absoluteTargetPath))
@@ -183,15 +209,15 @@ export class TargetPool {
       return this._dependencyMaps.get(absoluteTargetPath).get(targetName);
     } else {
       // Import the contract under test
-      const importsMap = new Map<string, string>();
-      importsMap.set(targetName, targetName);
+      const importMap = new Map<string, string>();
+      importMap.set(targetName, targetName);
 
       // Find all external imports in the contract under test
       const importVisitor = new ImportVisitor();
       SolidityParser.visit(this.getAST(targetPath), importVisitor);
 
       // For each external import scan the file for libraries with public and external functions
-      const libraries: string[] = [];
+      const libraries: Target[] = [];
       importVisitor.getImports().forEach((importPath: string) => {
         // Full path to the imported file
         const pathLib = path.join(path.dirname(targetPath), importPath);
@@ -211,24 +237,65 @@ export class TargetPool {
         SolidityParser.visit(astLib, libraryVisitor);
 
         // Import the external file in the test
-        importsMap.set(
+        importMap.set(
           path.basename(importPath).split(".")[0],
           path.basename(importPath).split(".")[0]
         );
 
         // Import the found libraries
         // TODO: check for duplicates in libraries
-        libraries.push(...libraryVisitor.libraries);
+        libraries.push(
+          ...libraryVisitor.libraries.map((l) => {
+            return {
+              canonicalPath: pathLib,
+              targetName: l,
+            };
+          })
+        );
       });
 
       // Return the library dependency information
-      const dependencyMap = new Map<string, string[]>();
+      const dependencyMap = new Map<string, Target[]>();
       dependencyMap.set(targetName, libraries);
 
       this._dependencyMaps
         .get(targetPath)
-        .set(targetName, [importsMap, dependencyMap]);
-      return [importsMap, dependencyMap];
+        .set(targetName, { importMap, dependencyMap });
+      return { importMap, dependencyMap };
+    }
+  }
+
+  // eslint-disable-next-line
+  async prepareAndInstrument(api: any): Promise<void> {
+    const absoluteRootPath = path.resolve(Properties.target_root_directory);
+
+    const destinationPath = path.resolve(
+      Properties.temp_instrumented_directory,
+      path.basename(Properties.target_root_directory)
+    );
+
+    // copy everything
+    await copySync(absoluteRootPath, destinationPath);
+
+    // overwrite the stuff that needs instrumentation
+    // const instrumenter = new Instrumenter();
+
+    const targetPaths = this.targets.map((x) => x.canonicalPath);
+
+    for (const targetPath of targetPaths) {
+      const source = this.getSource(targetPath);
+      const instrumented = await api.instrumenter.instrument(
+        source,
+        targetPath
+      );
+
+      api.coverage.addContract(instrumented, targetPath);
+
+      const _path = path
+        .normalize(targetPath)
+        .replace(absoluteRootPath, destinationPath);
+
+      await outputFileSync(_path, instrumented.contract);
     }
   }
 }

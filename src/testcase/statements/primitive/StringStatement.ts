@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,14 +16,10 @@
  * limitations under the License.
  */
 
-import {
-  PrimitiveStatement,
-  TestCaseSampler,
-  prng,
-  Properties,
-  Parameter,
-} from "@syntest/framework";
+import { prng, Properties } from "@syntest/core";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
+import { PrimitiveStatement } from "./PrimitiveStatement";
+import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
 /**
  * @author Dimitri Stallenberg
@@ -44,7 +40,7 @@ export class StringStatement extends PrimitiveStatement<string> {
     this.maxlength = maxlength;
   }
 
-  mutate(sampler: TestCaseSampler, depth: number): StringStatement {
+  mutate(): StringStatement {
     if (prng.nextBoolean(Properties.resample_gene_probability)) {
       return StringStatement.getRandom();
     }
@@ -78,7 +74,7 @@ export class StringStatement extends PrimitiveStatement<string> {
 
   addMutation(): StringStatement {
     const position = prng.nextInt(0, this.value.length - 1);
-    const addedChar = prng.pickOne(this.alphabet);
+    const addedChar = prng.pickOne(this.alphabet.split(""));
 
     let newValue = "";
 
@@ -123,7 +119,7 @@ export class StringStatement extends PrimitiveStatement<string> {
 
   replaceMutation(): StringStatement {
     const position = prng.nextInt(0, this.value.length - 1);
-    const newChar = prng.pickOne(this.alphabet);
+    const newChar = prng.pickOne(this.alphabet.split(""));
 
     let newValue = "";
 
@@ -198,7 +194,7 @@ export class StringStatement extends PrimitiveStatement<string> {
     let value = "";
 
     for (let i = 0; i < valueLength; i++) {
-      value += prng.pickOne(alphabet);
+      value += prng.pickOne(alphabet.split(""));
     }
 
     return new StringStatement(

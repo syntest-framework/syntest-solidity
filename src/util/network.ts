@@ -1,6 +1,6 @@
-import { getUserInterface } from "@syntest/framework";
-
-const TruffleProvider = require("@truffle/provider");
+import { getUserInterface } from "@syntest/core";
+import * as TruffleProvider from "@truffle/provider";
+import TruffleConfig = require("@truffle/config");
 
 /**
  * Configures the network. Runs before the server is launched.
@@ -13,7 +13,8 @@ const TruffleProvider = require("@truffle/provider");
  * @param {TruffleConfig}      config
  * @param {SolidityCoverage} api
  */
-export function setNetwork(config: any, api: any): void {
+// eslint-disable-next-line
+export function setNetwork(config: TruffleConfig, api: any): void {
   // --network <network-name>
   if (config.network) {
     const network = config.networks[config.network];
@@ -75,7 +76,14 @@ export function setNetwork(config: any, api: any): void {
 
 // Truffle complains that these outer keys *are not* set when running plugin fn directly.
 // But throws saying they *cannot* be manually set when running as truffle command.
-export function setOuterConfigKeys(config: any, api: any, id: any): void {
+// eslint-disable-next-line
+export function setOuterConfigKeys(
+  config: TruffleConfig,
+  // eslint-disable-next-line
+  api: any,
+  // eslint-disable-next-line
+  id: any
+): void {
   try {
     config.network_id = id;
     config.port = api.port;
@@ -93,7 +101,8 @@ export function setOuterConfigKeys(config: any, api: any, id: any): void {
  * @param {TruffleConfig} config
  * @param {Array}         accounts
  */
-export function setNetworkFrom(config: any, accounts: any[]): void {
+// eslint-disable-next-line
+export function setNetworkFrom(config: TruffleConfig, accounts: any[]): void {
   if (!config.networks[config.network].from) {
     config.networks[config.network].from = accounts[0];
   }

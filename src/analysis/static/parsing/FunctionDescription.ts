@@ -16,32 +16,27 @@
  * limitations under the License.
  */
 
-import { SolidityVisitor } from "../SolidityVisitor";
-import { ImportDirective } from "@solidity-parser/parser/dist/src/ast-types";
+import { ActionDescription } from "./ActionDescription";
+import { Parameter } from "./Parameter";
 
 /**
- * Visits the AST nodes of a contract to find all import statements
+ * Interface for a Function Description.
  *
- * @author Mitchell Olsthoorn
+ * @author Dimitri Stallenberg
  */
-export class ImportVisitor implements SolidityVisitor {
-  protected _imports: Set<string>;
-
-  constructor() {
-    this._imports = new Set<string>();
-  }
+export interface FunctionDescription extends ActionDescription {
+  /**
+   * If the function is a constructor.
+   */
+  isConstructor: boolean;
 
   /**
-   * @inheritDoc
+   * Parameters of the function.
    */
-  ImportDirective(node: ImportDirective): void {
-    this._imports.add(node.path);
-  }
+  parameters: Parameter[];
 
   /**
-   * Return the found imports.
+   * Return parameters of the function
    */
-  getImports(): string[] {
-    return Array.from(this._imports);
-  }
+  returnParameters: Parameter[];
 }

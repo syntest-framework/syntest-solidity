@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -23,11 +23,10 @@ import {
   StringLiteral,
   NumberLiteral,
   Identifier,
-  IndexAccess,
   MemberAccess,
   HexNumber,
   DecimalNumber,
-} from "@solidity-parser/parser";
+} from "@solidity-parser/parser/dist/src/ast-types";
 import { ConstantPool } from "./ConstantPool";
 
 /**
@@ -76,7 +75,7 @@ export class ConstantVisitor implements SolidityVisitor {
     if (!["require", "_"].includes(node.name)) this.pool.addString(node.name);
   }
 
-  IndexAccess(node: IndexAccess): void {
+  IndexAccess(): void {
     // TODO: check for index numbers
   }
 

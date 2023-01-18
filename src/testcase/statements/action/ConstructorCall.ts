@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 Delft University of Technology and SynTest contributors
+ * Copyright 2020-2022 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Solidity.
  *
@@ -16,15 +16,12 @@
  * limitations under the License.
  */
 
-import { SolidityTestCase } from "../../SolidityTestCase";
-import { AddressStatement } from "../AddressStatement";
-import {
-  Statement,
-  ActionStatement,
-  prng,
-  Parameter,
-  EncodingSampler,
-} from "@syntest/framework";
+import { AddressStatement } from "../primitive/AddressStatement";
+import { prng } from "@syntest/core";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { ActionStatement } from "./ActionStatement";
+import { Statement } from "../Statement";
+import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
 /**
  * @author Dimitri Stallenberg
@@ -62,7 +59,7 @@ export class ConstructorCall extends ActionStatement {
     this._sender = sender;
   }
 
-  mutate(sampler: EncodingSampler<SolidityTestCase>, depth: number) {
+  mutate(sampler: SoliditySampler, depth: number) {
     if (this.args.length > 0) {
       const args = [...this.args.map((a: Statement) => a.copy())];
       const index = prng.nextInt(0, args.length - 1);
@@ -79,51 +76,42 @@ export class ConstructorCall extends ActionStatement {
       changed = true;
     }
     if (prng.nextDouble(0, 1) <= 1.0 / 3.0) {
-      this.replaceMethodCall(depth, sampler);
+      this.replaceMethodCall(sampler, depth);
       changed = true;
     }
     if (prng.nextDouble(0, 1) <= 1.0 / 3.0) {
-      this.addMethodCall(depth, sampler);
+      this.addMethodCall(sampler, depth);
       changed = true;
     }
 
     if (!this.hasMethodCalls()) {
-      this.addMethodCall(depth, sampler);
+      this.addMethodCall(sampler, depth);
       changed = true;
     }
 
     if (!changed) {
-      this.replaceMethodCall(depth, sampler);
-      this.addMethodCall(depth, sampler);
+      this.replaceMethodCall(sampler, depth);
+      this.addMethodCall(sampler, depth);
     }
 
     return this;
   }
 
-  protected addMethodCall(
-    depth: number,
-    sampler: EncodingSampler<SolidityTestCase>
-  ) {
+  protected addMethodCall(sampler: SoliditySampler, depth: number) {
     let count = 0;
     while (prng.nextDouble(0, 1) <= Math.pow(0.5, count) && count < 10) {
       const index = prng.nextInt(0, this._calls.length);
 
-      // get a random test case and we extract one of its method call
-      // ugly solution for now. But we have to fix with proper refactoring
-      const randomTest: SolidityTestCase = sampler.sample();
       this._calls.splice(
         index,
         0,
-        (randomTest.root as ConstructorCall).getMethodCalls()[0]
+        sampler.sampleObjectFunctionCall(depth + 1, this)
       );
       count++;
     }
   }
 
-  protected replaceMethodCall(
-    depth: number,
-    sampler: EncodingSampler<SolidityTestCase>
-  ) {
+  protected replaceMethodCall(sampler: SoliditySampler, depth: number) {
     if (this.hasMethodCalls()) {
       const calls = this.getMethodCalls();
       const index = prng.nextInt(0, calls.length - 1);
