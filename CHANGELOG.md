@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [0.2.2] - 2023-01-25
+
+### Fixed
+
+- Variable names: variable names could start with a number which made te test cases fail
+
 ## [0.2.1] - 2023-01-25
 
 ### Fixed
