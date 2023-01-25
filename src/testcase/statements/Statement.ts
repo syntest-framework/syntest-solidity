@@ -46,7 +46,15 @@ export abstract class Statement {
     this._types = types;
     this._uniqueId = uniqueId;
     this._varNames = types.map((x) => {
-      return x.name + prng.uniqueId();
+      const typeName = x.type.includes("[]")
+        ? "array"
+        : x.type.includes("Map")
+        ? "map"
+        : x.type.includes("function")
+        ? "function"
+        : x.type;
+
+      return `_${x.name}_${typeName}_${prng.uniqueId()}`;
     });
   }
 

@@ -87,6 +87,7 @@ import {
   collectInitialVariables,
   collectStatistics,
 } from "./util/collection";
+import { Runner } from "mocha";
 // eslint-disable-next-line
 const pkg = require("../package.json");
 // eslint-disable-next-line
@@ -409,6 +410,9 @@ export class SolidityLauncher {
       testDir: testDir,
     });
 
+    // Reset instrumentation data (no hits)
+    this.api.resetInstrumentationData();
+
     // Run tests
     // by replacing the console.log global function we disable the output of the truffle test results
     const old = console.log;
@@ -422,6 +426,14 @@ export class SolidityLauncher {
     }
     console.log = old;
     await this.api.onTestsComplete(this.config);
+
+    const mochaRunner: Runner = this.truffle.test.mochaRunner;
+    const stats = mochaRunner.stats;
+
+    // If one of the executions failed, log it
+    if (stats.failures > 0) {
+      getUserInterface().error("Test case has failed!");
+    }
 
     getUserInterface().report("header", ["SEARCH RESULTS"]);
 

@@ -148,9 +148,9 @@ export class SoliditySuiteBuilder {
     }
     console.log = old;
 
-    // Create final tests files with assertions
     await this.clearDirectory(Properties.temp_test_directory);
 
+    // Create final tests files with assertions
     for (const key of reducedArchive.keys()) {
       await this.gatherAssertions(reducedArchive.get(key));
       const testPath = path.join(
