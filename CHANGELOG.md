@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Variable names: variable names could start with a number which made te test cases fail
+- Generated variable names: variable names cannot start with a number which made the test cases fail
 
 ## [0.2.1] - 2023-01-25
 
