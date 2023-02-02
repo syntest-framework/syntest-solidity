@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-import { prng, Properties } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/core";
 
 import BigNumber from "bignumber.js";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { SolidityArguments } from "../../../SolidityLauncher";
 
 /**
  * Generic number class
@@ -59,7 +60,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
   }
 
   mutate(): NumericStatement {
-    if (prng.nextBoolean(Properties.delta_mutation_probability)) {
+    if (prng.nextBoolean(CONFIG.deltaMutationProbability)) {
       return this.deltaMutation();
     }
 
@@ -84,7 +85,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     let newValue = this.value.plus(change);
 
     // If illegal values are not allowed we make sure the value does not exceed the specified bounds
-    if (!Properties.explore_illegal_values) {
+    if (!CONFIG.exploreIllegalValues) {
       const max = this.upper_bound;
       const min = this._signed ? this.lower_bound : NumericStatement._zero;
 
@@ -120,8 +121,8 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
 
   static getRandom(
     type: Parameter = { type: "number", name: "noname" },
-    decimals = Properties.numeric_decimals,
-    signed = Properties.numeric_signed,
+    decimals = (<SolidityArguments>CONFIG).numericDecimals,
+    signed = (<SolidityArguments>CONFIG).numericSigned,
     upper_bound = new BigNumber(Number.MAX_SAFE_INTEGER),
     lower_bound = new BigNumber(Number.MAX_SAFE_INTEGER)
   ): NumericStatement {
@@ -130,8 +131,8 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     const min: BigNumber = signed ? max.negated() : this._zero;
 
     if (
-      Properties.constant_pool &&
-      prng.nextDouble(0, 1) <= Properties.constant_pool_probability
+      CONFIG.constantPool &&
+      prng.nextDouble(0, 1) <= CONFIG.constantPoolProbability
     ) {
       const value = ConstantPool.getInstance().getNumber();
       if (value != null)
@@ -181,7 +182,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
       type,
       prng.uniqueId(),
       new BigNumber(value),
-      Properties.numeric_decimals,
+      (<SolidityArguments>CONFIG).numericDecimals,
       signed,
       new BigNumber(Number.MAX_SAFE_INTEGER),
       new BigNumber(Number.MAX_SAFE_INTEGER)

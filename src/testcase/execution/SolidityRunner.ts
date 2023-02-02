@@ -18,9 +18,9 @@
 
 import {
   ExecutionResult,
-  Properties,
   getUserInterface,
   EncodingRunner,
+  CONFIG,
 } from "@syntest/core";
 
 import * as path from "path";
@@ -62,7 +62,7 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     subject: SoliditySubject,
     testCase: SolidityTestCase
   ): Promise<ExecutionResult> {
-    const testPath = path.join(Properties.temp_test_directory, "tempTest.js");
+    const testPath = path.join(CONFIG.tempTestDirectory, "tempTest.js");
     await this.suiteBuilder.writeTestCase(testPath, testCase, subject.name);
 
     this.config.test_files = await getTestFilePaths(this.config);

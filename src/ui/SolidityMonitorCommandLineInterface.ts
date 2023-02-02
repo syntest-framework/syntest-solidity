@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { MonitorCommandLineInterface, yargs } from "@syntest/core";
+import { MonitorCommandLineInterface } from "@syntest/core";
 import Messages from "./Messages";
 import clear = require("clear");
 
@@ -39,9 +39,6 @@ export class SolidityMonitorCommandLineInterface extends MonitorCommandLineInter
         return;
       case "asciiArt":
         return;
-      case "help":
-        clear();
-        return yargs.showHelp();
       case "version":
         this.logs.push(this.messages.versions(args[0], args[1], args[2]));
         return;

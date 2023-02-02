@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { Properties, prng } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/core";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
 
@@ -37,7 +37,7 @@ export class ByteStatement extends PrimitiveStatement<number[]> {
   }
 
   mutate(): ByteStatement {
-    if (prng.nextBoolean(Properties.delta_mutation_probability)) {
+    if (prng.nextBoolean(CONFIG.deltaMutationProbability)) {
       const index = prng.nextInt(0, this.value.length - 1);
 
       const change = prng.nextGaussian(0, 3);

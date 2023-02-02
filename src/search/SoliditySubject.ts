@@ -17,11 +17,8 @@
  */
 
 import {
-  BranchNode,
   BranchObjectiveFunction,
-  CFG,
   FunctionObjectiveFunction,
-  NodeType,
   ObjectiveFunction,
   SearchSubject,
 } from "@syntest/core";
@@ -33,6 +30,7 @@ import { ActionDescription } from "../analysis/static/parsing/ActionDescription"
 import { FunctionDescription } from "../analysis/static/parsing/FunctionDescription";
 import { Parameter } from "../analysis/static/parsing/Parameter";
 import { PublicVisibility } from "../analysis/static/parsing/Visibility";
+import { BranchNode, CFG, NodeType } from "@syntest/cfg-core";
 
 export class SoliditySubject extends SearchSubject<SolidityTestCase> {
   private _functionCalls: FunctionDescription[] | null = null;

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { CFG, Target } from "@syntest/core";
+import { Target } from "@syntest/core";
 
 import { SolidityTargetPool } from "./SolidityTargetPool";
 import * as path from "path";
@@ -26,6 +26,7 @@ import { ContractMetadata } from "./map/ContractMetadata";
 import { Graph } from "./Graph";
 import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
 import { ContractFunction } from "./map/ContractFunction";
+import { CFG } from "@syntest/cfg-core";
 
 /**
  * Target system under test.

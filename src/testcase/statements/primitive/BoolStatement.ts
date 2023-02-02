@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { prng, Properties } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/core";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 
@@ -29,7 +29,7 @@ export class BoolStatement extends PrimitiveStatement<boolean> {
   }
 
   mutate() {
-    if (prng.nextBoolean(Properties.resample_gene_probability)) {
+    if (prng.nextBoolean(CONFIG.resampleGeneProbability)) {
       return BoolStatement.getRandom(this.type);
     }
 

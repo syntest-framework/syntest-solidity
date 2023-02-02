@@ -18,7 +18,7 @@
 
 import { existsSync, mkdirSync, rmdirSync, writeFileSync } from "fs";
 
-import { getUserInterface, Properties } from "@syntest/core";
+import { CONFIG, getUserInterface } from "@syntest/core";
 import globby = require("globby");
 import recursive = require("recursive-readdir");
 
@@ -46,7 +46,7 @@ export async function createTruffleConfig() {
   await writeFileSync(
     filepath,
     `module.exports = {
-  test_directory: "${Properties.temp_test_directory}",
+  test_directory: "${CONFIG.tempTestDirectory}",
   plugins: ["@syntest/solidity"]
 };`
   );

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { prng, Properties } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/core";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { ActionStatement } from "./ActionStatement";
 import { Statement } from "../Statement";
@@ -50,7 +50,7 @@ export class FunctionCall extends ActionStatement {
   }
 
   mutate(sampler: SoliditySampler, depth: number) {
-    if (prng.nextBoolean(Properties.resample_gene_probability)) {
+    if (prng.nextBoolean(CONFIG.resampleGeneProbability)) {
       // resample the gene
       return sampler.sampleStatement(depth, this.types, "functionCall");
     } else if (!this.args.length) {

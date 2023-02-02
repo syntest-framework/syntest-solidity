@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { Properties, Archive, getUserInterface } from "@syntest/core";
+import { Archive, CONFIG, getUserInterface } from "@syntest/core";
 
 import {
   readdirSync,
@@ -126,7 +126,7 @@ export class SoliditySuiteBuilder {
     for (const key of reducedArchive.keys()) {
       for (const testCase of reducedArchive.get(key)) {
         const testPath = path.join(
-          Properties.temp_test_directory,
+          CONFIG.tempTestDirectory,
           `test${key}${testCase.id}.js`
         );
         await this.writeTestCase(testPath, testCase, "", true);
@@ -149,12 +149,12 @@ export class SoliditySuiteBuilder {
     console.log = old;
 
     // Create final tests files with assertions
-    await this.clearDirectory(Properties.temp_test_directory);
+    await this.clearDirectory(CONFIG.tempTestDirectory);
 
     for (const key of reducedArchive.keys()) {
       await this.gatherAssertions(reducedArchive.get(key));
       const testPath = path.join(
-        Properties.final_suite_directory,
+        CONFIG.finalSuiteDirectory,
         `test-${key}.js`
       );
       await writeFileSync(
@@ -172,12 +172,12 @@ export class SoliditySuiteBuilder {
       try {
         // extract the log statements
         const dir = await readdirSync(
-          path.join(Properties.temp_log_directory, testCase.id)
+          path.join(CONFIG.tempLogDirectory, testCase.id)
         );
 
         for (const file of dir) {
           const assertionValue = await readFileSync(
-            path.join(Properties.temp_log_directory, testCase.id, file),
+            path.join(CONFIG.tempLogDirectory, testCase.id, file),
             "utf8"
           );
           assertions.set(file, assertionValue);
@@ -187,10 +187,10 @@ export class SoliditySuiteBuilder {
       }
 
       await this.clearDirectory(
-        path.join(Properties.temp_log_directory, testCase.id),
+        path.join(CONFIG.tempLogDirectory, testCase.id),
         /.*/g
       );
-      await rmdirSync(path.join(Properties.temp_log_directory, testCase.id));
+      await rmdirSync(path.join(CONFIG.tempLogDirectory, testCase.id));
 
       testCase.assertions = assertions;
     }

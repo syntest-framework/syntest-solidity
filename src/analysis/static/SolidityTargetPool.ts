@@ -23,12 +23,13 @@ import { TargetMapGenerator } from "./map/TargetMapGenerator";
 import { SolidityCFGFactory } from "../../graph/SolidityCFGFactory";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { ContractFunction } from "./map/ContractFunction";
-import { CFG, Properties, TargetPool, Target } from "@syntest/core";
+import { TargetPool, Target, CONFIG } from "@syntest/core";
 import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
 import { LibraryVisitor } from "./dependency/LibraryVisitor";
 import SolidityParser = require("@solidity-parser/parser");
 import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
+import { CFG } from "@syntest/cfg-core";
 // eslint-disable-next-line
 const { outputFileSync, copySync } = require("fs-extra");
 
@@ -267,11 +268,11 @@ export class SolidityTargetPool extends TargetPool {
 
   // eslint-disable-next-line
   async prepareAndInstrument(api: any): Promise<void> {
-    const absoluteRootPath = path.resolve(Properties.target_root_directory);
+    const absoluteRootPath = path.resolve(CONFIG.targetRootDirectory);
 
     const destinationPath = path.resolve(
-      Properties.temp_instrumented_directory,
-      path.basename(Properties.target_root_directory)
+      CONFIG.tempInstrumentedDirectory,
+      path.basename(CONFIG.targetRootDirectory)
     );
 
     // copy everything

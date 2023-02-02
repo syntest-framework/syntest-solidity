@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { Properties, prng } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/core";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
@@ -40,7 +40,7 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   mutate(sampler: SoliditySampler, depth: number): AddressStatement {
-    if (prng.nextBoolean(Properties.resample_gene_probability)) {
+    if (prng.nextBoolean(CONFIG.resampleGeneProbability)) {
       return <AddressStatement>(
         sampler.sampleStatement(depth, this.types, "primitive")
       );
@@ -87,8 +87,8 @@ export class AddressStatement extends PrimitiveStatement<string> {
   static getRandom(type: Parameter = { type: "address", name: "noname" }) {
     let account = -1;
     if (
-      Properties.constant_pool &&
-      prng.nextDouble(0, 1) <= Properties.constant_pool_probability
+      CONFIG.constantPool &&
+      prng.nextDouble(0, 1) <= CONFIG.constantPoolProbability
     ) {
       const value = ConstantPool.getInstance().getAddress();
       if (value != null) {

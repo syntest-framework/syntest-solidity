@@ -19,6 +19,7 @@
 import * as path from "path";
 import {
   Archive,
+  CONFIG,
   Datapoint,
   Encoding,
   EvaluationBudget,
@@ -26,7 +27,6 @@ import {
   ExecutionResult,
   getSeed,
   IterationBudget,
-  Properties,
   RuntimeVariable,
   SearchTimeBudget,
   StatisticsCollector,
@@ -42,19 +42,19 @@ export function collectInitialVariables<T extends Encoding>(
   collector.recordVariable(RuntimeVariable.VERSION, `1`);
   collector.recordVariable(
     RuntimeVariable.CONFIGURATION,
-    Properties.configuration
+    CONFIG.configuration
   );
   collector.recordVariable(RuntimeVariable.SEED, getSeed());
   collector.recordVariable(RuntimeVariable.SUBJECT, path.basename(targetPath));
   collector.recordVariable(
     RuntimeVariable.PROBE_ENABLED,
-    `${Properties.probe_objective}`
+    `${CONFIG.probeObjective}`
   );
   collector.recordVariable(
     RuntimeVariable.CONSTANT_POOL_ENABLED,
-    `${Properties.constant_pool}`
+    `${CONFIG.constant_pool}`
   );
-  collector.recordVariable(RuntimeVariable.ALGORITHM, Properties.algorithm);
+  collector.recordVariable(RuntimeVariable.ALGORITHM, CONFIG.algorithm);
   collector.recordVariable(
     RuntimeVariable.TOTAL_OBJECTIVES,
     `${currentSubject.getObjectives().length}`

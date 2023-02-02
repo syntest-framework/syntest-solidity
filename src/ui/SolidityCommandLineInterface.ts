@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { CommandLineInterface, yargs } from "@syntest/core";
+import { CommandLineInterface } from "@syntest/core";
 
 import Messages from "./Messages";
 
@@ -40,8 +40,6 @@ export class SolidityCommandLineInterface extends CommandLineInterface {
         return clear();
       case "asciiArt":
         return console.log(this.messages.asciiArt(args[0]));
-      case "help":
-        return yargs.showHelp();
       case "version":
         return console.log(this.messages.version(args[0]));
       case "versions":

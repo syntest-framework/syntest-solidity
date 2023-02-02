@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { prng, Properties } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/core";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
@@ -41,7 +41,7 @@ export class StringStatement extends PrimitiveStatement<string> {
   }
 
   mutate(): StringStatement {
-    if (prng.nextBoolean(Properties.resample_gene_probability)) {
+    if (prng.nextBoolean(CONFIG.resampleGeneProbability)) {
       return StringStatement.getRandom();
     }
 
@@ -179,12 +179,12 @@ export class StringStatement extends PrimitiveStatement<string> {
 
   static getRandom(
     type: Parameter = { type: "string", name: "noname" },
-    alphabet = Properties.string_alphabet,
-    maxlength = Properties.string_maxlength
+    alphabet = CONFIG.stringAlphabet,
+    maxlength = CONFIG.stringMaxLength
   ): StringStatement {
     if (
-      Properties.constant_pool &&
-      prng.nextDouble(0, 1) <= Properties.constant_pool_probability
+      CONFIG.constantPool &&
+      prng.nextDouble(0, 1) <= CONFIG.constantPoolProbability
     ) {
       const value = ConstantPool.getInstance().getString();
       if (value != null) return StringStatement.createWithValue(type, value);
@@ -211,8 +211,8 @@ export class StringStatement extends PrimitiveStatement<string> {
       type,
       prng.uniqueId(),
       value,
-      Properties.string_alphabet,
-      Properties.string_maxlength
+      CONFIG.stringAlphabet,
+      CONFIG.stringMaxLength
     );
   }
 }

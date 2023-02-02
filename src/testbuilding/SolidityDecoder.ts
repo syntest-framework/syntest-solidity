@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { Properties, Decoder } from "@syntest/core";
+import { CONFIG, Decoder } from "@syntest/core";
 
 import * as path from "path";
 import * as web3_utils from "web3-utils";
@@ -325,7 +325,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
         imports.push(`const fs = require('fs');\n\n`);
         testString.push(
           `\t\tawait fs.mkdirSync('${path.join(
-            Properties.temp_log_directory,
+            CONFIG.tempLogDirectory,
             ind.id
           )}', { recursive: true })\n`
         );
@@ -348,7 +348,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
         if (gene instanceof ConstructorCall) {
           if (count === stopAfter) {
             // assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
-            if (Properties.test_minimization) break;
+            if (CONFIG.testMinimization) break;
           }
           testString.push(`\t\t${this.decodeConstructor(gene)}`);
           importableGenes.push(<ConstructorCall>gene);
@@ -363,7 +363,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
                 constructor.varNames[0]
               )}`
             );
-            if (Properties.test_minimization) break;
+            if (CONFIG.testMinimization) break;
           }
           functionCalls.push(
             `\t\t${this.decodeFunctionCall(gene, constructor.varNames[0])}`
@@ -378,7 +378,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
             for (const varName of gene.varNames) {
               functionCalls.push(
                 `\t\tawait fs.writeFileSync('${path.join(
-                  Properties.temp_log_directory,
+                  CONFIG.tempLogDirectory,
                   ind.id,
                   varName
                 )}', '' + ${varName})`
@@ -388,7 +388,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
             for (const varName of gene.varNames) {
               testString.push(
                 `\t\tawait fs.writeFileSync('${path.join(
-                  Properties.temp_log_directory,
+                  CONFIG.tempLogDirectory,
                   ind.id,
                   varName
                 )}', '' + ${varName})`
@@ -414,7 +414,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
         testString.push(`} catch (e) {`);
         testString.push(
           `await fs.writeFileSync('${path.join(
-            Properties.temp_log_directory,
+            CONFIG.tempLogDirectory,
             ind.id,
             "error"
           )}', '' + e.stack)`

@@ -19,7 +19,7 @@
 import { ConstructorCall } from "./ConstructorCall";
 import { AddressStatement } from "../primitive/AddressStatement";
 
-import { prng, Properties } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/core";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { ActionStatement } from "./ActionStatement";
 import { Statement } from "../Statement";
@@ -56,7 +56,7 @@ export class ObjectFunctionCall extends ActionStatement {
   }
 
   mutate(sampler: SoliditySampler, depth: number): ObjectFunctionCall {
-    if (prng.nextBoolean(Properties.resample_gene_probability)) {
+    if (prng.nextBoolean(CONFIG.resampleGeneProbability)) {
       // resample the gene
       return <ObjectFunctionCall>(
         sampler.sampleStatement(depth, this.types, "functionCall")

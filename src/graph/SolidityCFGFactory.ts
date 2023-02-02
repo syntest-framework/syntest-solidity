@@ -44,9 +44,8 @@ import {
   Operation,
   Edge,
   CFGFactory,
-  Properties,
   NodeType,
-} from "@syntest/core";
+} from "@syntest/cfg-core";
 
 import {
   ExternalVisibility,
@@ -59,6 +58,7 @@ import {
   PublicVisibility,
   Visibility,
 } from "../analysis/static/parsing/Visibility";
+import { CONFIG } from "@syntest/core";
 
 // TODO break and continue statements
 
@@ -532,7 +532,7 @@ export class SolidityCFGFactory implements CFGFactory {
     let parents: Node[] = [node];
 
     const totalBreakNodes = [];
-    if (AST.modifiers && Properties.modifier_extraction) {
+    if (AST.modifiers && CONFIG.modifierExtraction) {
       AST.modifiers.forEach((modifier) => {
         const { childNodes, breakNodes } = this.visitChild(
           cfg,
@@ -1074,7 +1074,7 @@ export class SolidityCFGFactory implements CFGFactory {
       if (
         AST.expression.type === "Identifier" &&
         AST.expression.name === "require" &&
-        Properties.probe_objective
+        CONFIG.probeObjective
       ) {
         const node: Node = this.createBranchNode(
           cfg,

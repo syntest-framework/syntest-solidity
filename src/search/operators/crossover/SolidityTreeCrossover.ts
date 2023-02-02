@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { prng, Crossover, Properties } from "@syntest/core";
+import { prng, Crossover, CONFIG } from "@syntest/core";
 
 import { SolidityTestCase } from "../../../testcase/SolidityTestCase";
 import { ConstructorCall } from "../../../testcase/statements/action/ConstructorCall";
@@ -44,11 +44,13 @@ interface QueueEntry {
  */
 export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
   public crossOver(
-    parentA: SolidityTestCase,
-    parentB: SolidityTestCase
+    parents: SolidityTestCase[]
   ): SolidityTestCase[] {
-    const rootA = parentA.copy().root;
-    const rootB = parentB.copy().root;
+    if (parents.length !== 2) {
+      throw new Error("Expected 2 parents got: " + parents.length)
+    }
+    const rootA = parents[0].copy().root;
+    const rootB = parents[1].copy().root;
 
     const queueA: QueueEntry[] = [];
 
@@ -79,7 +81,7 @@ export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
         });
       }
 
-      if (prng.nextBoolean(Properties.crossover_probability)) {
+      if (prng.nextBoolean(CONFIG.crossoverProbability)) {
         // crossover
         const donorSubtrees = this.findSimilarSubtree(pair.child, rootB);
 

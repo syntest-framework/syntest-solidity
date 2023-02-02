@@ -16,12 +16,10 @@
  * limitations under the License.
  */
 
+import { NodeType, BranchNode, Node } from "@syntest/cfg-core";
 import {
   BranchDistance,
-  BranchNode,
   Encoding,
-  Node,
-  NodeType,
   ProbeObjectiveFunction,
   SearchSubject,
 } from "@syntest/core";

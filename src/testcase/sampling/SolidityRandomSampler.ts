@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { prng, Properties } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/core";
 
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/primitive/AddressStatement";
@@ -36,6 +36,7 @@ import { Statement } from "../statements/Statement";
 import { ActionStatement } from "../statements/action/ActionStatement";
 import { FunctionDescription } from "../../analysis/static/parsing/FunctionDescription";
 import { Parameter } from "../../analysis/static/parsing/Parameter";
+import { SolidityArguments } from "../../SolidityLauncher";
 
 /**
  * SolidityRandomSampler class
@@ -151,7 +152,7 @@ export class SolidityRandomSampler extends SoliditySampler {
 
   sampleArgument(depth: number, type: Parameter, bits: number): Statement {
     // check depth to decide whether to pick a variable
-    if (depth >= Properties.max_depth) {
+    if (depth >= CONFIG.maxDepth) {
       // TODO or take an already available variable
       if (type.type.includes("int")) {
         return this.sampleNumericGene(depth, type, bits);
@@ -164,7 +165,7 @@ export class SolidityRandomSampler extends SoliditySampler {
       (<SoliditySubject>this._subject)
         .getPossibleActions()
         .filter((a) => a.type === type.type).length &&
-      prng.nextBoolean(Properties.sample_func_as_arg)
+      prng.nextBoolean(CONFIG.sampleFunctionOutputAsArgument)
     ) {
       // Pick function
       // TODO or take an already available functionCall
@@ -194,13 +195,13 @@ export class SolidityRandomSampler extends SoliditySampler {
     if (type.type.includes("ufixed")) {
       return NumericStatement.getRandom(
         type,
-        Properties.numeric_decimals,
+        (<SolidityArguments>CONFIG).numericDecimals,
         false
       );
     } else {
       return NumericStatement.getRandom(
         type,
-        Properties.numeric_decimals,
+        (<SolidityArguments>CONFIG).numericDecimals,
         true
       );
     }
