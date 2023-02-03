@@ -153,10 +153,7 @@ export class SoliditySuiteBuilder {
 
     for (const key of reducedArchive.keys()) {
       await this.gatherAssertions(reducedArchive.get(key));
-      const testPath = path.join(
-        CONFIG.finalSuiteDirectory,
-        `test-${key}.js`
-      );
+      const testPath = path.join(CONFIG.finalSuiteDirectory, `test-${key}.js`);
       await writeFileSync(
         testPath,
         this.decoder.decode(reducedArchive.get(key), `${key}`, false)

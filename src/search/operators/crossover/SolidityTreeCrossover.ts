@@ -43,11 +43,9 @@ interface QueueEntry {
  * @author Dimitri Stallenberg
  */
 export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
-  public crossOver(
-    parents: SolidityTestCase[]
-  ): SolidityTestCase[] {
+  public crossOver(parents: SolidityTestCase[]): SolidityTestCase[] {
     if (parents.length !== 2) {
-      throw new Error("Expected 2 parents got: " + parents.length)
+      throw new Error("Expected 2 parents got: " + parents.length);
     }
     const rootA = parents[0].copy().root;
     const rootB = parents[1].copy().root;
