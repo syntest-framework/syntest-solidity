@@ -121,8 +121,8 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
 
   static getRandom(
     type: Parameter = { type: "number", name: "noname" },
-    decimals = (<SolidityArguments>CONFIG).numericDecimals,
-    signed = (<SolidityArguments>CONFIG).numericSigned,
+    decimals = (<SolidityArguments>(<unknown>CONFIG)).numericDecimals,
+    signed = (<SolidityArguments>(<unknown>CONFIG)).numericSigned,
     upper_bound = new BigNumber(Number.MAX_SAFE_INTEGER),
     lower_bound = new BigNumber(Number.MAX_SAFE_INTEGER)
   ): NumericStatement {
@@ -182,7 +182,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
       type,
       prng.uniqueId(),
       new BigNumber(value),
-      (<SolidityArguments>CONFIG).numericDecimals,
+      (<SolidityArguments>(<unknown>CONFIG)).numericDecimals,
       signed,
       new BigNumber(Number.MAX_SAFE_INTEGER),
       new BigNumber(Number.MAX_SAFE_INTEGER)

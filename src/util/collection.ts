@@ -33,6 +33,7 @@ import {
   TotalTimeBudget,
 } from "@syntest/core";
 import { SoliditySubject } from "../search/SoliditySubject";
+import { SolidityArguments } from "../SolidityLauncher";
 
 export function collectInitialVariables<T extends Encoding>(
   collector: StatisticsCollector<T>,
@@ -40,19 +41,16 @@ export function collectInitialVariables<T extends Encoding>(
   targetPath: string
 ) {
   collector.recordVariable(RuntimeVariable.VERSION, `1`);
-  collector.recordVariable(
-    RuntimeVariable.CONFIGURATION,
-    CONFIG.configuration
-  );
+  collector.recordVariable(RuntimeVariable.CONFIGURATION, CONFIG.configuration);
   collector.recordVariable(RuntimeVariable.SEED, getSeed());
   collector.recordVariable(RuntimeVariable.SUBJECT, path.basename(targetPath));
   collector.recordVariable(
     RuntimeVariable.PROBE_ENABLED,
-    `${CONFIG.probeObjective}`
+    `${(<SolidityArguments>(<unknown>CONFIG)).probeObjective}`
   );
   collector.recordVariable(
     RuntimeVariable.CONSTANT_POOL_ENABLED,
-    `${CONFIG.constant_pool}`
+    `${CONFIG.constantPool}`
   );
   collector.recordVariable(RuntimeVariable.ALGORITHM, CONFIG.algorithm);
   collector.recordVariable(

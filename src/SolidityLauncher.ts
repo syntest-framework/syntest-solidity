@@ -87,13 +87,15 @@ import {
   collectStatistics,
 } from "./util/collection";
 import Yargs = require("yargs");
+import { RemoveIndex } from "@syntest/core/dist/Configuration";
 
 // eslint-disable-next-line
 const pkg = require("../package.json");
 // eslint-disable-next-line
 const Web3 = require("web3");
 
-export interface SolidityArguments extends ArgumentsObject {
+export interface SolidityArguments
+  extends Readonly<RemoveIndex<ArgumentsObject>> {
   solcCompilerVersion: string;
   probeObjective: boolean;
   modifierExtraction: boolean;
@@ -102,9 +104,8 @@ export interface SolidityArguments extends ArgumentsObject {
 }
 
 export class SolidityLauncher extends Launcher<SolidityTestCase> {
-
-  private importsMap: Map<string, string>
-  private dependencyMap: Map<string, Target[]>
+  private importsMap: Map<string, string>;
+  private dependencyMap: Map<string, Target[]>;
 
   private api;
   private config;
@@ -120,62 +121,63 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
     eventManager: EventManager<SolidityTestCase>,
     pluginManager: PluginManager<SolidityTestCase>
   ) {
-    super(programName, eventManager, pluginManager)
-    this.importsMap = new Map()
-    this.dependencyMap = new Map()
+    super(programName, eventManager, pluginManager);
+    this.importsMap = new Map();
+    this.dependencyMap = new Map();
   }
 
   addOptions<Y>(yargs: Yargs.Argv<Y>): Yargs.Argv<Y> {
-    return yargs.options("solc-compiler-version", {
-      alias: [],
-      demandOption: true,
-      description: "Solc compiler version",
-      group: "Solidity Options:",
-      hidden: false,
-      type: "string",
-    })
-    .options("probe-objective", {
-      alias: [],
-      default: false,
-      description: "Enable the probe objectives",
-      group: "Solidity Options:",
-      hidden: false,
-      type: "boolean",
-    })
-    .options("modifier-extraction", {
-      alias: [],
-      default: false,
-      description: "Enable modifier extraction",
-      group: "Solidity Options:",
-      hidden: false,
-      type: "boolean",
-    })
-    .options("numeric-decimals", {
-      alias: [],
-      default: 64,
-      description: "Number of decimals placed used by the numeric gene.",
-      group: "Solidity Options:",
-      hidden: false,
-      type: "number",
-    })
-    .options("numeric-signed", {
-      alias: [],
-      default: true,
-      description: "Whether the numeric genes are signed.",
-      group: "Solidity Options:",
-      hidden: false,
-      type: "boolean",
-    })
+    return yargs
+      .options("solc-compiler-version", {
+        alias: [],
+        demandOption: true,
+        description: "Solc compiler version",
+        group: "Solidity Options:",
+        hidden: false,
+        type: "string",
+      })
+      .options("probe-objective", {
+        alias: [],
+        default: false,
+        description: "Enable the probe objectives",
+        group: "Solidity Options:",
+        hidden: false,
+        type: "boolean",
+      })
+      .options("modifier-extraction", {
+        alias: [],
+        default: false,
+        description: "Enable modifier extraction",
+        group: "Solidity Options:",
+        hidden: false,
+        type: "boolean",
+      })
+      .options("numeric-decimals", {
+        alias: [],
+        default: 64,
+        description: "Number of decimals placed used by the numeric gene.",
+        group: "Solidity Options:",
+        hidden: false,
+        type: "number",
+      })
+      .options("numeric-signed", {
+        alias: [],
+        default: true,
+        description: "Whether the numeric genes are signed.",
+        group: "Solidity Options:",
+        hidden: false,
+        type: "boolean",
+      });
   }
 
   async initialize(): Promise<void> {
     await createTruffleConfig();
-    this.config = normalizeConfig(TruffleConfig.default())
+    this.config = normalizeConfig(TruffleConfig.default());
 
-    setupLogger()
-    await createDirectoryStructure()
-    await createTempDirectoryStructure()
-    await setupTempFolders(this.tempArtifactsDir)
+    setupLogger();
+    await createDirectoryStructure();
+    await createTempDirectoryStructure();
+    await setupTempFolders(this.tempArtifactsDir);
 
     const messages = new Messages();
 
@@ -197,8 +199,7 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
       );
     }
 
-    this.config.testDir = path.join(process.cwd(), CONFIG.tempTestDirectory)
-
+    this.config.testDir = path.join(process.cwd(), CONFIG.tempTestDirectory);
 
     getUserInterface().report("clear", []);
     getUserInterface().report("asciiArt", ["Syntest"]);
@@ -206,7 +207,7 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
 
     this.config.compilers = {
       solc: {
-        version: (<SolidityArguments>CONFIG).solcCompilerVersion,
+        version: (<SolidityArguments>(<unknown>CONFIG)).solcCompilerVersion,
         parser: "solcjs",
         settings: {
           optimizer: {
@@ -243,25 +244,25 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
 
     getUserInterface().report("header", ["TARGETS"]);
 
-     // Run post-launch server hook;
-     await this.api.onServerReady(this.config);
+    // Run post-launch server hook;
+    await this.api.onServerReady(this.config);
 
-     const sourceGenerator = new SourceGenerator();
-     const astGenerator = new ASTGenerator();
-     const targetMapGenerator = new TargetMapGenerator();
-     const cfgGenerator = new SolidityCFGFactory();
-     const targetPool = new SolidityTargetPool(
-       sourceGenerator,
-       astGenerator,
-       targetMapGenerator,
-       cfgGenerator
-     );
+    const sourceGenerator = new SourceGenerator();
+    const astGenerator = new ASTGenerator();
+    const targetMapGenerator = new TargetMapGenerator();
+    const cfgGenerator = new SolidityCFGFactory();
+    const targetPool = new SolidityTargetPool(
+      sourceGenerator,
+      astGenerator,
+      targetMapGenerator,
+      cfgGenerator
+    );
 
-     this.programState.targetPool = targetPool
+    this.programState.targetPool = targetPool;
   }
- 
+
   async preprocess(): Promise<void> {
-    this.programState.targetPool.loadTargets()
+    this.programState.targetPool.loadTargets();
 
     if (!this.programState.targetPool.targets.length) {
       // Shut server down
@@ -298,10 +299,7 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
       <string>(<unknown>[
         ["Resampling", CONFIG.resampleGeneProbability],
         ["Delta mutation", CONFIG.deltaMutationProbability],
-        [
-          "Re-sampling from chromosome",
-          CONFIG.sampleExistingValueProbability,
-        ],
+        ["Re-sampling from chromosome", CONFIG.sampleExistingValueProbability],
         ["Crossover", CONFIG.crossoverProbability],
       ]),
     ]);
@@ -309,7 +307,10 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
     getUserInterface().report("property-set", ["Sampling", <string>(<unknown>[
         ["Max Depth", CONFIG.maxDepth],
         ["Explore Illegal Values", CONFIG.exploreIllegalValues],
-        ["Sample Function Result as Argument", CONFIG.sampleFunctionOutputAsArgument],
+        [
+          "Sample Function Result as Argument",
+          CONFIG.sampleFunctionOutputAsArgument,
+        ],
         ["Crossover", CONFIG.crossoverProbability],
       ])]);
 
@@ -334,7 +335,7 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
     await this.truffle.contracts.compile(this.config);
     await this.api.onCompileComplete(this.config);
   }
-  
+
   async process(): Promise<void> {
     this.programState.archive = new Archive<SolidityTestCase>();
     this.importsMap = new Map();
@@ -362,7 +363,7 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
       ]);
     }
   }
-  
+
   async postprocess(): Promise<void> {
     const testDir = path.resolve(CONFIG.finalSuiteDirectory);
     await clearDirectory(testDir);
@@ -463,16 +464,16 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
       const algorithm = createSearchAlgorithmFromConfig(
         this.pluginManager,
         null,
-        sampler, 
-        runner, 
+        sampler,
+        runner,
         crossover
-        );
+      );
 
       await suiteBuilder.clearDirectory(CONFIG.tempTestDirectory);
 
       // allocate budget manager
       const iterationBudget = new IterationBudget(CONFIG.iterationBudget);
-      const evaluationBudget = new EvaluationBudget();
+      const evaluationBudget = new EvaluationBudget(CONFIG.evaluationBudget);
       const searchBudget = new SearchTimeBudget(CONFIG.searchTimeBudget);
       const totalTimeBudget = new TotalTimeBudget(CONFIG.totalTimeBudget);
       const budgetManager = new BudgetManager();
@@ -547,4 +548,3 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
     process.exit(0);
   }
 }
-

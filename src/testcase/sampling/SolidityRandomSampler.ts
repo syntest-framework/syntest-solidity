@@ -195,13 +195,13 @@ export class SolidityRandomSampler extends SoliditySampler {
     if (type.type.includes("ufixed")) {
       return NumericStatement.getRandom(
         type,
-        (<SolidityArguments>CONFIG).numericDecimals,
+        (<SolidityArguments>(<unknown>CONFIG)).numericDecimals,
         false
       );
     } else {
       return NumericStatement.getRandom(
         type,
-        (<SolidityArguments>CONFIG).numericDecimals,
+        (<SolidityArguments>(<unknown>CONFIG)).numericDecimals,
         true
       );
     }
