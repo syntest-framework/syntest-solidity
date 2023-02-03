@@ -87,7 +87,7 @@ import {
   collectStatistics,
 } from "./util/collection";
 import Yargs = require("yargs");
-import { RemoveIndex } from "@syntest/core/dist/Configuration";
+import { RemoveIndex } from "@syntest/core";
 
 // eslint-disable-next-line
 const pkg = require("../package.json");
