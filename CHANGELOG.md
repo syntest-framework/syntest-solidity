@@ -17,13 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-### Security
-
-## [0.2.2] - 2023-01-25
-
-### Fixed
-
 - Generated variable names: variable names cannot start with a number which made the test cases fail
+
+### Security
 
 ## [0.2.1] - 2023-01-25
 
