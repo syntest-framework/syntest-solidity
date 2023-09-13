@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-<%= YEAR %> Delft University of Technology and SynTest contributors
+ * Copyright 2020-2023 Delft University of Technology and SynTest contributors
  *
  * This file is part of SynTest Framework - SynTest Solidity.
  *
@@ -15,3 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+export class Factory {
+    private _syntaxForgiving: boolean;
+  
+    constructor(syntaxForgiving: boolean) {
+      this._syntaxForgiving = syntaxForgiving;
+    }
+  
+    get syntaxForgiving() {
+      return this._syntaxForgiving;
+    }
+  }

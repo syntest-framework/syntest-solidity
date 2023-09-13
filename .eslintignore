@@ -8,7 +8,14 @@ syntest/
 .*
 *.json
 *.md
+LICENSE*
+Dockerfile
+NOTICE
+commitlint.config.js
+link.sh
 
+**/coverage
+**/nyc_output
 
 # Since the javascript files have a lot of eslint errors that will be fixed by refactoring to typescript we ignore them for now.
 src/**/*.js

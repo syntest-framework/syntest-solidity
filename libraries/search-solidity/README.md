@@ -1,0 +1,1 @@
+# Search library for Solidity

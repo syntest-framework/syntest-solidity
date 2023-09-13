@@ -1,0 +1,137 @@
+name: pr-test
+
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/"
+      - "**.md"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Stop remaining runs when a build fails that is not experimental
+      fail-fast: true
+
+      matrix:
+        # Run the pipeline on all the currently supported OS versions
+        os: [ubuntu-latest]
+
+        # Run the pipeline on all the currently supported LTS versions and the upcoming version
+        node-version: [lts/*]
+
+        # Run the pipeline on all the currently supported architectures
+        architecture: [x64]
+
+        include:
+          # Report coverage for only one configuration
+          - os: ubuntu-latest
+            node-version: lts/*
+            architecture: x64
+            report_coverage: true
+
+    steps:
+      # Cloning
+      - uses: actions/checkout@v3
+
+      # Setup and Caching
+      - name: Use Node.js ${{ matrix.node-version }} (${{ matrix.architecture }})
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          architecture: ${{ matrix.architecture }}
+
+          # NPM Cache using all package-lock files as hash
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      # Dependencies
+      - name: Solidity - Install Dependencies
+        run: npm ci
+
+      # Testing
+      - name: Solidity - Run Tests
+        id: test
+        # Generate lcov.info file and Mocha test report
+        run: npm run test:coverage:ci
+
+      # Artifact
+      - name: Solidity - Upload Test Results
+        if: ${{ matrix.report_coverage }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-results
+          path: ${{ github.workspace }}/**/coverage/lcov.info
+
+      # Test Report
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: ${{ matrix.report_coverage }}
+        with:
+          name: Mocha Tests
+          path: ${{ github.workspace }}/**/test-results.json
+          reporter: mocha-json
+
+      # Mark job as successful even if the artifact or test report fails
+      - run: exit 0
+        if: ${{ steps.test.outcome == 'success' }}
+
+  # Send coverage information to Coveralls
+  coverage:
+    name: Coverage(${{ matrix.package }}) - Collection
+    needs: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: "."
+    strategy:
+      # Keep running other versions when a job fails
+      fail-fast: false
+
+      matrix:
+        # Collect coverage for all packages and plugins
+        package:
+          - libraries/analysis-javascript
+          - libraries/ast-visitor-javascript
+          - libraries/instrumentation-javascript
+          - libraries/search-javascript
+          - plugins/plugin-javascript-event-listener-state-storage
+          - tools/javascript
+
+    steps:
+      # Cloning
+      - uses: actions/checkout@v3
+
+      # Download test results
+      - uses: actions/download-artifact@v3
+        with:
+          name: coverage-results
+
+      # Run the Coveralls action which uploads the lcov.info file
+      - name: Coveralls(${{ matrix.package }})
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+          # We collect all coverages in parallel
+          parallel: true
+          flag-name: ${{ matrix.package }}
+          base-path: ${{ matrix.package }}/
+          path-to-lcov: ${{ github.workspace }}/${{ matrix.package }}/coverage/lcov.info
+
+  # Indicate sending coverage to Coveralls is finished
+  coverage-finished:
+    name: Coverage - Finish
+    needs: coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true

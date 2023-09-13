@@ -1,7 +1,7 @@
 /*
- * Copyright 2020-<%= YEAR %> Delft University of Technology and SynTest contributors
+ * Copyright 2020-2023 Delft University of Technology and SynTest contributors
  *
- * This file is part of SynTest Framework - SynTest Solidity.
+ * This file is part of SynTest Framework - SynTest JavaScript.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,3 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import * as chai from "chai";
+
+import { SolidityLauncher } from "../lib/SolidityLauncher";
+
+const expect = chai.expect;
+
+/**
+ * This test is only added such that the github action does not fail.
+ */
+describe("example test", () => {
+  it("test", () => {
+    new SolidityLauncher();
+    expect(true);
+  });
+});

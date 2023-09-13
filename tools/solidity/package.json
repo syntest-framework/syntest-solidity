@@ -1,0 +1,72 @@
+{
+  "name": "@syntest/solidity",
+  "version": "0.2.1",
+  "description": "SynTest Solidity is a tool for automatically generating test cases for the Solidity platform",
+  "keywords": [
+    "syntest",
+    "automatic-test-generation"
+  ],
+  "homepage": "https://www.syntest.org",
+  "bugs": {
+    "url": "https://github.com/syntest-framework/syntest-solidity/issues"
+  },
+  "license": "Apache-2.0",
+  "contributors": [
+    "Annibale Panichella",
+    "Mitchell Olsthoorn",
+    "Dimitri Stallenberg"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist",
+    "/src/**/*.js",
+    "/api.js",
+    "/NOTICE"
+  ],
+  "bin": {
+    "syntest-solidity": "dist/bin.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/syntest-framework/syntest-solidity.git"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "build:watch": "tsc --build --watch",
+    "clean": "rm -rf .nyc_output dist node_modules",
+    "clean:dist": "rm -rf dist",
+    "format": "prettier --config ../../.prettierrc.json --ignore-path ../../.prettierignore --write .",
+    "format:check": "prettier --config ../../.prettierrc.json --ignore-path ../../.prettierignore --check .",
+    "lint": "eslint --config ../../.eslintrc.json --ignore-path ../../.eslintignore .",
+    "lint:fix": "eslint --config ../../.eslintrc.json --ignore-path ../../.eslintignore . --fix",
+    "test": "mocha --config ../../.mocharc.json",
+    "test:coverage": "nyc --reporter=text --reporter=html --reporter=lcov mocha --config ../../.mocharc.json",
+    "test:coverage:ci": "nyc --reporter=lcovonly mocha --config ../../.mocharc.json --reporter json --reporter-option output=test-results.json",
+    "test:watch": "mocha --config ../../.mocharc.json --watch"
+  },
+  "dependencies": {
+    "@syntest/analysis": "*",
+    "@syntest/analysis-solidity": "*",
+
+    "@syntest/base-language": "^0.2.0-beta.39",
+    "@syntest/cli-graphics": "^0.1.0-beta.3",
+    "@syntest/instrumentation-solidity": "*",
+    "@syntest/logging": "^0.1.0-beta.7",
+    "@syntest/metric": "^0.1.0-beta.6",
+    "@syntest/module": "^0.1.0-beta.18",
+    "@syntest/search": "^0.4.0-beta.36",
+    "@syntest/search-solidity": "*",
+    "@syntest/storage": "*",
+    "yargs": "^17.7.2"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "lint-staged": {
+    "**/*": [
+      "npx prettier --config .prettierrc.json --ignore-path .prettierignore --write .",
+      "npx eslint --config .eslintrc.json --ignore-path .eslintignore --fix ."
+    ]
+  }
+}

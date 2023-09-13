@@ -1,0 +1,1 @@
+# SynTest Framework - Solidity

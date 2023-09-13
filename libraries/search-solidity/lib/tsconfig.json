@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig-base.json",
+  "compilerOptions": {
+    "outDir": "../dist",
+    "rootDir": ".",
+    "composite": true
+  },
+  "include": ["**/*.ts", "../../analysis-solidity/lib/cfg/ControlFlowGraphFactory.ts", "../../analysis-solidity/lib/constant/ConstantPool.ts"]
+}

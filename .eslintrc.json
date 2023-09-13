@@ -1,19 +1,75 @@
 {
   "env": {
-    "es6": true,
+    "es2021": true,
     "mocha": true,
     "node": true
   },
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "prettier"
+    // "plugin:@typescript-eslint/recommended-requiring-type-checking", // TODO later too much work currently
+    "plugin:unicorn/recommended",
+    // "plugin:import/recommended", // TODO gives weird errors
+    "plugin:import/typescript",
+    "plugin:promise/recommended",
+    "prettier"//,
+    // "plugin:sonarjs/recommended" // TODO later too much work currently
   ],
-  "parser": "@typescript-eslint/parser",
+  // "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "ecmaVersion": 6,
-    "sourceType": "module"
+    "ecmaVersion": 2021,
+    "sourceType": "module"//,
+    // "project": "./tsconfig.json",
+    // "tsconfigRootDir": "."
   },
-  "plugins": ["@typescript-eslint"],
-  "rules": {}
+  "settings": {
+    "import/resolver": {
+      "typescript": true,
+      "node": true
+    }
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "notice",
+    "unused-imports"
+  ],
+  "rules": {
+    // "import/first": "error",
+    // "import/newline-after-import": "error",
+    // "import/no-duplicates": "error",
+    // "import/order": ["error",
+    //   {
+    //     "alphabetize": {
+    //       "order": "asc",
+    //       "caseInsensitive": true
+    //     },
+    //     "newlines-between": "always"
+    //   }
+    // ],
+    // "sort-imports": ["error",
+    //   {
+    //     "ignoreDeclarationSort": true,
+    //     "ignoreCase": true
+    //   }
+    // ],
+    "notice/notice": [
+      "error",
+      { 
+        "templateFile": "./LICENSE.header.ts",
+        "nonMatchingTolerance": 0.8
+      }
+    ],
+    "unicorn/filename-case": "off",
+    "unicorn/prefer-ternary": "warn",
+
+    // "no-unused-vars": "off",
+    // "@typescript-eslint/no-unused-vars": "off",
+		// "unused-imports/no-unused-imports": "error",
+		// "unused-imports/no-unused-vars": [
+		// 	"error",
+		// 	{ "vars": "all", "varsIgnorePattern": "^_", "args": "after-used", "argsIgnorePattern": "^_" }
+		// ],
+    "no-fallthrough": "off",
+    "unicorn/expiring-todo-comments": "off"
+  }
 }

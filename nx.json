@@ -1,0 +1,84 @@
+{
+  "pluginsConfig": {
+    "@nrwl/js": {
+      "analyzeSourceFiles": true
+    }
+  },
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "nx/tasks-runners/default",
+      "options": {
+        "cacheableOperations": [
+          "build",
+          "format",
+          "format:check",
+          "lint",
+          "lint:fix",
+          "test",
+          "test:coverage",
+          "test:coverage:ci"
+        ],
+        "parallel": 10
+      }
+    }
+  },
+  "namedInputs": {
+    "build-system": [
+      "{workspaceRoot}/nx.json",
+      "{workspaceRoot}/lerna.json",
+      "{workspaceRoot}/package.json",
+      "{projectRoot}/package.json"
+    ],
+    "eslint": [
+      "{workspaceRoot}/.eslintignore",
+      "{workspaceRoot}/.eslintrc.json"
+    ],
+    "mocha": ["{workspaceRoot}/.mocharc.json"],
+    "prettier": [
+      "{workspaceRoot}/.prettierignore",
+      "{workspaceRoot}/.prettierrc.json"
+    ],
+    "typescript": [
+      "{workspaceRoot}/tsconfig-base.json",
+      "{projectRoot}/tsconfig.json",
+      "{projectRoot}/*/tsconfig.json",
+      "{projectRoot}/**/*.ts",
+      "{projectRoot}/**/*.js"
+    ]
+  },
+  "targetDefaults": {
+    "build": {
+      "dependsOn": ["clean:dist", "^build"],
+      "inputs": ["build-system", "typescript", "^typescript"],
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "format": {
+      "inputs": ["build-system", "prettier", "typescript"],
+      "outputs": ["{projectRoot}/lib"]
+    },
+    "format:check": {
+      "inputs": ["build-system", "prettier", "typescript"]
+    },
+    "lint": {
+      "inputs": ["build-system", "eslint", "typescript"]
+    },
+    "lint:fix": {
+      "inputs": ["build-system", "eslint", "typescript"],
+      "outputs": ["{projectRoot}/lib"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["build-system", "mocha", "typescript"]
+    },
+    "test:coverage": {
+      "dependsOn": ["build", "^build"],
+      "inputs": ["build-system", "mocha", "typescript"],
+      "outputs": ["{projectRoot}/coverage"]
+    },
+    "test:coverage:ci": {
+      "dependsOn": ["build", "^build"],
+      "inputs": ["build-system", "mocha", "typescript"],
+      "outputs": ["{projectRoot}/coverage"]
+    }
+  }
+}

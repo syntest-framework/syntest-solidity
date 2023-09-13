@@ -1,0 +1,49 @@
+name: version-release
+
+on:
+  create:
+
+jobs:
+  version-release:
+    name: Release - Version
+    # Only run when new release branches are created
+    if: >
+      (github.ref_type == 'branch') &&
+      startsWith(github.ref_name, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      # Cloning
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.SYNTEST_CI }}
+          fetch-depth: 0
+
+      # Setup and Caching
+      - name: Use latest Node.js LTS version
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+
+          # NPM Cache using all package-lock files as hash
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      # Configure git user
+      - name: Config git user
+        run: |
+          git config --global user.name 'SynTest CI'
+          git config --global user.email 'info@syntest.org'
+
+      # Dependencies
+      - name: Solidity - Install Dependencies
+        run: npm ci
+
+      # Building
+      - name: Solidity - Build
+        run: npm run build
+
+      # Versioning
+      - name: "Solidity - Version"
+        env:
+          GH_TOKEN: ${{ secrets.SYNTEST_CI }}
+        run: npx lerna version --conventional-commits --conventional-graduate --changelog-preset conventionalcommits --create-release github --yes --loglevel silly

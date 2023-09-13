@@ -1,0 +1,52 @@
+name: pr-build
+
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/"
+      - "**.md"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Stop remaining runs when a build fails that is not experimental
+      fail-fast: true
+
+      matrix:
+        # Run the pipeline on all the currently supported OS versions
+        os: [ubuntu-latest]
+
+        # Run the pipeline on all the currently supported LTS versions and the upcoming version
+        node-version: [lts/*]
+
+        # Run the pipeline on all the currently supported architectures
+        architecture: [x64]
+
+    steps:
+      # Cloning
+      - uses: actions/checkout@v3
+
+      # Setup and Caching
+      - name: Use Node.js ${{ matrix.node-version }} (${{ matrix.architecture }})
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          architecture: ${{ matrix.architecture }}
+
+          # NPM Cache using all package-lock files as hash
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      # Dependencies
+      - name: Solidity - Install Dependencies
+        run: npm ci
+
+      # Building
+      - name: Solidity - Build
+        run: npm run build

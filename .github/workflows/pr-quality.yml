@@ -1,0 +1,41 @@
+name: pr-quality
+
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/"
+      - "**.md"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Verify Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      # Cloning
+      - uses: actions/checkout@v3
+
+      # Setup and Caching
+      - name: Use latest Node.js LTS version
+        uses: actions/setup-node@v3
+        with:
+          node-version: lts/*
+
+          # NPM Cache using all package-lock files as hash
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      # Dependencies
+      - name: Solidity - Install Dependencies
+        run: npm ci
+
+      # Formatting
+      - name: Solidity - Run Formatter
+        run: npm run format:check
+
+      # Linting
+      - name: Solidity - Run Linter
+        run: npm run lint
