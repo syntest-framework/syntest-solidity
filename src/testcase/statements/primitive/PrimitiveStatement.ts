@@ -17,7 +17,7 @@
  */
 
 import { Statement } from "../Statement";
-import { EncodingSampler } from "@syntest/core";
+import { EncodingSampler } from "@syntest/search";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";
 import { SolidityTestCase } from "../../SolidityTestCase";
 

@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Solidity adapters for the different interfaces in the framework (e.g., test runner, static and dynamic analysis)
 - Solidity test encoding
 - Solidity instrumentation
-- Solidity specific search criteria (i.e., probe coverage)
+- Solidity specific search criteria (i.e., implicit-branch coverage)
 
 [unreleased]: https://github.com/syntest-framework/syntest-solidity/compare/v0.2.1...HEAD
 [0.2.1]: https://github.com/syntest-framework/syntest-solidity/releases/tag/v0.2.0...v0.2.1

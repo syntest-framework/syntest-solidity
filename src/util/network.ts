@@ -1,4 +1,4 @@
-import { getUserInterface } from "@syntest/core";
+import { getUserInterface } from "@syntest/search";
 import * as TruffleProvider from "@truffle/provider";
 import TruffleConfig = require("@truffle/config");
 

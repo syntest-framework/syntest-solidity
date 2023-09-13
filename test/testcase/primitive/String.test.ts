@@ -5,7 +5,7 @@ import {
   processConfig,
   setupLogger,
   setupOptions,
-} from "@syntest/core";
+} from "@syntest/search";
 import { StringStatement } from "../../../src/testcase/statements/primitive/StringStatement";
 
 const expect = chai.expect;

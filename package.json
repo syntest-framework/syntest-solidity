@@ -49,8 +49,8 @@
   },
   "dependencies": {
     "@solidity-parser/parser": "0.14.5",
-    "@syntest/cfg-core": "^0.2.0-beta.0",
-    "@syntest/core": "0.3.0-beta.0",
+    "@syntest/cfg": "^0.2.0-beta.0",
+    "@syntest/search": "file:../syntest-core/packages/core",
     "@truffle/config": "1.3.49",
     "@truffle/provider": "0.3.3",
     "bignumber.js": "9.0.1",
@@ -94,7 +94,7 @@
     "typescript": "4.9.4"
   },
   "engines": {
-    "node": ">=10.24.0"
+    "node": ">=16"
   },
   "lint-staged": {
     "**/*": [

@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-import { NodeType, BranchNode, Node } from "@syntest/cfg-core";
+import { NodeType, BranchNode, Node } from "@syntest/cfg";
 import {
   BranchDistance,
   Encoding,
   ProbeObjectiveFunction,
   SearchSubject,
-} from "@syntest/core";
+} from "@syntest/search";
 
 export class RequireObjectiveFunction<
   T extends Encoding

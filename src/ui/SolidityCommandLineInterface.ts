@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { CommandLineInterface } from "@syntest/core";
+import { CommandLineInterface } from "@syntest/search";
 
 import Messages from "./Messages";
 

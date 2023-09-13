@@ -33,10 +33,10 @@ import SolidityParser = require("@solidity-parser/parser");
  * @author Mitchell Olsthoorn
  */
 export class DependencyAnalyzer {
-  protected _targetPool: SolidityTargetPool;
+  protected _rootContext: SolidityTargetPool;
 
-  constructor(targetPool: SolidityTargetPool) {
-    this._targetPool = targetPool;
+  constructor(rootContext: SolidityTargetPool) {
+    this._rootContext = rootContext;
   }
 
   /**
@@ -56,7 +56,7 @@ export class DependencyAnalyzer {
 
       importGraph.addNode(filePath);
 
-      const ast = this._targetPool.getAST(filePath);
+      const ast = this._rootContext.getAST(filePath);
       const visitor = new ImportVisitor();
       SolidityParser.visit(ast, visitor);
 
@@ -87,7 +87,7 @@ export class DependencyAnalyzer {
 
     const nodes = importGraph.getNodes();
     nodes.forEach((currentImport) => {
-      const targetMap = this._targetPool.getTargetMap(currentImport);
+      const targetMap = this._rootContext.getTargetMap(currentImport);
       targetMap.forEach(
         (contractMetadata: ContractMetadata, contractName: string) => {
           targetContext.add(currentImport, contractName, contractMetadata);
@@ -180,10 +180,10 @@ export class DependencyAnalyzer {
       adjacentNodes.forEach((importedFilePath) => {
         const linkedContracts = new Set<string>();
 
-        const contracts = this._targetPool.getTargetMap(importedFilePath);
+        const contracts = this._rootContext.getTargetMap(importedFilePath);
         contracts.forEach((contractMetadata: ContractMetadata) => {
           if (contractMetadata.kind === ContractKind.Library) {
-            const functions = this._targetPool.getFunctionMapSpecific(
+            const functions = this._rootContext.getFunctionMapSpecific(
               importedFilePath,
               contractMetadata.name
             );

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { CONFIG, prng } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/search";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 import { Parameter } from "../../../analysis/static/parsing/Parameter";

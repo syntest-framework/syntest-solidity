@@ -21,7 +21,7 @@ import {
   FunctionObjectiveFunction,
   ObjectiveFunction,
   SearchSubject,
-} from "@syntest/core";
+} from "@syntest/search";
 
 import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
 import { ExternalVisibility } from "../analysis/static/map/ContractFunction";
@@ -30,7 +30,7 @@ import { ActionDescription } from "../analysis/static/parsing/ActionDescription"
 import { FunctionDescription } from "../analysis/static/parsing/FunctionDescription";
 import { Parameter } from "../analysis/static/parsing/Parameter";
 import { PublicVisibility } from "../analysis/static/parsing/Visibility";
-import { BranchNode, CFG, NodeType } from "@syntest/cfg-core";
+import { BranchNode, CFG, NodeType } from "@syntest/cfg";
 
 export class SoliditySubject extends SearchSubject<SolidityTestCase> {
   private _functionCalls: FunctionDescription[] | null = null;

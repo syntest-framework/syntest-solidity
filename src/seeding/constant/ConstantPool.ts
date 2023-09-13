@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { prng } from "@syntest/core";
+import { prng } from "@syntest/prng";
 
 /**
  * A pool with constants extracted from the subject under test.

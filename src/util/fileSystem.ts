@@ -18,7 +18,7 @@
 
 import { existsSync, mkdirSync, rmdirSync, writeFileSync } from "fs";
 
-import { CONFIG, getUserInterface } from "@syntest/core";
+import { CONFIG, getUserInterface } from "@syntest/search";
 import globby = require("globby");
 import recursive = require("recursive-readdir");
 
@@ -69,8 +69,7 @@ export async function getTestFilePaths(config) {
   const solregex = /.*\.(sol)$/;
   const hasSols = target.filter((f) => f.match(solregex) != null);
 
-  if (hasSols.length > 0)
-    getUserInterface().info("sol-tests " + [hasSols.length]);
+  if (hasSols.length > 0) LOGGER.info("sol-tests " + [hasSols.length]);
 
   // Return list of test files
   const testregex = /.*\.(js|ts|es|es6|jsx)$/;

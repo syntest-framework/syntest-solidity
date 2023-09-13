@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { CONFIG, prng } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/search";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { ActionStatement } from "./ActionStatement";
 import { Statement } from "../Statement";

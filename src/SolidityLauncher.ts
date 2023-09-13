@@ -33,13 +33,10 @@ import {
   EvaluationBudget,
   IterationBudget,
   SearchTimeBudget,
-  setupLogger,
   StatisticsCollector,
   StatisticsSearchListener,
   SummaryWriter,
   TotalTimeBudget,
-  setUserInterface,
-  getUserInterface,
   getSeed,
   clearDirectory,
   createTempDirectoryStructure,
@@ -51,7 +48,7 @@ import {
   PluginManager,
   createSearchAlgorithmFromConfig,
   createTerminationManagerFromConfig,
-} from "@syntest/core";
+} from "@syntest/search";
 
 import * as path from "path";
 import TruffleConfig = require("@truffle/config");
@@ -69,7 +66,6 @@ import {
 
 import Messages from "./ui/Messages";
 import { SolidityCommandLineInterface } from "./ui/SolidityCommandLineInterface";
-import { SolidityMonitorCommandLineInterface } from "./ui/SolidityMonitorCommandLineInterface";
 
 import { ConstantPool } from "./seeding/constant/ConstantPool";
 import { ConstantVisitor } from "./seeding/constant/ConstantVisitor";
@@ -87,7 +83,8 @@ import {
   collectStatistics,
 } from "./util/collection";
 import Yargs = require("yargs");
-import { RemoveIndex } from "@syntest/core";
+import { RemoveIndex } from "@syntest/search";
+import { LOGGER } from "@syntest/search/lib/util/logger";
 
 // eslint-disable-next-line
 const pkg = require("../package.json");
@@ -174,36 +171,15 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
     await createTruffleConfig();
     this.config = normalizeConfig(TruffleConfig.default());
 
-    setupLogger();
     await createDirectoryStructure();
     await createTempDirectoryStructure();
     await setupTempFolders(this.tempArtifactsDir);
 
-    const messages = new Messages();
-
-    if (CONFIG.userInterface === "regular") {
-      setUserInterface(
-        new SolidityCommandLineInterface(
-          CONFIG.consoleLogLevel === "silent",
-          CONFIG.consoleLogLevel === "verbose",
-          messages
-        )
-      );
-    } else if (CONFIG.userInterface === "monitor") {
-      setUserInterface(
-        new SolidityMonitorCommandLineInterface(
-          CONFIG.consoleLogLevel === "silent",
-          CONFIG.consoleLogLevel === "verbose",
-          messages
-        )
-      );
-    }
-
     this.config.testDir = path.join(process.cwd(), CONFIG.tempTestDirectory);
 
-    getUserInterface().report("clear", []);
-    getUserInterface().report("asciiArt", ["Syntest"]);
-    getUserInterface().report("version", [pkg.version]);
+    this.userInterface.clear();
+    this.userInterface.asciiArt("SynTest Solidity " + pkg.version);
+    // LOGGER.report("version", [pkg.version]);
 
     this.config.compilers = {
       solc: {
@@ -232,17 +208,20 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
 
     setNetworkFrom(this.config, accounts);
 
-    getUserInterface().report("header", ["GENERAL INFO"]);
+    this.userInterface.header("GENERAL INFO");
 
-    getUserInterface().report("property-set", ["Network Info", <string>(<
-        unknown
-      >[
-        ["id", this.config.network],
-        ["port", this.config.networks[this.config.network].network_id],
-        ["network", this.config.networks[this.config.network].port],
-      ])]);
+    this.userInterface.subheader("Network Info");
+    this.userInterface.property("id", `${this.config.network}`);
+    this.userInterface.property(
+      "port",
+      `${this.config.networks[this.config.network].network_id}`
+    );
+    this.userInterface.property(
+      "network",
+      `${this.config.networks[this.config.network].port}`
+    );
 
-    getUserInterface().report("header", ["TARGETS"]);
+    this.userInterface.header("TARGETS");
 
     // Run post-launch server hook;
     await this.api.onServerReady(this.config);
@@ -251,72 +230,90 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
     const astGenerator = new ASTGenerator();
     const targetMapGenerator = new TargetMapGenerator();
     const cfgGenerator = new SolidityCFGFactory();
-    const targetPool = new SolidityTargetPool(
+    const rootContext = new SolidityTargetPool(
+      this.eventManager,
       sourceGenerator,
       astGenerator,
       targetMapGenerator,
       cfgGenerator
     );
 
-    this.programState.targetPool = targetPool;
+    this.programState.rootContext = rootContext;
   }
 
   async preprocess(): Promise<void> {
-    this.programState.targetPool.loadTargets();
+    this.programState.rootContext.loadTargets();
 
-    if (!this.programState.targetPool.targets.length) {
+    if (!this.programState.rootContext.targets.length) {
       // Shut server down
-      getUserInterface().error(
+      LOGGER.error(
         `No targets where selected! Try changing the 'include' parameter`
       );
       await this.exit();
     }
 
-    const names = [];
-
-    this.programState.targetPool.targets.forEach((target) =>
-      names.push(
-        `${path.basename(target.canonicalPath)} -> ${target.targetName}`
+    this.userInterface.subheader("Included");
+    this.userInterface.subheader("=====================");
+    this.programState.rootContext.targets.forEach((target) =>
+      this.userInterface.property(
+        path.basename(target.canonicalPath),
+        target.targetName
       )
     );
-    getUserInterface().report("targets", names);
+    this.userInterface.subheader("=====================");
 
-    getUserInterface().report("header", ["CONFIGURATION"]);
+    this.userInterface.header("CONFIGURATION");
 
-    getUserInterface().report("single-property", ["Seed", getSeed()]);
-    getUserInterface().report("property-set", ["Budgets", <string>(<unknown>[
-        ["Iteration Budget", `${CONFIG.iterationBudget} iterations`],
-        ["Evaluation Budget", `${CONFIG.evaluationBudget} evaluations`],
-        ["Search Time Budget", `${CONFIG.searchTimeBudget} seconds`],
-        ["Total Time Budget", `${CONFIG.totalTimeBudget} seconds`],
-      ])]);
-    getUserInterface().report("property-set", ["Algorithm", <string>(<unknown>[
-        ["Algorithm", CONFIG.algorithm],
-        ["Population Size", CONFIG.populationSize],
-      ])]);
-    getUserInterface().report("property-set", [
-      "Variation Probabilities",
-      <string>(<unknown>[
-        ["Resampling", CONFIG.resampleGeneProbability],
-        ["Delta mutation", CONFIG.deltaMutationProbability],
-        ["Re-sampling from chromosome", CONFIG.sampleExistingValueProbability],
-        ["Crossover", CONFIG.crossoverProbability],
-      ]),
-    ]);
-
-    getUserInterface().report("property-set", ["Sampling", <string>(<unknown>[
-        ["Max Depth", CONFIG.maxDepth],
-        ["Explore Illegal Values", CONFIG.exploreIllegalValues],
-        [
-          "Sample Function Result as Argument",
-          CONFIG.sampleFunctionOutputAsArgument,
-        ],
-        ["Crossover", CONFIG.crossoverProbability],
-      ])]);
+    this.userInterface.property("Seed", `${getSeed()}`);
+    this.userInterface.subheader("Budgets");
+    this.userInterface.property(
+      "Iteration Budget",
+      `${CONFIG.iterationBudget} iterations`
+    );
+    this.userInterface.property(
+      "Evaluation Budget",
+      `${CONFIG.evaluationBudget} evaluations`
+    );
+    this.userInterface.property(
+      "Search Time Budget",
+      `${CONFIG.searchTimeBudget} seconds`
+    );
+    this.userInterface.property(
+      "Total Time Budget",
+      `${CONFIG.totalTimeBudget} seconds`
+    );
+    this.userInterface.subheader("Algorithm");
+    this.userInterface.property("Algorithm", `${CONFIG.algorithm}`);
+    this.userInterface.property("Population Size", `${CONFIG.populationSize}`);
+    this.userInterface.subheader("Variation Probabilities");
+    this.userInterface.property(
+      "Resampling",
+      `${CONFIG.resampleGeneProbability}`
+    );
+    this.userInterface.property(
+      "Delta mutation",
+      `${CONFIG.deltaMutationProbability}`
+    );
+    this.userInterface.property(
+      "Re-sampling from chromosome",
+      `${CONFIG.sampleExistingValueProbability}`
+    );
+    this.userInterface.property("Crossover", `${CONFIG.crossoverProbability}`);
+    this.userInterface.subheader("Sampling");
+    this.userInterface.property("Max Depth", `${CONFIG.maxDepth}`);
+    this.userInterface.property(
+      "Explore Illegal Values",
+      `${CONFIG.exploreIllegalValues}`
+    );
+    this.userInterface.property(
+      "Sample Function Result as Argument",
+      `${CONFIG.sampleFunctionOutputAsArgument}`
+    );
+    this.userInterface.property("Crossover", `${CONFIG.crossoverProbability}`);
 
     // Instrument
     await (<SolidityTargetPool>(
-      this.programState.targetPool
+      this.programState.rootContext
     )).prepareAndInstrument(this.api);
 
     this.config.contracts_directory = CONFIG.tempInstrumentedDirectory;
@@ -341,14 +338,14 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
     this.importsMap = new Map();
     this.dependencyMap = new Map();
 
-    for (const target of this.programState.targetPool.targets) {
+    for (const target of this.programState.rootContext.targets) {
       const archive = await this.testTarget(
-        <SolidityTargetPool>this.programState.targetPool,
+        <SolidityTargetPool>this.programState.rootContext,
         target.canonicalPath,
         target.targetName
       );
       const { importMap, dependencyMap } = (<SolidityTargetPool>(
-        this.programState.targetPool
+        this.programState.rootContext
       )).getImportDependencies(target.canonicalPath, target.targetName);
 
       this.programState.archive.merge(archive);
@@ -394,13 +391,13 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
     try {
       await this.truffle.test.run(this.config);
     } catch (e) {
-      getUserInterface().error(e);
+      LOGGER.error(e);
       console.trace(e);
     }
     console.log = old;
     await this.api.onTestsComplete(this.config);
 
-    getUserInterface().report("header", ["SEARCH RESULTS"]);
+    this.userInterface.header("SEARCH RESULTS");
 
     // Run Istanbul
     await this.api.report();
@@ -408,19 +405,22 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
   }
 
   async testTarget(
-    targetPool: SolidityTargetPool,
+    rootContext: SolidityTargetPool,
     targetPath: string,
     target: string
   ): Promise<Archive<SolidityTestCase>> {
     try {
-      getUserInterface().report("header", [
-        `SEARCHING: "${path.basename(targetPath)}": "${target}"`,
-      ]);
+      this.userInterface.header(
+        `SEARCHING: "${path.basename(targetPath)}": "${target}"`
+      );
 
-      const ast = targetPool.getAST(targetPath);
-      const cfg = targetPool.getCFG(targetPath, target);
+      const ast = rootContext.getAST(targetPath);
+      const cfg = rootContext.getCFG(targetPath, target);
 
-      const functionMap = targetPool.getFunctionMapSpecific(targetPath, target);
+      const functionMap = rootContext.getFunctionMapSpecific(
+        targetPath,
+        target
+      );
 
       const currentSubject = new SoliditySubject(
         path.basename(targetPath),
@@ -430,11 +430,11 @@ export class SolidityLauncher extends Launcher<SolidityTestCase> {
       );
 
       if (!currentSubject.getPossibleActions().length) {
-        getUserInterface().report("skipping", [currentSubject.name]);
+        this.userInterface.property("skipping", currentSubject.name);
         return new Archive();
       }
 
-      const { importMap, dependencyMap } = targetPool.getImportDependencies(
+      const { importMap, dependencyMap } = rootContext.getImportDependencies(
         targetPath,
         target
       );

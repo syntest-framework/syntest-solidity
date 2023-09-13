@@ -45,7 +45,7 @@ import {
   Edge,
   CFGFactory,
   NodeType,
-} from "@syntest/cfg-core";
+} from "@syntest/cfg";
 
 import {
   ExternalVisibility,
@@ -58,7 +58,7 @@ import {
   PublicVisibility,
   Visibility,
 } from "../analysis/static/parsing/Visibility";
-import { CONFIG } from "@syntest/core";
+import { CONFIG } from "@syntest/search";
 import { SolidityArguments } from "../SolidityLauncher";
 
 // TODO break and continue statements

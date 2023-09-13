@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { EventManager, PluginManager } from "@syntest/core";
+import { EventManager, PluginManager } from "@syntest/search";
 import { SolidityLauncher } from "./SolidityLauncher";
 import { SolidityTestCase } from "./testcase/SolidityTestCase";
 

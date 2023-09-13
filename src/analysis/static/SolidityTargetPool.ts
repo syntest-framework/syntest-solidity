@@ -23,13 +23,14 @@ import { TargetMapGenerator } from "./map/TargetMapGenerator";
 import { SolidityCFGFactory } from "../../graph/SolidityCFGFactory";
 import { ContractMetadata } from "./map/ContractMetadata";
 import { ContractFunction } from "./map/ContractFunction";
-import { TargetPool, Target, CONFIG } from "@syntest/core";
+import { TargetPool, Target, CONFIG, EventManager } from "@syntest/search";
 import { ImportVisitor } from "./dependency/ImportVisitor";
 import * as fs from "fs";
 import { LibraryVisitor } from "./dependency/LibraryVisitor";
 import SolidityParser = require("@solidity-parser/parser");
 import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
-import { CFG } from "@syntest/cfg-core";
+import { CFG } from "@syntest/cfg";
+import { SolidityTestCase } from "../../testcase/SolidityTestCase";
 // eslint-disable-next-line
 const { outputFileSync, copySync } = require("fs-extra");
 
@@ -40,7 +41,7 @@ const { outputFileSync, copySync } = require("fs-extra");
  *
  * @author Mitchell Olsthoorn
  */
-export class SolidityTargetPool extends TargetPool {
+export class SolidityTargetPool extends TargetPool<SolidityTestCase> {
   protected _sourceGenerator: SourceGenerator;
   protected _abstractSyntaxTreeGenerator: ASTGenerator;
   protected _targetMapGenerator: TargetMapGenerator;
@@ -74,12 +75,13 @@ export class SolidityTargetPool extends TargetPool {
   >;
 
   constructor(
+    eventManager: EventManager<SolidityTestCase>,
     sourceGenerator: SourceGenerator,
     abtractSyntaxTreeGenerator: ASTGenerator,
     targetMapGenerator: TargetMapGenerator,
     controlFlowGraphGenerator: SolidityCFGFactory
   ) {
-    super();
+    super(eventManager);
     this._sourceGenerator = sourceGenerator;
     this._abstractSyntaxTreeGenerator = abtractSyntaxTreeGenerator;
     this._targetMapGenerator = targetMapGenerator;

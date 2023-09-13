@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { CONFIG, Decoder } from "@syntest/core";
+import { CONFIG, Decoder } from "@syntest/search";
 
 import * as path from "path";
 import * as web3_utils from "web3-utils";
@@ -28,7 +28,7 @@ import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunction
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
 import { Statement } from "../testcase/statements/Statement";
 import { PrimitiveStatement } from "../testcase/statements/primitive/PrimitiveStatement";
-import { Target } from "@syntest/core";
+import { Target } from "@syntest/search";
 
 /**
  * @author Dimitri Stallenberg

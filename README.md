@@ -65,7 +65,7 @@ To be able to make quick changes to the syntest-framework and then test it in th
 
 ```bash
 cd <PATH_TO_SYNTEST_FRAMEWORK>; npm link
-cd <PATH_TO_SYNTEST_SOLIDITY>; npm link @syntest/core
+cd <PATH_TO_SYNTEST_SOLIDITY>; npm link @syntest/search
 ```
 
 This creates a symbolic link to the local syntest-framework instance in the node modules folder of syntest-solidity.

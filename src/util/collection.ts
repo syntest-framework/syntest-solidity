@@ -31,7 +31,7 @@ import {
   SearchTimeBudget,
   StatisticsCollector,
   TotalTimeBudget,
-} from "@syntest/core";
+} from "@syntest/search";
 import { SoliditySubject } from "../search/SoliditySubject";
 import { SolidityArguments } from "../SolidityLauncher";
 

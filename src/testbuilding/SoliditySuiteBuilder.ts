@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { Archive, CONFIG, getUserInterface } from "@syntest/core";
+import { Archive, CONFIG, getUserInterface } from "@syntest/search";
 
 import {
   readdirSync,
@@ -59,7 +59,7 @@ export class SoliditySuiteBuilder {
     try {
       await unlinkSync(filepath);
     } catch (error) {
-      getUserInterface().debug(error);
+      LOGGER.debug(error);
     }
   }
 
@@ -143,7 +143,7 @@ export class SoliditySuiteBuilder {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
-      getUserInterface().error(e);
+      LOGGER.error(e);
       console.trace(e);
     }
     console.log = old;

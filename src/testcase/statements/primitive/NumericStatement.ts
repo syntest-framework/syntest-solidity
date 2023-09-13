@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { CONFIG, prng } from "@syntest/core";
+import { CONFIG, prng } from "@syntest/search";
 
 import BigNumber from "bignumber.js";
 import { ConstantPool } from "../../../seeding/constant/ConstantPool";

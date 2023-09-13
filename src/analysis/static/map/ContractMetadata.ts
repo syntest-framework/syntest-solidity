@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { TargetMetaData } from "@syntest/core";
+import { TargetMetaData } from "@syntest/search";
 
 /**
  * Interface for Solidity contract metadata.

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { Target } from "@syntest/core";
+import { Target } from "@syntest/search";
 
 import { SolidityTargetPool } from "./SolidityTargetPool";
 import * as path from "path";
@@ -26,7 +26,7 @@ import { ContractMetadata } from "./map/ContractMetadata";
 import { Graph } from "./Graph";
 import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
 import { ContractFunction } from "./map/ContractFunction";
-import { CFG } from "@syntest/cfg-core";
+import { CFG } from "@syntest/cfg";
 
 /**
  * Target system under test.
@@ -82,12 +82,12 @@ export class SolidityTarget extends Target {
   /**
    * Create a target from the target pool.
    *
-   * @param targetPool The target pool to load the target information from
+   * @param rootContext The target pool to load the target information from
    * @param targetPath The path to the target file
    * @param targetName the name of the target
    */
   static fromPool(
-    targetPool: SolidityTargetPool,
+    rootContext: SolidityTargetPool,
     targetPath: string,
     targetName: string
   ): SolidityTarget {
@@ -99,22 +99,22 @@ export class SolidityTarget extends Target {
     const functionMaps = new Map<string, Map<string, ContractFunction>>();
     const controlFlowGraphs = new Map<string, CFG>();
 
-    sources.set(absoluteTargetPath, targetPool.getSource(absoluteTargetPath));
+    sources.set(absoluteTargetPath, rootContext.getSource(absoluteTargetPath));
     abstractSyntaxTrees.set(
       absoluteTargetPath,
-      targetPool.getAST(absoluteTargetPath)
+      rootContext.getAST(absoluteTargetPath)
     );
     functionMaps.set(
       targetName,
-      targetPool.getFunctionMapSpecific(absoluteTargetPath, targetName)
+      rootContext.getFunctionMapSpecific(absoluteTargetPath, targetName)
     );
     controlFlowGraphs.set(
       targetName,
-      targetPool.getCFG(absoluteTargetPath, targetName)
+      rootContext.getCFG(absoluteTargetPath, targetName)
     );
 
     // Analyze dependencies
-    const analyzer = new DependencyAnalyzer(targetPool);
+    const analyzer = new DependencyAnalyzer(rootContext);
 
     const importGraph = analyzer.analyzeImports(targetPath);
     const context = analyzer.analyzeContext(importGraph);
@@ -122,13 +122,13 @@ export class SolidityTarget extends Target {
 
     const nodes = importGraph.getNodes();
     nodes.forEach((filePath) => {
-      sources.set(filePath, targetPool.getSource(filePath));
-      abstractSyntaxTrees.set(filePath, targetPool.getAST(filePath));
+      sources.set(filePath, rootContext.getSource(filePath));
+      abstractSyntaxTrees.set(filePath, rootContext.getAST(filePath));
 
       context.getTargets(filePath).forEach((contractMetadata) => {
         functionMaps.set(
           contractMetadata.name,
-          targetPool.getFunctionMapSpecific(filePath, contractMetadata.name)
+          rootContext.getFunctionMapSpecific(filePath, contractMetadata.name)
         );
       });
     });

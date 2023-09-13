@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { ExecutionResult, Datapoint } from "@syntest/core";
+import { ExecutionResult, Datapoint } from "@syntest/search";
 
 export enum SolidityExecutionStatus {
   PASSED,

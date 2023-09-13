@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { getUserInterface, Encoding, Decoder } from "@syntest/core";
+import { getUserInterface, Encoding, Decoder } from "@syntest/search";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
 import { SoliditySampler } from "./sampling/SoliditySampler";
 
@@ -40,7 +40,7 @@ export class SolidityTestCase extends Encoding {
   }
 
   mutate(sampler: SoliditySampler) {
-    getUserInterface().debug(`Mutating test case: ${this._id}`);
+    LOGGER.debug(`Mutating test case: ${this._id}`);
     return new SolidityTestCase(
       (this._root as ConstructorCall).mutate(sampler, 0)
     );

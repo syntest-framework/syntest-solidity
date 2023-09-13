@@ -21,7 +21,7 @@ import {
   getUserInterface,
   EncodingRunner,
   CONFIG,
-} from "@syntest/core";
+} from "@syntest/search";
 
 import * as path from "path";
 import {
@@ -80,7 +80,7 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
       await this.truffle.test.run(this.config);
     } catch (e) {
       // TODO
-      getUserInterface().error(e);
+      LOGGER.error(e);
       console.trace(e);
     }
     console.log = old;
@@ -91,7 +91,7 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
 
     // If one of the executions failed, log it
     if (stats.failures > 0) {
-      getUserInterface().error("Test case has failed!");
+      LOGGER.error("Test case has failed!");
     }
 
     // Retrieve execution traces
