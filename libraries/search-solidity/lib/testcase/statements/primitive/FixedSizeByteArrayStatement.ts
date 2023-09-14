@@ -20,6 +20,7 @@ import { prng } from "@syntest/prng";
 import { PrimitiveStatement } from "../primitive/PrimitiveStatement";
 import { FixedSizeByteArray, Parameter } from "@syntest/analysis-solidity";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { Statement } from "../Statement";
 
 /**
  * Special statement specific to solidity contracts

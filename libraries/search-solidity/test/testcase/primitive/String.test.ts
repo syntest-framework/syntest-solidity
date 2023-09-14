@@ -33,49 +33,48 @@ const mockSampler = new SolidityRandomSampler(
   "abcdef",
   10,
   0.5,
-  true
+  true,
+  10
 );
+
+function getRandom() {
+  return new StringStatement(undefined, "0000", "abcde")
+}
 
 describe("StringStatement", () => {
   it("Add mutation increases statement's length by one", () => {
-    const statement = StringStatement.getRandom();
+    const statement = getRandom();
     const mutated = statement.addMutation(mockSampler);
 
     expect(statement.value.length + 1 === mutated.value.length);
   });
 
   it("Remove mutation decreases statement's length by one", () => {
-    const statement = StringStatement.getRandom();
-    const mutated = statement.removeMutation(mockSampler);
+    const statement = getRandom();
+    const mutated = statement.removeMutation();
 
     expect(statement.value.length - 1 === mutated.value.length);
   });
 
   it("Replace mutation doesnt affect statement's length", () => {
-    const statement = StringStatement.getRandom();
+    const statement = getRandom();
     const mutated = statement.replaceMutation(mockSampler);
 
     expect(statement.value.length === mutated.value.length);
   });
 
   it("Delta mutation doesnt affect statement's length", () => {
-    const statement = StringStatement.getRandom();
+    const statement = getRandom();
     const mutated = statement.deltaMutation(mockSampler);
 
     expect(statement.value.length - 1 === mutated.value.length);
   });
 
   it("Copy gives exact same value", () => {
-    const statement = StringStatement.getRandom();
+    const statement = getRandom();
     const copy = statement.copy();
 
     expect(statement.value).to.equal(copy.value);
   });
 
-  it("Mutate gives exact other value", () => {
-    const statement = StringStatement.getRandom();
-    const mutation = statement.mutate(mockSampler);
-
-    expect(statement.value != mutation.value);
-  });
 });

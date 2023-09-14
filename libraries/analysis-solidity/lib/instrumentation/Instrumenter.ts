@@ -23,10 +23,12 @@ import { InstrumentationData } from "./datastructures/InstrumentationData";
 import * as SolidityParser from "@solidity-parser/parser";
 import { ASTNode } from "@solidity-parser/parser/dist/src/ast-types";
 
-import Injector from "./injector"; // Local copy
-import preprocess from "solidity-coverage/lib/preprocessor";
-
-import parse from "./parse"; // Local copy
+// eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
+const Injector = require("./injector"); // Local copy
+// eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
+const preprocess = require("solidity-coverage/lib/preprocessor");
+// eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
+const parse = require("./parse"); // Local copy
 
 export class Instrumenter {
   protected instrumentationData;

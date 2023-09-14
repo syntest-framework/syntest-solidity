@@ -26,12 +26,11 @@ import { Statement } from "../statements/Statement";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { ConstantPool, RootContext } from "@syntest/analysis-solidity";
 import { NumericStatement } from "../statements/primitive/NumericStatement";
-import { ArrayStatement } from "../statements/complex/ArrayStatement";
 import { AddressStatement } from "../statements/primitive/AddressStatement";
 import { BoolStatement } from "../statements/primitive/BoolStatement";
 import { IntegerStatement } from "../statements/primitive/IntegerStatement";
 import { StringStatement } from "../statements/primitive/StringStatement";
-import { FixedSizeByteArrayStatement } from "../statements/complex/FixedSizeByteArrayStatement";
+import { FixedSizeByteArrayStatement } from "../statements/primitive/FixedSizeByteArrayStatement";
 import { DynamicSizeByteArrayStatement } from "../statements/primitive/DynamicSizeByteArrayStatement";
 
 /**

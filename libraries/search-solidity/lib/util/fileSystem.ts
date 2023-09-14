@@ -16,13 +16,12 @@
  * limitations under the License.
  */
 
-import { existsSync, mkdirSync, rmdirSync, writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 
-import { CONFIG, getUserInterface } from "@syntest/search";
-import globby = require("globby");
-import recursive = require("recursive-readdir");
+// import globby = require("globby");
+// import recursive = require("recursive-readdir");
 
-export async function createTruffleConfig() {
+export async function createTruffleConfig(temporaryTestDirectory: string) {
   const filepath = "./truffle-config.js";
 
   if (existsSync(filepath)) {
@@ -32,32 +31,32 @@ export async function createTruffleConfig() {
   await writeFileSync(
     filepath,
     `module.exports = {
-  test_directory: "${CONFIG.tempTestDirectory}",
+  test_directory: "${temporaryTestDirectory}",
   plugins: ["@syntest/solidity"]
 };`
   );
 }
 
-/**
- * Returns a list of test files to pass to mocha.
- * @param  {Object}   config  truffleConfig
- * @return {String[]}         list of files to pass to mocha
- */
-export async function getTestFilePaths(config) {
-  let target;
+// /**
+//  * Returns a list of test files to pass to mocha.
+//  * @param  {Object}   config  truffleConfig
+//  * @return {String[]}         list of files to pass to mocha
+//  */
+// export async function getTestFilePaths(config) {
+//   let target;
 
-  // Handle --file <path|glob> cli option (subset of tests)
-  typeof config.file === "string"
-    ? (target = globby.sync([config.file]))
-    : (target = await recursive(config.testDir));
+//   // Handle --file <path|glob> cli option (subset of tests)
+//   typeof config.file === "string"
+//     ? (target = globby.sync([config.file]))
+//     : (target = await recursive(config.testDir));
 
-  // Filter native solidity tests and warn that they're skipped
-  const solregex = /.*\.(sol)$/;
-  const hasSols = target.filter((f) => f.match(solregex) != undefined);
+//   // Filter native solidity tests and warn that they're skipped
+//   const solregex = /.*\.(sol)$/;
+//   const hasSols = target.filter((f) => f.match(solregex) != undefined);
 
-  if (hasSols.length > 0) LOGGER.info("sol-tests " + [hasSols.length]);
+//   if (hasSols.length > 0) console.info("sol-tests " + [hasSols.length]);
 
-  // Return list of test files
-  const testregex = /.*\.(js|ts|es|es6|jsx)$/;
-  return target.filter((f) => f.match(testregex) != undefined);
-}
+//   // Return list of test files
+//   const testregex = /.*\.(js|ts|es|es6|jsx)$/;
+//   return target.filter((f) => f.match(testregex) != undefined);
+// }

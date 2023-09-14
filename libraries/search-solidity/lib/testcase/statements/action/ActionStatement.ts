@@ -17,8 +17,6 @@
  */
 
 import { Statement } from "../Statement";
-import { EncodingSampler } from "@syntest/search";
-import { Encoding } from "@syntest/search";
 import { Parameter } from "@syntest/analysis-solidity";
 
 /**
@@ -35,13 +33,6 @@ export abstract class ActionStatement extends Statement {
     super(types, uniqueId);
     this._arguments_ = arguments_;
   }
-
-  abstract mutate(
-    sampler: EncodingSampler<Encoding>,
-    depth: number
-  ): ActionStatement;
-
-  abstract copy(): ActionStatement;
 
   hasChildren(): boolean {
     return this._arguments_.length > 0;

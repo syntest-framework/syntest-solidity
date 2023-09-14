@@ -54,7 +54,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       }
     }
     const formattedArguments = arguments_
-      .map((a: PrimitiveStatement<any>) => a.varName)
+      .map((a: PrimitiveStatement<any, any>) => a.varName)
       .join(", ");
 
     const sender = (statement as ConstructorCall).getSender().getValue();
@@ -101,8 +101,8 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       throw new TypeError(`${statement} is not a primitive statement`);
     }
 
-    const primitive: PrimitiveStatement<any> =
-      statement as PrimitiveStatement<any>;
+    const primitive: PrimitiveStatement<any, any> =
+      statement as PrimitiveStatement<any, any>;
     // TODO what happened to float support?
     if (
       statement.type.type.startsWith("int") ||
@@ -369,7 +369,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
             for (const variableName of gene.varNames) {
               functionCalls.push(
                 `\t\tawait fs.writeFileSync('${path.join(
-                  CONFIG.tempLogDirectory,
+                  this.tempLogDirectory,
                   ind.id,
                   variableName
                 )}', '' + ${variableName})`
@@ -379,7 +379,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
             for (const variableName of gene.varNames) {
               testString.push(
                 `\t\tawait fs.writeFileSync('${path.join(
-                  CONFIG.tempLogDirectory,
+                  this.tempLogDirectory,
                   ind.id,
                   variableName
                 )}', '' + ${variableName})`
@@ -403,7 +403,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       if (addLogs) {
         testString.push(`} catch (e) {`, 
           `await fs.writeFileSync('${path.join(
-            CONFIG.tempLogDirectory,
+            this.tempLogDirectory,
             ind.id,
             "error"
           )}', '' + e.stack)`,

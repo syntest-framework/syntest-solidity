@@ -93,12 +93,12 @@ export class ObjectFunctionCall extends ActionStatement {
     );
   }
 
-  hasChildren(): boolean {
+  override hasChildren(): boolean {
     // since every object function call has an instance there must be atleast one child
     return true;
   }
 
-  getChildren(): Statement[] {
+  override getChildren(): Statement[] {
     return [...this.arguments_];
   }
 

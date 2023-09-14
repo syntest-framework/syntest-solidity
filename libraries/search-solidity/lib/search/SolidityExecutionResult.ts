@@ -135,7 +135,7 @@ export class SolidityExecutionResult implements ExecutionResult {
   /**
    * @inheritDoc
    */
-  public getTraces(): Datapoint[] {
+  public getTraces(): Trace[] {
     return this._traces;
   }
 

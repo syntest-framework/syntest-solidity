@@ -44,13 +44,12 @@ import {
   TypeEnum,
   Ufixed,
   Uint,
-  Visibility,
 } from "@syntest/analysis-solidity";
 import { TargetType } from "@syntest/analysis";
 import { FunctionTarget } from "@syntest/analysis-solidity";
 import { IntegerStatement } from "../statements/primitive/IntegerStatement";
 import { DynamicSizeByteArrayStatement } from "../statements/primitive/DynamicSizeByteArrayStatement";
-import { FixedSizeByteArrayStatement } from "../statements/complex/FixedSizeByteArrayStatement";
+import { FixedSizeByteArrayStatement } from "../statements/primitive/FixedSizeByteArrayStatement";
 
 /**
  * SolidityRandomSampler class
@@ -129,7 +128,13 @@ export class SolidityRandomSampler extends SoliditySampler {
       root,
       action.name,
       arguments_,
-      AddressStatement.getRandom()
+      this.sampleAddressStatement(depth + 1, {
+        name: 'address',
+        type: {
+          type: TypeEnum.ADDRESS,
+          stateMutability: undefined
+        }
+      })
     );
   }
 
@@ -152,7 +157,13 @@ export class SolidityRandomSampler extends SoliditySampler {
         `${action.name}`,
         arguments_,
         [],
-        AddressStatement.getRandom()
+        this.sampleAddressStatement(depth + 1, {
+          name: 'address',
+          type: {
+            type: TypeEnum.ADDRESS,
+            stateMutability: undefined
+          }
+        })
       );
 
       const nCalls = prng.nextInt(1, 5);
@@ -171,7 +182,13 @@ export class SolidityRandomSampler extends SoliditySampler {
         `${this._subject.name}`,
         [],
         [],
-        AddressStatement.getRandom()
+        this.sampleAddressStatement(depth + 1, {
+          name: 'address',
+          type: {
+            type: TypeEnum.ADDRESS,
+            stateMutability: undefined
+          }
+        })
       );
 
       const nCalls = prng.nextInt(1, 5);

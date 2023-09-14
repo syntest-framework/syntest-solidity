@@ -19,10 +19,8 @@
 import { prng } from "@syntest/prng";
 
 import BigNumber from "bignumber.js";
-import { ConstantPool } from "../../../../../analysis-solidity/lib/constant/ConstantPool";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 import { Fixed, Parameter, Ufixed } from "@syntest/analysis-solidity";
-import { SolidityArguments } from "../../../SolidityLauncher";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { Statement } from "../Statement";
 

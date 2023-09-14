@@ -48,26 +48,26 @@ export type BaseType = {
 
 export type Address = {
   type: TypeEnum.ADDRESS;
-  stateMutability: StateMutability | null;
+  stateMutability?: StateMutability | undefined;
 };
 
 export type Bool = {
   type: TypeEnum.BOOL;
-  stateMutability: StateMutability | null;
+  stateMutability?: StateMutability | undefined;
 };
 
 export type Int = {
   type: TypeEnum.INT;
   bits: number;
   signed: true;
-  stateMutability: StateMutability | null;
+  stateMutability?: StateMutability | undefined;
 };
 
 export type Uint = {
   type: TypeEnum.INT;
   bits: number;
   signed: false;
-  stateMutability: StateMutability | null;
+  stateMutability?: StateMutability | undefined;
 };
 
 export type Fixed = {
@@ -75,7 +75,7 @@ export type Fixed = {
   bits: number;
   signed: true;
   decimals: number;
-  stateMutability: StateMutability | null;
+  stateMutability?: StateMutability | undefined;
 };
 
 export type Ufixed = {
@@ -83,7 +83,7 @@ export type Ufixed = {
   bits: number;
   signed: false;
   decimals: number;
-  stateMutability: StateMutability | null;
+  stateMutability?: StateMutability | undefined;
 };
 
 export type FixedSizeByteArray = {
@@ -113,7 +113,7 @@ export type FunctionType = {
   parameters: Parameter[];
   returns: Parameter[];
   visibility: Visibility;
-  stateMutability: StateMutability | null;
+  stateMutability?: StateMutability | undefined;
 };
 
 export type Mapping = {
