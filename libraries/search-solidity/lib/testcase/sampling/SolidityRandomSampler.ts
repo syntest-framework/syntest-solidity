@@ -16,14 +16,13 @@
  * limitations under the License.
  */
 
-import { CONFIG, prng } from "@syntest/search";
+import { prng } from "@syntest/prng";
 
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/primitive/AddressStatement";
 import BigNumber from "bignumber.js";
-import { ByteStatement } from "../statements/primitive/ByteStatement";
+import { ArrayStatement } from "../statements/complex/ArrayStatement";
 import {
-  SolidityParameter,
   SoliditySubject,
 } from "../../search/SoliditySubject";
 import { SolidityTestCase } from "../SolidityTestCase";
@@ -34,9 +33,12 @@ import { BoolStatement } from "../statements/primitive/BoolStatement";
 import { StringStatement } from "../statements/primitive/StringStatement";
 import { Statement } from "../statements/Statement";
 import { ActionStatement } from "../statements/action/ActionStatement";
-import { FunctionDescription } from "../../analysis/static/parsing/FunctionDescription";
-import { Parameter } from "../../analysis/static/parsing/Parameter";
-import { SolidityArguments } from "../../SolidityLauncher";
+import { Address, Bool, ConstantPool, DynamicSizeByteArray, Fixed, FixedSizeByteArray, Int, Parameter, StringType, TypeEnum, Ufixed, Uint, Visibility } from "@syntest/analysis-solidity";
+import { TargetType } from "@syntest/analysis";
+import { FunctionTarget } from "@syntest/analysis-solidity";
+import { IntegerStatement } from "../statements/primitive/IntegerStatement";
+import { DynamicSizeByteArrayStatement } from "../statements/complex/DynamicSizeByteArrayStatement";
+import { FixedSizeByteArrayStatement } from "../statements/complex/FixedSizeByteArrayStatement";
 
 /**
  * SolidityRandomSampler class
@@ -47,8 +49,34 @@ export class SolidityRandomSampler extends SoliditySampler {
   /**
    * Constructor
    */
-  constructor(subject: SoliditySubject) {
-    super(subject);
+  constructor(
+    subject: SoliditySubject,
+    constantPool: ConstantPool,
+    constantPoolEnabled: boolean,
+    constantPoolProbability: number,
+    statementPoolEnabled: boolean,
+    statementPoolProbability: number,
+    maxActionStatements: number,
+    stringAlphabet: string,
+    stringMaxLength: number,
+    deltaMutationProbability: number,
+    exploreIllegalValues: boolean,
+    numericDecimals: number
+  ) {
+    super(
+      subject,
+      constantPool,
+      constantPoolEnabled,
+      constantPoolProbability,
+      statementPoolEnabled,
+      statementPoolProbability,
+      maxActionStatements,
+      stringAlphabet,
+      stringMaxLength,
+      deltaMutationProbability,
+      exploreIllegalValues,
+      numericDecimals
+    )
   }
 
   sample(): SolidityTestCase {
@@ -57,29 +85,26 @@ export class SolidityRandomSampler extends SoliditySampler {
     return new SolidityTestCase(root);
   }
 
-  sampleObjectFunctionCall(
+  sampleContractFunction(
     depth: number,
     root: ConstructorCall
   ): ObjectFunctionCall {
-    const actions = (<SoliditySubject>this._subject).getPossibleActions(
-      "function"
-    );
+    const actions = (<SoliditySubject>this._subject).getActionableTargetsByType(TargetType.FUNCTION).filter((x) => (<FunctionTarget>x).name !== 'constructor')
 
     // TODO make sure these actions are available on this root
 
-    if (!actions.length) {
+    if (actions.length === 0) {
       throw new Error("There are no functions to test!");
     }
 
-    const action = <FunctionDescription>prng.pickOne(actions);
+    const action = <FunctionTarget>prng.pickOne(actions);
 
-    const args: Statement[] = [];
+    const arguments_: Statement[] = [];
 
-    for (const param of action.parameters) {
-      if (param.type != "")
-        args.push(
-          this.sampleArgument(depth + 1, param, (<SolidityParameter>param).bits)
-        );
+    for (const parameter of action.parameters) {
+      arguments_.push(
+        this.sampleArgument(depth + 1, parameter)
+      );
     }
 
     const uniqueID = prng.uniqueId();
@@ -91,39 +116,36 @@ export class SolidityRandomSampler extends SoliditySampler {
       uniqueID,
       root,
       action.name,
-      args,
+      arguments_,
       AddressStatement.getRandom()
     );
   }
 
   sampleConstructor(depth: number): ConstructorCall {
-    const constructors = (<SoliditySubject>this._subject).getPossibleActions(
-      "constructor"
-    );
+    const constructors = (<SoliditySubject>this._subject).getActionableTargetsByType(TargetType.FUNCTION).filter((x) => (<FunctionTarget>x).name === 'constructor')
 
     if (constructors.length > 0) {
-      const action = <FunctionDescription>prng.pickOne(constructors);
+      const action = <FunctionTarget>prng.pickOne(constructors);
 
-      const args: Statement[] = [];
-      for (const param of action.parameters) {
-        if (param.type != "")
-          args.push(
-            this.sampleArgument(1, param, (<SolidityParameter>param).bits)
-          );
+      const arguments_: Statement[] = [];
+      for (const parameter of action.parameters) {
+        arguments_.push(
+          this.sampleArgument(1, parameter)
+        );
       }
 
       const root = new ConstructorCall(
         [{ type: action.name, name: "contract" }],
         prng.uniqueId(),
         `${action.name}`,
-        args,
+        arguments_,
         [],
         AddressStatement.getRandom()
       );
 
       const nCalls = prng.nextInt(1, 5);
       for (let index = 0; index <= nCalls; index++) {
-        const call = this.sampleObjectFunctionCall(depth + 1, root);
+        const call = this.sampleContractFunction(depth + 1, root);
         root.setMethodCall(index, call as ActionStatement);
       }
 
@@ -142,7 +164,7 @@ export class SolidityRandomSampler extends SoliditySampler {
 
       const nCalls = prng.nextInt(1, 5);
       for (let index = 0; index <= nCalls; index++) {
-        const call = this.sampleObjectFunctionCall(depth + 1, root);
+        const call = this.sampleContractFunction(depth + 1, root);
         root.setMethodCall(index, call as ActionStatement);
       }
 
@@ -150,145 +172,147 @@ export class SolidityRandomSampler extends SoliditySampler {
     }
   }
 
-  sampleArgument(depth: number, type: Parameter, bits: number): Statement {
-    // check depth to decide whether to pick a variable
-    if (depth >= CONFIG.maxDepth) {
-      // TODO or take an already available variable
-      if (type.type.includes("int")) {
-        return this.sampleNumericGene(depth, type, bits);
-      } else {
-        return this.sampleStatement(depth, [type]);
-      }
+  sampleArgument(depth: number, type: Parameter): Statement {
+    switch (type.type.type) {
+    case TypeEnum.ADDRESS: {
+      return this.sampleAddressStatement(depth, <Parameter<Address>>type)
     }
-
-    if (
-      (<SoliditySubject>this._subject)
-        .getPossibleActions()
-        .filter((a) => a.type === type.type).length &&
-      prng.nextBoolean(CONFIG.sampleFunctionOutputAsArgument)
-    ) {
-      // Pick function
-      // TODO or take an already available functionCall
-
-      return this.sampleObjectFunctionCallTypeBased(depth, [type]);
-    } else {
-      // Pick variable
-      // TODO or take an already available variable
-      if (type.type.includes("int")) {
-        return this.sampleNumericGene(depth, type, bits);
-      } else {
-        return this.sampleStatement(depth, [type]);
-      }
+    case TypeEnum.BOOL: {
+      return this.sampleBoolStatement(depth, <Parameter<Bool>>type)
+    }
+    case TypeEnum.INT: {
+      return this.sampleIntegerStatement(depth, <Parameter<Int | Uint>>type)
+    }
+    case TypeEnum.FIXED: {
+      return this.sampleNumericStatement(depth, <Parameter<Fixed | Ufixed>>type)
+    }
+    case TypeEnum.FIXED_SIZE_BYTE_ARRAY: {
+      return this.sampleFixedSizeByteArrayStatement(depth, <Parameter<FixedSizeByteArray>>type)
+    }
+    case TypeEnum.DYNAMIC_SIZE_BYTE_ARRAY: {
+      return this.sampleDynamicSizeByteArrayStatement(depth,<Parameter<DynamicSizeByteArray>>type)
+    }
+    case TypeEnum.STRING: {
+      return this.sampleStringStatement(depth, <Parameter<StringType>>type)
+    }
+    case TypeEnum.CONTRACT: {
+      throw new Error("TODO contract types")
+      // return this.sampleStringStatement(depth, type)
+    }
+    case TypeEnum.USER_DEFINED: {
+      throw new Error("TODO user defined types")
+      // return this.sampleStringStatement(depth, type)
+    }
+    case TypeEnum.FUNCTION: {
+      throw new Error("TODO function types")
+      // return this.sampleStringStatement(depth, type)
+    }
+    case TypeEnum.MAPPING: {
+      throw new Error("TODO mapping types")
+      // return this.sampleStringStatement(depth, type)
+    }
+    case TypeEnum.ARRAY: {
+      throw new Error("TODO array types")
+      // return this.sampleStringStatement(depth, type)
+    }
     }
   }
 
-  sampleNumericGene(depth: number, type: Parameter, bits: number): Statement {
-    let max = new BigNumber(2).pow(bits - 1).minus(1);
-
-    if (type.type.includes("uint")) {
-      max = new BigNumber(2).pow(bits).minus(1);
-      return NumericStatement.getRandom(type, 0, false, max, new BigNumber(0));
+  sampleAddressStatement(depth: number, type: Parameter<Address>): AddressStatement {
+    let address: string
+    let account: number
+    if (this.constantPoolEnabled && prng.nextBoolean(this.constantPoolProbability)) {
+      address = this.constantPool.getRandomAdress()
+      account = -1
     } else {
-      return NumericStatement.getRandom(type, 0, true, max, max.negated());
+      account = prng.nextInt(-1, 5);
+      address = account < 0 ? "0x".concat((-account).toString(16).padStart(40, "0")) : `accounts[${account}]`;
     }
-    // TODO unreachable?
-    if (type.type.includes("ufixed")) {
-      return NumericStatement.getRandom(
-        type,
-        (<SolidityArguments>(<unknown>CONFIG)).numericDecimals,
-        false
+
+    return new AddressStatement(type, prng.uniqueId(), address, account)
+  }
+
+  sampleBoolStatement(depth: number, type: Parameter<Bool>): BoolStatement {
+    return new BoolStatement(type, prng.uniqueId(), prng.nextBoolean())
+  }
+
+  sampleIntegerStatement(depth: number, type: Parameter<Int | Uint>): IntegerStatement {
+    let value: BigNumber
+    if (this.constantPoolEnabled && prng.nextBoolean(this.constantPoolProbability)) {
+      value = new BigNumber(this.constantPool.getRandomInteger())
+    } else if (type.type.signed) {
+      const upper_bound = new BigNumber(2).pow(type.type.bits - 1).minus(1);
+      const max = BigNumber.min(upper_bound, new BigNumber(Math.pow(2, 11) - 1));
+      const min: BigNumber = max.negated()
+      value = prng.nextBigDouble(min, max)
+    } else {
+      const upper_bound = new BigNumber(2).pow(type.type.bits).minus(1);
+      const max = BigNumber.min(upper_bound, new BigNumber(Math.pow(2, 11) - 1));
+      const min: BigNumber = new BigNumber(0);
+      value = prng.nextBigDouble(min, max)
+    }
+    return new IntegerStatement(type, prng.uniqueId(), value)
+
+  }
+
+  sampleNumericStatement(depth: number, type: Parameter<Fixed | Ufixed>): NumericStatement {
+    let value: BigNumber
+    if (this.constantPoolEnabled && prng.nextBoolean(this.constantPoolProbability)) {
+      value = new BigNumber(this.constantPool.getRandomNumeric())
+    } else if (type.type.signed) {
+      const upper_bound = new BigNumber(2).pow(type.type.bits - 1).minus(1);
+      const max = BigNumber.min(upper_bound, new BigNumber(Math.pow(2, 11) - 1));
+      const min: BigNumber = max.negated()
+      value = prng.nextBigDouble(min, max)
+    } else {
+      const upper_bound = new BigNumber(2).pow(type.type.bits).minus(1);
+      const max = BigNumber.min(upper_bound, new BigNumber(Math.pow(2, 11) - 1));
+      const min: BigNumber = new BigNumber(0);
+      value = prng.nextBigDouble(min, max)
+    }
+    return new NumericStatement(type, prng.uniqueId(), value)
+  }
+
+  sampleFixedSizeByteArrayStatement(depth: number, type: Parameter<FixedSizeByteArray>): FixedSizeByteArrayStatement {
+    const bytes: number[] = [];
+    for (let index = 0; index < type.type.bytes; index++) {
+      bytes[index] = prng.nextInt(
+        FixedSizeByteArrayStatement.lower_bound,
+        FixedSizeByteArrayStatement.upper_bound
       );
-    } else {
-      return NumericStatement.getRandom(
-        type,
-        (<SolidityArguments>(<unknown>CONFIG)).numericDecimals,
-        true
+    }
+    return new FixedSizeByteArrayStatement(type, prng.uniqueId(), bytes)
+  }
+
+  sampleDynamicSizeByteArrayStatement(depth: number, type: Parameter<DynamicSizeByteArray>): DynamicSizeByteArrayStatement {
+    const min = 1
+    const max = 32
+
+    const bytes: number[] = [];
+    for (let index = 0; index < prng.nextInt(min, max); index++) {
+      bytes[index] = prng.nextInt(
+        DynamicSizeByteArrayStatement.lower_bound,
+        DynamicSizeByteArrayStatement.upper_bound
       );
     }
+
+    return new DynamicSizeByteArrayStatement(type, prng.uniqueId(), bytes)
   }
 
-  sampleStatement(
-    depth: number,
-    types: Parameter[],
-    geneType = "primitive"
-  ): Statement {
-    if (geneType === "primitive") {
-      if (types.length === 0) {
-        throw new Error(
-          "To sample a statement at least one type must be given!"
-        );
-      }
-
-      if (types.length !== 1) {
-        throw new Error(
-          "Primitive can only have a single type, multiple where given."
-        );
-      }
-
-      if (types[0].type === "bool") {
-        return BoolStatement.getRandom(types[0]);
-      } else if (types[0].type === "address") {
-        return AddressStatement.getRandom(types[0]);
-      } else if (types[0].type === "string") {
-        return StringStatement.getRandom(types[0]);
-      } else if (types[0].type.includes("string")) {
-        return StringStatement.getRandom(types[0]);
-      } else if (types[0].type.startsWith("byte")) {
-        return this.sampleByteStatement(types[0]);
-      } else if (types[0].type == "") {
-        throw new Error(
-          `Type "" not recognized. It must be a bug in our parser!`
-        );
-      }
-    } else if (geneType === "functionCall") {
-      return this.sampleObjectFunctionCallTypeBased(depth, types);
-    } else if (geneType === "constructor") {
-      return this.sampleConstructor(depth);
-    }
-
-    throw new Error(`Unknown types [${types.join(", ")}] ${geneType}!`);
-  }
-
-  sampleByteStatement(type: Parameter): ByteStatement {
-    if (type.type === "byte" || type.type === "bytes1")
-      return ByteStatement.getRandom(type, 1);
-    else if (type.type === "bytes") {
-      return ByteStatement.getRandom(type, prng.nextInt(1, 32));
+  sampleStringStatement(depth: number, type: Parameter<StringType>): StringStatement {
+    let value: string
+    if (this.constantPoolEnabled && prng.nextBoolean(this.constantPoolProbability)) {
+      value = this.constantPool.getRandomString()
     } else {
-      const nBytes = type.type.replace("bytes", "");
-      const n = Number.parseInt(nBytes);
-      return ByteStatement.getRandom(type, n);
-    }
-  }
+      const valueLength = prng.nextInt(0, this.stringMaxLength - 1);
+      value = "";
 
-  sampleObjectFunctionCallTypeBased(
-    depth: number,
-    types: Parameter[]
-  ): ObjectFunctionCall {
-    const action = <FunctionDescription>(
-      prng.pickOne(
-        (<SoliditySubject>this._subject).getPossibleActions("function", types)
-      )
-    );
-
-    const args: Statement[] = [];
-
-    for (const param of action.parameters) {
-      if (param.type != "")
-        args.push(
-          this.sampleArgument(depth + 1, param, (<SolidityParameter>param).bits)
-        );
+      for (let index = 0; index < valueLength; index++) {
+        value += prng.pickOne([...this.stringAlphabet]);
+      }
     }
 
-    const constructor = this.sampleConstructor(depth + 1);
-
-    return new ObjectFunctionCall(
-      action.returnParameters,
-      prng.uniqueId(),
-      constructor,
-      action.name,
-      args,
-      AddressStatement.getRandom()
-    );
+    return new StringStatement(type, prng.uniqueId(), value)
   }
+
 }

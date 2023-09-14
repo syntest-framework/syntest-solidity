@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-import { CONFIG, prng } from "@syntest/search";
+import { prng } from "@syntest/prng";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { ActionStatement } from "./ActionStatement";
 import { Statement } from "../Statement";
-import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { Parameter } from "@syntest/analysis-solidity";
 
 /**
  * @author Dimitri Stallenberg
@@ -43,44 +43,46 @@ export class FunctionCall extends ActionStatement {
     types: Parameter[],
     uniqueId: string,
     functionName: string,
-    args: Statement[]
+    arguments_: Statement[]
   ) {
-    super(types, uniqueId, [...args]);
+    super(types, uniqueId, [...arguments_]);
     this._functionName = functionName;
   }
 
   mutate(sampler: SoliditySampler, depth: number) {
-    if (prng.nextBoolean(CONFIG.resampleGeneProbability)) {
+    if (prng.nextBoolean(sampler.deltaMutationProbability)) {
+      if (this.arguments_.length === 0) {
+        return this.copy();
+      }
+      
+      // randomly mutate one of the args
+      const arguments_ = this.arguments_.map((a: Statement) => a.copy());
+      const index = prng.nextInt(0, arguments_.length - 1);
+      arguments_[index] = arguments_[index].mutate(sampler, depth + 1);
+
+      return new FunctionCall(this.types, this.uniqueId, this.functionName, arguments_);
+    } else {
       // resample the gene
       return sampler.sampleStatement(depth, this.types, "functionCall");
-    } else if (!this.args.length) {
-      return this.copy();
-    } else {
-      // randomly mutate one of the args
-      const args = [...this.args.map((a: Statement) => a.copy())];
-      const index = prng.nextInt(0, args.length - 1);
-      args[index] = args[index].mutate(sampler, depth + 1);
-
-      return new FunctionCall(this.types, this.id, this.functionName, args);
     }
   }
 
   copy(): FunctionCall {
-    const deepCopyArgs = [...this.args.map((a: Statement) => a.copy())];
+    const deepCopyArguments = this.arguments_.map((a: Statement) => a.copy());
 
     return new FunctionCall(
       this.types,
-      this.id,
+      this.uniqueId,
       this.functionName,
-      deepCopyArgs
+      deepCopyArguments
     );
   }
 
   hasChildren(): boolean {
-    return !!this.args.length;
+    return this.arguments_.length > 0;
   }
 
   getChildren(): Statement[] {
-    return [...this.args];
+    return [...this.arguments_];
   }
 }

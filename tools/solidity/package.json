@@ -51,14 +51,17 @@
 
     "@syntest/base-language": "^0.2.0-beta.39",
     "@syntest/cli-graphics": "^0.1.0-beta.3",
-    "@syntest/instrumentation-solidity": "*",
     "@syntest/logging": "^0.1.0-beta.7",
     "@syntest/metric": "^0.1.0-beta.6",
     "@syntest/module": "^0.1.0-beta.18",
     "@syntest/search": "^0.4.0-beta.36",
     "@syntest/search-solidity": "*",
     "@syntest/storage": "*",
-    "yargs": "^17.7.2"
+    "yargs": "^17.7.2",
+
+    "truffle": "5.1.65",
+    "web3": "1.8.1",
+    "web3-utils": "1.8.1"
   },
   "engines": {
     "node": ">=16"

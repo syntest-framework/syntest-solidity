@@ -16,5 +16,29 @@
  * limitations under the License.
  */
 
-
 export * from './lib/ast/AbstractSyntaxTreeFactory'
+
+export * from './lib/cfg/ControlFlowGraphFactory'
+export * from './lib/cfg/ControlFlowGraphVisitor'
+
+export * from './lib/constant/ConstantPool'
+export * from './lib/constant/ConstantPoolFactory'
+export * from './lib/constant/ConstantVisitor'
+
+export * from './lib/dependency/DependencyFactory'
+export * from './lib/dependency/DependencyVisitor'
+
+export * from './lib/instrumentation/datastructures/InstrumentationData'
+export * from './lib/instrumentation/Instrumenter'
+
+export * from './lib/target/Target'
+export * from './lib/target/TargetFactory'
+export * from './lib/target/TargetVisitor'
+
+export * from './lib/types/Parameter'
+export * from './lib/types/StateMutability'
+export * from './lib/types/Type'
+export * from './lib/types/Visibility'
+
+export * from './lib/Factory'
+export * from './lib/RootContext'

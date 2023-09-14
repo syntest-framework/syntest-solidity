@@ -19,11 +19,11 @@
 import { ConstructorCall } from "./ConstructorCall";
 import { AddressStatement } from "../primitive/AddressStatement";
 
-import { CONFIG, prng } from "@syntest/search";
+import { prng } from "@syntest/prng";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { ActionStatement } from "./ActionStatement";
 import { Statement } from "../Statement";
-import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { Parameter } from "@syntest/analysis-solidity";
 /**
  * @author Dimitri Stallenberg
  */
@@ -46,49 +46,49 @@ export class ObjectFunctionCall extends ActionStatement {
     uniqueId: string,
     instance: ConstructorCall,
     functionName: string,
-    args: Statement[],
+    arguments_: Statement[],
     sender: AddressStatement
   ) {
-    super(types, uniqueId, [...args]);
+    super(types, uniqueId, [...arguments_]);
     this._parent = instance;
     this._functionName = functionName;
     this._sender = sender;
   }
 
   mutate(sampler: SoliditySampler, depth: number): ObjectFunctionCall {
-    if (prng.nextBoolean(CONFIG.resampleGeneProbability)) {
-      // resample the gene
-      return <ObjectFunctionCall>(
-        sampler.sampleStatement(depth, this.types, "functionCall")
-      );
-    } else {
-      const args = [...this.args.map((a: Statement) => a.copy())];
-      if (args.length === 0) return this;
+    if (prng.nextBoolean(sampler.deltaMutationProbability)) {
+      const arguments_ = this.arguments_.map((a: Statement) => a.copy());
+      if (arguments_.length === 0) return this;
 
-      const index = prng.nextInt(0, args.length - 1);
-      args[index] = args[index].mutate(sampler, depth + 1);
+      const index = prng.nextInt(0, arguments_.length - 1);
+      arguments_[index] = arguments_[index].mutate(sampler, depth + 1);
 
       const instance = this._parent;
       return new ObjectFunctionCall(
         this.types,
-        this.id,
+        this.uniqueId,
         instance,
         this.functionName,
-        args,
+        arguments_,
         this._sender.copy()
+      );
+    } else {
+      // resample the gene
+      return <ObjectFunctionCall>(
+        sampler.sampleStatement(depth, this.types, "functionCall")
       );
     }
   }
 
   copy() {
-    const deepCopyArgs = [...this.args.map((a: Statement) => a.copy())];
+    const deepCopyArguments = this.arguments_.map((a: Statement) => a.copy());
 
     return new ObjectFunctionCall(
       this.types,
-      this.id,
+      this.uniqueId,
       this._parent,
       this.functionName,
-      deepCopyArgs,
+      deepCopyArguments,
       this._sender.copy()
     );
   }
@@ -99,7 +99,7 @@ export class ObjectFunctionCall extends ActionStatement {
   }
 
   getChildren(): Statement[] {
-    return [...this.args];
+    return [...this.arguments_];
   }
 
   getParent(): ConstructorCall {

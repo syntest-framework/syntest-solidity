@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-import { getUserInterface, Encoding, Decoder } from "@syntest/search";
+import { Encoding, Decoder } from "@syntest/search";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
 import { SoliditySampler } from "./sampling/SoliditySampler";
-
+import { Logger, getLogger } from "@syntest/logging"
 /**
  * SolidityTestCase class
  *
@@ -27,6 +27,7 @@ import { SoliditySampler } from "./sampling/SoliditySampler";
  * @author Mitchell Olsthoorn
  */
 export class SolidityTestCase extends Encoding {
+  protected static LOGGER: Logger
   private _root: ConstructorCall;
 
   /**
@@ -36,11 +37,12 @@ export class SolidityTestCase extends Encoding {
    */
   constructor(root: ConstructorCall) {
     super();
+    SolidityTestCase.LOGGER = getLogger("SolidityTestCase")
     this._root = root;
   }
 
   mutate(sampler: SoliditySampler) {
-    LOGGER.debug(`Mutating test case: ${this._id}`);
+    SolidityTestCase.LOGGER.debug(`Mutating test case: ${this._id}`);
     return new SolidityTestCase(
       (this._root as ConstructorCall).mutate(sampler, 0)
     );
@@ -49,8 +51,8 @@ export class SolidityTestCase extends Encoding {
   hashCode(decoder: Decoder<Encoding, string>): number {
     const string = decoder.decode(this, `${this.id}`);
     let hash = 0;
-    for (let i = 0; i < string.length; i++) {
-      const character = string.charCodeAt(i);
+    for (let index = 0; index < string.length; index++) {
+      const character = string.codePointAt(index);
       hash = (hash << 5) - hash + character;
       hash = hash & hash; // Convert to 32bit integer
     }

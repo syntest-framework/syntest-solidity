@@ -16,13 +16,23 @@
  * limitations under the License.
  */
 
-import { SearchSubject, EncodingSampler } from "@syntest/search";
-import { Parameter } from "../../analysis/static/parsing/Parameter";
+import { EncodingSampler } from "@syntest/search";
+import { Parameter } from "@syntest/analysis-solidity";
 
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
 import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
 import { Statement } from "../statements/Statement";
+import { SoliditySubject } from "../../search/SoliditySubject";
+import { ConstantPool, RootContext } from "@syntest/analysis-solidity";
+import { NumericStatement } from "../statements/primitive/NumericStatement";
+import { ArrayStatement } from "../statements/complex/ArrayStatement";
+import { AddressStatement } from "../statements/primitive/AddressStatement";
+import { BoolStatement } from "../statements/primitive/BoolStatement";
+import { IntegerStatement } from "../statements/primitive/IntegerStatement";
+import { StringStatement } from "../statements/primitive/StringStatement";
+import { FixedSizeByteArrayStatement } from "../statements/complex/FixedSizeByteArrayStatement";
+import { DynamicSizeByteArrayStatement } from "../statements/complex/DynamicSizeByteArrayStatement";
 
 /**
  * SolidityRandomSampler class
@@ -30,40 +40,143 @@ import { Statement } from "../statements/Statement";
  * @author Dimitri Stallenberg
  */
 export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> {
-  protected readonly POOL_PROB = 0.5;
+  private _rootContext: RootContext;
 
-  protected constructor(subject: SearchSubject<SolidityTestCase>) {
+  private _constantPool: ConstantPool;
+  private _constantPoolEnabled: boolean;
+  private _constantPoolProbability: number;
+
+  private _statementPoolEnabled: boolean;
+  private _statementPoolProbability: number;
+
+  private _maxActionStatements: number;
+  private _stringAlphabet: string;
+  private _stringMaxLength: number;
+
+  private _deltaMutationProbability: number;
+
+  private _exploreIllegalValues: boolean;
+
+  private _statementPool: StatementPool | null;
+
+  private _maxDepth = 10
+
+  private _numericDecimals: number
+
+  constructor(
+    subject: SoliditySubject,
+    constantPool: ConstantPool,
+    constantPoolEnabled: boolean,
+    constantPoolProbability: number,
+    statementPoolEnabled: boolean,
+    statementPoolProbability: number,
+    maxActionStatements: number,
+    stringAlphabet: string,
+    stringMaxLength: number,
+    deltaMutationProbability: number,
+    exploreIllegalValues: boolean,
+    numericDecimals: number
+
+  ) {
     super(subject);
+    this._constantPool = constantPool;
+    this._constantPoolEnabled = constantPoolEnabled;
+    this._constantPoolProbability = constantPoolProbability;
+
+    this._statementPoolEnabled = statementPoolEnabled;
+    this._statementPoolProbability = statementPoolProbability;
+
+    this._maxActionStatements = maxActionStatements;
+    this._stringAlphabet = stringAlphabet;
+    this._stringMaxLength = stringMaxLength;
+    this._deltaMutationProbability = deltaMutationProbability;
+    this._exploreIllegalValues = exploreIllegalValues;
+    this._numericDecimals = numericDecimals
   }
 
-  /**
-   * Should sample any statement based on the type.
-   *
-   * @param depth      the current depth of the statement tree
-   * @param types      the return types of the statement to sample
-   * @param geneType   the type of the statement
-   * @return Statement a sampled statement
-   */
-  abstract sampleStatement(
-    depth: number,
-    types: Parameter[],
-    geneType: string
-  ): Statement;
+
+  get rootContext() {
+    return this._rootContext;
+  }
+
+  set rootContext(rootContext: RootContext) {
+    this._rootContext = rootContext;
+  }
+
+
+  get statementPool() {
+    return this._statementPool;
+  }
+
+  set statementPool(statementPool: StatementPool) {
+    this._statementPool = statementPool;
+  }
 
   abstract sampleConstructor(depth: number): ConstructorCall;
-  abstract sampleObjectFunctionCall(
+  abstract sampleContractFunction(
     depth: number,
     root: ConstructorCall
   ): ObjectFunctionCall;
 
-  abstract sampleObjectFunctionCallTypeBased(
-    depth: number,
-    types: Parameter[]
-  ): ObjectFunctionCall;
-
   abstract sampleArgument(
     depth: number,
-    type: Parameter,
-    bits: number
+    type: Parameter
   ): Statement;
+
+  abstract sampleAddressStatement(depth: number, type: Parameter): AddressStatement
+  abstract sampleBoolStatement(depth: number, type: Parameter): BoolStatement
+  abstract sampleIntegerStatement(depth: number, type: Parameter): IntegerStatement
+  abstract sampleNumericStatement(depth: number, type: Parameter): NumericStatement
+  abstract sampleFixedSizeByteArrayStatement(depth: number, type: Parameter): FixedSizeByteArrayStatement
+  abstract sampleDynamicSizeByteArrayStatement(depth: number, type: Parameter): DynamicSizeByteArrayStatement
+  abstract sampleStringStatement(depth: number, type: Parameter): StringStatement
+  // abstract sampleHexStatement(depth: number, type: Parameter): StringStatement
+
+  get constantPool(): ConstantPool {
+    return this._constantPool;
+  }
+
+  get constantPoolEnabled(): boolean {
+    return this._constantPoolEnabled;
+  }
+
+  get constantPoolProbability(): number {
+    return this._constantPoolProbability;
+  }
+
+  get statementPoolEnabled(): boolean {
+    return this._statementPoolEnabled;
+  }
+
+  get statementPoolProbability(): number {
+    return this._statementPoolProbability;
+  }
+
+  get maxActionStatements(): number {
+    return this._maxActionStatements;
+  }
+
+  get stringAlphabet(): string {
+    return this._stringAlphabet;
+  }
+
+  get stringMaxLength(): number {
+    return this._stringMaxLength;
+  }
+
+  get deltaMutationProbability(): number {
+    return this._deltaMutationProbability;
+  }
+
+  get exploreIllegalValues(): boolean {
+    return this._exploreIllegalValues;
+  }
+
+  get maxDepth(): number {
+    return this._maxDepth
+  }
+
+  get numericDecimals(): number {
+    return this._numericDecimals
+  }
 }

@@ -17,246 +17,243 @@
  */
 
 import {
+  ApproachLevel,
   BranchObjectiveFunction,
   FunctionObjectiveFunction,
   ObjectiveFunction,
   SearchSubject,
+  shouldNeverHappen,
 } from "@syntest/search";
 
-import { RequireObjectiveFunction } from "../criterion/RequireObjectiveFunction";
-import { ExternalVisibility } from "../analysis/static/map/ContractFunction";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
-import { ActionDescription } from "../analysis/static/parsing/ActionDescription";
-import { FunctionDescription } from "../analysis/static/parsing/FunctionDescription";
-import { Parameter } from "../analysis/static/parsing/Parameter";
-import { PublicVisibility } from "../analysis/static/parsing/Visibility";
-import { BranchNode, CFG, NodeType } from "@syntest/cfg";
+import { ControlFlowGraph, Edge, EdgeType } from "@syntest/cfg";
+import { RootContext, SubTarget, Target, Visibility } from "@syntest/analysis-solidity";
+import { TargetType } from "@syntest/analysis";
+import { BranchDistance } from "../criterion/BranchDistance";
 
 export class SoliditySubject extends SearchSubject<SolidityTestCase> {
-  private _functionCalls: FunctionDescription[] | null = null;
-  private _functions: ActionDescription[];
-
-  get functions(): ActionDescription[] {
-    return this._functions;
-  }
-
+  protected syntaxForgiving: boolean;
+  protected stringAlphabet: string;
   constructor(
-    path: string,
-    name: string,
-    cfg: CFG,
-    functions: FunctionDescription[]
+    target: Target,
+    rootContext: RootContext,
+    syntaxForgiving: boolean,
+    stringAlphabet: string
   ) {
-    super(path, name, cfg);
-    this._functions = functions;
+    super(target, rootContext);
+    this.syntaxForgiving = syntaxForgiving;
+    this.stringAlphabet = stringAlphabet;
+
+    this._extractObjectives();
   }
 
   protected _extractObjectives(): void {
-    // Branch objectives
-    this._cfg.nodes
-      // Find all branch nodes
-      .filter(
-        (node) => node.type === NodeType.Branch && !(<BranchNode>node).probe
-      )
-      .forEach((branchNode) => {
-        this._cfg.edges
-          // Find all edges from the branch node
-          .filter((edge) => edge.from === branchNode.id)
-          .forEach((edge) => {
-            this._cfg.nodes
-              // Find nodes with incoming edge from branch node
-              .filter((node) => node.id === edge.to)
-              .forEach((childNode) => {
-                // Add objective function
-                this._objectives.set(
-                  new BranchObjectiveFunction(
-                    this,
-                    childNode.id,
-                    branchNode.lines[0],
-                    edge.branchType
-                  ),
-                  []
-                );
-              });
-          });
-      });
+    this._objectives = new Map<
+      ObjectiveFunction<SolidityTestCase>,
+      ObjectiveFunction<SolidityTestCase>[]
+    >();
 
-    // Probe objectives
-    this._cfg.nodes
-      // Find all probe nodes
-      .filter(
-        (node) => node.type === NodeType.Branch && (<BranchNode>node).probe
-      )
-      .forEach((probeNode) => {
-        this._cfg.edges
-          // Find all edges from the probe node
-          .filter((edge) => edge.from === probeNode.id)
-          .forEach((edge) => {
-            this._cfg.nodes
-              // Find nodes with incoming edge from probe node
-              .filter((node) => node.id === edge.to)
-              .forEach((childNode) => {
-                // Add objective
-                this._objectives.set(
-                  new RequireObjectiveFunction(
-                    this,
-                    childNode.id,
-                    probeNode.lines[0],
-                    edge.branchType
-                  ),
-                  []
-                );
-              });
-          });
-      });
+    const functions = this._rootContext.getControlFlowProgram(
+      this._target.path
+    ).functions;
 
-    // Add children for branches and probe objectives
-    for (const objective of this._objectives.keys()) {
+    // FUNCTION objectives
+    for (const function_ of functions) {
+      const graph = function_.graph;
+      // Branch objectives
+      // Find all control nodes
+      // I.E. nodes that have more than one outgoing edge
+      const controlNodeIds = [...graph.nodes.keys()].filter(
+        (node) => graph.getOutgoingEdges(node).length > 1
+      );
+
+      for (const controlNodeId of controlNodeIds) {
+        const outGoingEdges = graph.getOutgoingEdges(controlNodeId);
+
+        for (const edge of outGoingEdges) {
+          if (["ENTRY", "SUCCESS_EXIT", "ERROR_EXIT"].includes(edge.target)) {
+            throw new Error(
+              `Function ${function_.name} in ${function_.id} ends in entry/exit node`
+            );
+          }
+          // Add objective function
+          this._objectives.set(
+            new BranchObjectiveFunction(
+              new ApproachLevel(),
+              new BranchDistance(this.syntaxForgiving, this.stringAlphabet),
+              this,
+              edge.target
+            ),
+            []
+          );
+        }
+      }
+
+      for (const objective of this._objectives.keys()) {
+        const childrenObject = this.findChildren(graph, objective);
+        this._objectives.get(objective).push(...childrenObject);
+      }
+
+      const entry = function_.graph.entry;
+
+      const children = function_.graph.getChildren(entry.id);
+
+      if (children.length !== 1) {
+        throw new Error(shouldNeverHappen("JavaScriptSubject")); //, "entry node has more than one child"))
+      }
+
+      // Add objective
+      const functionObjective = new FunctionObjectiveFunction(
+        this,
+        function_.id
+      );
+
+      // find first control node in function
+      let firstControlNodeInFunction = children[0];
+      while (
+        function_.graph.getChildren(firstControlNodeInFunction.id).length === 1
+      ) {
+        firstControlNodeInFunction = function_.graph.getChildren(
+          firstControlNodeInFunction.id
+        )[0];
+      }
+
+      // there are control nodes in the function
       if (
-        objective instanceof RequireObjectiveFunction &&
-        objective.type === false
-      )
-        continue;
+        function_.graph.getChildren(firstControlNodeInFunction.id).length === 2
+      ) {
+        const firstObjectives = function_.graph
+          .getChildren(firstControlNodeInFunction.id)
+          .map((child) => {
+            return [...this._objectives.keys()].find(
+              (objective) => objective.getIdentifier() === child.id
+            );
+          });
 
-      const childrenObj = this.findChildren(objective);
-      this._objectives.get(objective).push(...childrenObj);
+        if (!firstObjectives[0] || !firstObjectives[1]) {
+          throw new Error(
+            `Cannot find objective with id: ${firstControlNodeInFunction.id}`
+          );
+        }
+
+        this._objectives.set(functionObjective, [...firstObjectives]);
+      } else {
+        // no control nodes so no sub objectives
+        this._objectives.set(functionObjective, []);
+      }
     }
 
-    // Function objectives
-    this._cfg.nodes
-      // Find all root function nodes
-      .filter((node) => node.type === NodeType.Root)
-      .forEach((node) => {
-        // Add objective
-        const functionObjective = new FunctionObjectiveFunction(
-          this,
-          node.id,
-          node.lines[0]
-        );
-        const childrenObj = this.findChildren(functionObjective);
-        this._objectives.set(functionObjective, childrenObj);
-      });
+    // Probe objectives
+    // for (const probeNode of this._cfg.nodes
+    //   // Find all probe nodes
+    //   .filter(
+    //     (node) => node.type === NodeType.Branch && (<BranchNode>node).probe
+    //   )) {
+    //     for (const edge of this._cfg.edges
+    //       // Find all edges from the probe node
+    //       .filter((edge) => edge.from === probeNode.id)) {
+    //         for (const childNode of this._cfg.nodes
+    //           // Find nodes with incoming edge from probe node
+    //           .filter((node) => node.id === edge.to)) {
+    //             // Add objective
+    //             this._objectives.set(
+    //               new RequireObjectiveFunction(
+    //                 this,
+    //                 childNode.id,
+    //                 probeNode.lines[0],
+    //                 edge.branchType
+    //               ),
+    //               []
+    //             );
+    //           }
+    //       }
+    //   }
+
+    // // Add children for branches and probe objectives
+    // for (const objective of this._objectives.keys()) {
+    //   if (
+    //     objective instanceof RequireObjectiveFunction &&
+    //     objective.type === false
+    //   )
+    //     continue;
+
+    //   const childrenObject = this.findChildren(graph, objective);
+    //   this._objectives.get(objective).push(...childrenObject);
+    // }
+
+    // // Function objectives
+    // for (const node of this._cfg.nodes
+    //   // Find all root function nodes
+    //   .filter((node) => node.type === NodeType.Root)) {
+    //     // Add objective
+    //     const functionObjective = new FunctionObjectiveFunction(
+    //       this,
+    //       node.id,
+    //       node.lines[0]
+    //     );
+    //     const childrenObject = this.findChildren(functionObjective);
+    //     this._objectives.set(functionObjective, childrenObject);
+    //   }
   }
 
   findChildren(
-    obj: ObjectiveFunction<SolidityTestCase>
+    graph: ControlFlowGraph,
+    object: ObjectiveFunction<SolidityTestCase>
   ): ObjectiveFunction<SolidityTestCase>[] {
-    let childrenObj = [];
+    let childObjectives: ObjectiveFunction<SolidityTestCase>[] = [];
 
-    let edges2Visit = this._cfg.edges.filter(
-      (edge) => edge.from === obj.getIdentifier()
-    );
-    const visitedEdges = [];
+    let edges2Visit = [...graph.getOutgoingEdges(object.getIdentifier())]
+
+    const visitedEdges: Edge[] = [];
 
     while (edges2Visit.length > 0) {
       const edge = edges2Visit.pop();
 
-      if (visitedEdges.includes(edge))
+      if (visitedEdges.includes(edge)) {
         // this condition is made to avoid infinite loops
         continue;
+      }
+        
+      if (edge.type === EdgeType.BACK_EDGE) {
+        continue;
+      }
 
       visitedEdges.push(edge);
 
       const found = this.getObjectives().filter(
-        (child) => child.getIdentifier() === edge.to
+        (child) => child.getIdentifier() === edge.target
       );
-      if (found.length == 0) {
-        const additionalEdges = this._cfg.edges.filter(
-          (nextEdge) => nextEdge.from === edge.to
-        );
-        edges2Visit = edges2Visit.concat(additionalEdges);
+      if (found.length === 0) {
+        const additionalEdges = graph.getOutgoingEdges(edge.target);
+
+        edges2Visit = [...edges2Visit, ...additionalEdges];
       } else {
-        childrenObj = childrenObj.concat(found);
+        childObjectives = [...childObjectives, ...found];
       }
     }
 
-    return childrenObj;
+    return childObjectives;
   }
 
-  get functionCalls(): FunctionDescription[] {
-    if (this._functionCalls === null) {
-      this._functionCalls = this.getPossibleActions();
-    }
-
-    return this._functionCalls;
-  }
-
-  set functionCalls(value: FunctionDescription[]) {
-    this._functionCalls = value;
-  }
-
-  getPossibleActions(
-    type?: string,
-    returnTypes?: Parameter[]
-  ): FunctionDescription[] {
-    if (this._functionCalls == null) {
-      this.parseActions();
-    }
-
-    return this._functionCalls.filter((f) => {
-      // TODO
-      // Currently we require the return parameters to be exactly equal.
-      // However, if the required returnTypes are a superset of the return parameters of the function then it should also work!
-      if (returnTypes) {
-        if (returnTypes.length !== f.returnParameters.length) {
-          return false;
-        }
-
-        for (let i = 0; i < returnTypes.length; i++) {
-          if (returnTypes[i].type !== f.returnParameters[i].type) {
-            return false;
-          }
-        }
-      }
-
+  getActionableTargets(): SubTarget[] {
+    return (<SubTarget[]>(this._target.subTargets)).filter((t) => {
       return (
-        (type === undefined || f.type === type) &&
-        (f.visibility === PublicVisibility ||
-          f.visibility === ExternalVisibility) &&
-        f.name !== "" // fallback function has no name
+        (t.type === TargetType.FUNCTION && (t.visibility === Visibility.External || t.visibility === Visibility.Public)) 
+        || t.type === TargetType.CLASS
       );
     });
   }
 
-  parseActions(): void {
-    this._functionCalls = this.functions.map((actionDescription) => {
-      (<FunctionDescription>actionDescription).parameters = (<
-        FunctionDescription
-      >actionDescription).parameters.map((param): SolidityParameter => {
-        const newParam = {
-          name: param.name,
-          type: param.type,
-          bits: null,
-          decimals: null,
-        };
+  getActionableTargetsByType(type: TargetType): SubTarget[] {
+    return (<SubTarget[]>(this._target.subTargets)).filter((t) => {
 
-        if (param.type.includes("int")) {
-          const type = param.type.includes("uint") ? "uint" : "int";
-          const bits = param.type.replace(type, "");
-          newParam.type = type;
-          if (bits && bits.length) {
-            newParam.bits = parseInt(bits);
-          } else {
-            newParam.bits = 256;
-          }
-        } else if (param.type.includes("fixed")) {
-          const type = param.type.includes("ufixed") ? "ufixed" : "fixed";
-          let params = [param.type.replace(type, "")];
-          params = params[0].split("x");
-          newParam.type = type;
-          newParam.bits = parseInt(params[0]) || 128;
-          newParam.decimals = parseInt(params[1]) || 18;
-        }
-
-        return newParam;
-      });
-      return <FunctionDescription>actionDescription;
+      if (type === TargetType.FUNCTION) {
+        return t.type === TargetType.FUNCTION && (t.visibility === Visibility.External || t.visibility === Visibility.Public)
+      } else if (type === TargetType.CLASS) {
+        return t.type === TargetType.CLASS
+      } else {
+        throw new Error(`Invalid target type: ${type}`)
+      }
     });
   }
-}
-
-export interface SolidityParameter extends Parameter {
-  name: string;
-  type: string;
-  bits?: number;
-  decimals?: number;
 }

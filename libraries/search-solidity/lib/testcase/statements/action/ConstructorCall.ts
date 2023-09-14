@@ -21,7 +21,7 @@ import { prng } from "@syntest/prng";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { ActionStatement } from "./ActionStatement";
 import { Statement } from "../Statement";
-import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { Parameter } from "@syntest/analysis-solidity";
 
 /**
  * @author Dimitri Stallenberg
@@ -49,37 +49,37 @@ export class ConstructorCall extends ActionStatement {
     types: Parameter[],
     uniqueId: string,
     constructorName: string,
-    args: Statement[],
+    arguments_: Statement[],
     calls: ActionStatement[],
     sender: AddressStatement
   ) {
-    super(types, uniqueId, args);
+    super(types, uniqueId, arguments_);
     this._constructorName = constructorName;
     this._calls = calls;
     this._sender = sender;
   }
 
   mutate(sampler: SoliditySampler, depth: number) {
-    if (this.args.length > 0) {
-      const args = [...this.args.map((a: Statement) => a.copy())];
-      const index = prng.nextInt(0, args.length - 1);
-      if (args[index] !== undefined)
-        args[index] = args[index].mutate(sampler, depth + 1);
+    if (this.arguments_.length > 0) {
+      const arguments_ = this.arguments_.map((a: Statement) => a.copy());
+      const index = prng.nextInt(0, arguments_.length - 1);
+      if (arguments_[index] !== undefined)
+        arguments_[index] = arguments_[index].mutate(sampler, depth + 1);
     }
 
     let changed = false;
     if (
-      prng.nextDouble(0, 1) <= 1.0 / 3.0 &&
+      prng.nextDouble(0, 1) <= 1 / 3 &&
       this.getMethodCalls().length > 1
     ) {
       this.deleteMethodCall();
       changed = true;
     }
-    if (prng.nextDouble(0, 1) <= 1.0 / 3.0) {
+    if (prng.nextDouble(0, 1) <= 1 / 3) {
       this.replaceMethodCall(sampler, depth);
       changed = true;
     }
-    if (prng.nextDouble(0, 1) <= 1.0 / 3.0) {
+    if (prng.nextDouble(0, 1) <= 1 / 3) {
       this.addMethodCall(sampler, depth);
       changed = true;
     }
@@ -105,7 +105,7 @@ export class ConstructorCall extends ActionStatement {
       this._calls.splice(
         index,
         0,
-        sampler.sampleObjectFunctionCall(depth + 1, this)
+        sampler.sampleContractFunction(depth + 1, this)
       );
       count++;
     }
@@ -128,15 +128,15 @@ export class ConstructorCall extends ActionStatement {
   }
 
   copy() {
-    const deepCopyArgs = [...this.args.map((a: Statement) => a.copy())];
-    const deepCopyCalls = [
-      ...this._calls.map((a: ActionStatement) => a.copy()),
-    ];
+    const deepCopyArguments = this.arguments_.map((a: Statement) => a.copy());
+    const deepCopyCalls = 
+      this._calls.map((a: ActionStatement) => a.copy())
+    ;
     return new ConstructorCall(
       this.types,
-      this.id,
+      this.uniqueId,
       this.constructorName,
-      deepCopyArgs,
+      deepCopyArguments,
       deepCopyCalls,
       this._sender.copy()
     );

@@ -19,21 +19,25 @@
 import SolidityParser = require("@solidity-parser/parser");
 import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
 import { AbstractSyntaxTreeFactory as CoreAbstractSyntaxTreeFactory } from "@syntest/analysis";
+import { NodePath } from "./NodePath";
+import { Hub } from "./Hub";
 
 /**
  * Abstract Syntax Trees (AST) generator for targets.
  */
-export class AbstractSyntaxTreeFactory implements CoreAbstractSyntaxTreeFactory<SourceUnit> {
+export class AbstractSyntaxTreeFactory implements CoreAbstractSyntaxTreeFactory<NodePath<SourceUnit>> {
   /**
    * Generate Abstract Syntax Tree (AST) for specified target.
    *
    * @param filepath The filePath of the target
    * @param source The source of the target
    */
-  convert(filepath: string, source: string): SourceUnit {
-    return <SourceUnit>SolidityParser.parse(source, {
+  convert(filepath: string, source: string): NodePath<SourceUnit> {
+    const sourceUnit = <SourceUnit>SolidityParser.parse(source, {
       loc: true,
       range: true,
     });
+
+    return new NodePath(new Hub(filepath, source), sourceUnit, undefined)
   }
 }

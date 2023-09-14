@@ -15,10 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BaseASTNode } from '@solidity-parser/parser/dist/src/ast-types';
-import {AbstractSyntaxTreeVisitor} from '@syntest/ast-visitor-solidity'
+import { Statement } from '@solidity-parser/parser/dist/src/ast-types';
 import { ControlFlowFunction, ControlFlowGraph, Edge, EdgeType, Location, Node, NodeType } from '@syntest/cfg';
 import { Logger, getLogger } from '@syntest/logging';
+import { AbstractSyntaxTreeVisitor } from '../ast/AbstractSyntaxTreeVisitor';
+import { NodePath } from '../ast/NodePath';
 
 export class ControlFlowGraphVisitor extends AbstractSyntaxTreeVisitor {
     protected static override LOGGER: Logger;
@@ -165,36 +166,52 @@ export class ControlFlowGraphVisitor extends AbstractSyntaxTreeVisitor {
     this._currentParents = [entry.id];
   }
 
-  private _getLocation(astNode: BaseASTNode): Location {
+  private _getLocation(path: NodePath): Location {
     return {
       start: {
-        line: astNode.loc.start.line,
-        column: astNode.loc.start.column,
-        index: astNode.range[0],
+        line: path.node.loc.start.line,
+        column: path.node.loc.start.column,
+        index: path.node.range[0],
       },
       end: {
-        line: astNode.loc.end.line,
-        column: astNode.loc.end.column,
-        index: astNode.range[1]
+        line: path.node.loc.end.line,
+        column: path.node.loc.end.column,
+        index: path.node.range[1]
       },
     };
   }
 
-  private _createNode(astNode: BaseASTNode): Node {
-    const id = `${this._getNodeId(astNode)}`;
+  /**
+   * Connects the current parents to the given node
+   * It uses the current edge type and resets it back to normal afterwards
+   *
+   * @param node
+   */
+  private _connectToParents(node: Node) {
+    // it is actually possible that there are no parents
+    for (const parent of this._currentParents) {
+      this._edges.push(
+        this._createEdge(this._nodes.get(parent), node, this._edgeType)
+      );
+      this._edgeType = EdgeType.NORMAL;
+    }
+  }
+
+  private _createNode(path: NodePath): Node {
+    const id = `${this._getNodeId(path)}`;
     const node = new Node(
       id,
       NodeType.NORMAL,
-      astNode.type,
+      path.type,
       [
         {
           id: id,
-          location: this._getLocation(astNode),
+          location: this._getLocation(path),
           statementAsText: ''// TODO
         },
       ],
       {},
-      astNode.type
+      path.type
     );
 
     if (this._nodes.has(id)) {
@@ -221,6 +238,22 @@ export class ControlFlowGraphVisitor extends AbstractSyntaxTreeVisitor {
       "description"
     );
   }
+
+// actual control flow graph related nodes
+  override Statement = (path: NodePath<Statement>): void => {
+  ControlFlowGraphVisitor.LOGGER.debug(
+    `Entering statement: ${path.type}\tline: ${path.node.loc.start.line}\tcolumn: ${path.node.loc.start.column}`
+  );
+
+  if (this._nodes.has(this._getNodeId(path))) {
+    throw new Error(`Id already used id: ${this._getNodeId(path)}`);
+  } else {
+    const node = this._createNode(path);
+
+    this._connectToParents(node);
+    this._currentParents = [node.id];
+  }
+};
 
     // TODO
 }

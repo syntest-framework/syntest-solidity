@@ -22,8 +22,12 @@ import { ConstantPool } from "./constant/ConstantPool";
 import { AbstractSyntaxTreeFactory } from "./ast/AbstractSyntaxTreeFactory";
 import { ConstantPoolFactory } from "./constant/ConstantPoolFactory";
 import { ControlFlowGraphFactory } from "./cfg/ControlFlowGraphFactory";
+import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
+import { TargetFactory } from "./target/TargetFactory";
+import { DependencyFactory } from "./dependency/DependencyFactory";
+import { NodePath } from "./ast/NodePath";
 
-export class RootContext extends CoreRootContext<any> {
+export class RootContext extends CoreRootContext<NodePath<SourceUnit>> {
     protected static LOGGER: Logger;
 
     protected _constantPoolFactory: ConstantPoolFactory;
@@ -70,5 +74,9 @@ export class RootContext extends CoreRootContext<any> {
 
     RootContext.LOGGER.info("Extracting constants done");
     return constantPool;
+  }
+
+  get rootPath() {
+    return this._rootPath
   }
 }

@@ -52,7 +52,6 @@
     "@syntest/logging": "^0.1.0-beta.7",
     "@syntest/prng": "*",
     "@syntest/search": "^0.4.0-beta.36",
-    "@syntest/ast-visitor-solidity": "*",
     "@solidity-parser/parser": "0.14.5"
   },
   "engines": {

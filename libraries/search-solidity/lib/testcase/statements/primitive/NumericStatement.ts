@@ -16,13 +16,15 @@
  * limitations under the License.
  */
 
-import { CONFIG, prng } from "@syntest/search";
+import { prng } from "@syntest/prng";
 
 import BigNumber from "bignumber.js";
 import { ConstantPool } from "../../../../../analysis-solidity/lib/constant/ConstantPool";
 import { PrimitiveStatement } from "./PrimitiveStatement";
-import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { Fixed, Parameter, Ufixed } from "@syntest/analysis-solidity";
 import { SolidityArguments } from "../../../SolidityLauncher";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { Statement } from "../Statement";
 
 /**
  * Generic number class
@@ -31,53 +33,39 @@ import { SolidityArguments } from "../../../SolidityLauncher";
  *
  * Documentation on BigNumber:
  * https://www.npmjs.com/package/bignumber.js
- *
- * @author Dimitri Stallenberg
  */
-export class NumericStatement extends PrimitiveStatement<BigNumber> {
-  private static _max_value: number = Number.MAX_SAFE_INTEGER;
-  private static _zero = new BigNumber(0);
-
-  private readonly _decimals: number;
-  private readonly _signed: boolean;
+export class NumericStatement extends PrimitiveStatement<BigNumber, Fixed | Ufixed> {
   private readonly _upper_bound: BigNumber;
   private readonly _lower_bound: BigNumber;
 
   constructor(
-    type: Parameter,
+    type: Parameter<Fixed | Ufixed>,
     uniqueId: string,
-    value: BigNumber,
-    decimals = 0,
-    signed = true,
-    upper_bound = new BigNumber(Number.MAX_SAFE_INTEGER),
-    lower_bound = new BigNumber(-Number.MAX_SAFE_INTEGER)
+    value: BigNumber
   ) {
     super(type, uniqueId, value);
-    this._decimals = decimals;
-    this._signed = signed;
-    this._upper_bound = upper_bound;
-    this._lower_bound = lower_bound;
+    if (type.type.signed) {
+      this._upper_bound = new BigNumber(2).pow(type.type.bits - 1).minus(1);
+      this._lower_bound = this.upper_bound.negated()
+    } else {
+      this._upper_bound = new BigNumber(2).pow(type.type.bits).minus(1);
+      this._lower_bound = new BigNumber(0);
+    }
   }
 
-  mutate(): NumericStatement {
-    if (prng.nextBoolean(CONFIG.deltaMutationProbability)) {
-      return this.deltaMutation();
+  mutate(sampler: SoliditySampler, depth: number): Statement {
+    if (prng.nextBoolean(sampler.deltaMutationProbability)) {
+      return this.deltaMutation(sampler);
     }
 
-    return NumericStatement.getRandom(
-      this.type,
-      this.decimals,
-      this.signed,
-      this.upper_bound,
-      this.lower_bound
-    );
+    return sampler.sampleArgument(depth, this.type)
   }
 
-  deltaMutation() {
+  deltaMutation(sampler: SoliditySampler) {
     // small mutation
     let change = prng.nextGaussian(0, 20);
 
-    if (this.type.type.includes("int")) {
+    if (this.type.type.signed) {
       change = Math.round(change);
       if (change == 0) change = prng.nextBoolean() ? -1 : 1;
     }
@@ -85,84 +73,32 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
     let newValue = this.value.plus(change);
 
     // If illegal values are not allowed we make sure the value does not exceed the specified bounds
-    if (!CONFIG.exploreIllegalValues) {
-      const max = this.upper_bound;
-      const min = this._signed ? this.lower_bound : NumericStatement._zero;
-
-      if (newValue.isGreaterThan(max)) {
-        newValue = new BigNumber(max);
-      } else if (newValue.isLessThan(min)) {
-        newValue = new BigNumber(min);
+    if (!sampler.exploreIllegalValues) {
+      if (newValue.isGreaterThan(this.upper_bound)) {
+        newValue = new BigNumber(this.upper_bound);
+      } else if (newValue.isLessThan(this.lower_bound)) {
+        newValue = new BigNumber(this.lower_bound);
       }
     }
 
     return new NumericStatement(
       this.type,
-      this.id,
-      newValue,
-      this._decimals,
-      this._signed,
-      this._upper_bound,
-      this._lower_bound
+      this.uniqueId,
+      newValue
     );
   }
 
   copy() {
     return new NumericStatement(
       this.type,
-      prng.uniqueId(),
-      new BigNumber(this.value),
-      this._decimals,
-      this._signed,
-      this._upper_bound,
-      this._lower_bound
+      this.uniqueId,
+      new BigNumber(this.value)
     );
   }
 
-  static getRandom(
-    type: Parameter = { type: "number", name: "noname" },
-    decimals = (<SolidityArguments>(<unknown>CONFIG)).numericDecimals,
-    signed = (<SolidityArguments>(<unknown>CONFIG)).numericSigned,
-    upper_bound = new BigNumber(Number.MAX_SAFE_INTEGER),
-    lower_bound = new BigNumber(Number.MAX_SAFE_INTEGER)
-  ): NumericStatement {
-    // by default we create small numbers (do we need very large numbers?)
-    const max = BigNumber.min(upper_bound, new BigNumber(Math.pow(2, 11) - 1));
-    const min: BigNumber = signed ? max.negated() : this._zero;
-
-    if (
-      CONFIG.constantPool &&
-      prng.nextDouble(0, 1) <= CONFIG.constantPoolProbability
-    ) {
-      const value = ConstantPool.getInstance().getNumber();
-      if (value != null)
-        return NumericStatement.createWithValue(type, value, signed);
-    }
-
-    return new NumericStatement(
-      type,
-      prng.uniqueId(),
-      prng.nextBigDouble(min, max),
-      decimals,
-      signed,
-      upper_bound,
-      lower_bound
-    );
-  }
-
-  /**
-   * Make sure that whenever the value is used it is the wanted precision.
-   */
-  get value(): BigNumber {
-    return super.value.decimalPlaces(this._decimals);
-  }
-
-  get decimals(): number {
-    return this._decimals;
-  }
 
   get signed(): boolean {
-    return this._signed;
+    return this.type.type.signed;
   }
 
   get upper_bound(): BigNumber {
@@ -171,21 +107,5 @@ export class NumericStatement extends PrimitiveStatement<BigNumber> {
 
   get lower_bound(): BigNumber {
     return this._lower_bound;
-  }
-
-  private static createWithValue(
-    type: Parameter,
-    value: number,
-    signed: boolean
-  ) {
-    return new NumericStatement(
-      type,
-      prng.uniqueId(),
-      new BigNumber(value),
-      (<SolidityArguments>(<unknown>CONFIG)).numericDecimals,
-      signed,
-      new BigNumber(Number.MAX_SAFE_INTEGER),
-      new BigNumber(Number.MAX_SAFE_INTEGER)
-    );
   }
 }

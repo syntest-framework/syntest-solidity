@@ -16,26 +16,30 @@
  * limitations under the License.
  */
 
-import {
-  ExecutionResult,
-  getUserInterface,
-  EncodingRunner,
-  CONFIG,
-} from "@syntest/search";
-
-import * as path from "path";
-import {
-  SolidityExecutionResult,
-  SolidityExecutionStatus,
-} from "../../search/SolidityExecutionResult";
 import { Runner } from "mocha";
+import { SolidityExecutionResult, SolidityExecutionStatus } from "../../search/SolidityExecutionResult";
 import { SoliditySubject } from "../../search/SoliditySubject";
+import { SolidityDecoder } from "../../testbuilding/SolidityDecoder";
 import { getTestFilePaths } from "../../util/fileSystem";
 import { SolidityTestCase } from "../SolidityTestCase";
-import { SoliditySuiteBuilder } from "../../testbuilding/SoliditySuiteBuilder";
+import { EncodingRunner, ExecutionResult } from "@syntest/search"
+import { Logger, getLogger } from "@syntest/logging"
+import { StorageManager } from "@syntest/storage"
+import path = require("node:path");
 
 export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
-  protected suiteBuilder: SoliditySuiteBuilder;
+  protected static LOGGER: Logger;
+
+  protected storageManager: StorageManager;
+  protected decoder: SolidityDecoder;
+
+  protected tempTestDirectory: string;
+
+  protected executionTimeout: number;
+  protected testTimeout: number;
+
+  protected silenceTestOutput: boolean;
+
   // eslint-disable-next-line
   protected api: any;
   // eslint-disable-next-line
@@ -44,7 +48,12 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
   protected config: any;
 
   constructor(
-    suiteBuilder: SoliditySuiteBuilder,
+    storageManager: StorageManager,
+    decoder: SolidityDecoder,
+    temporaryTestDirectory: string,
+    executionTimeout: number,
+    testTimeout: number,
+    silenceTestOutput: boolean,
     // eslint-disable-next-line
     api: any,
     // eslint-disable-next-line
@@ -52,20 +61,29 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     // eslint-disable-next-line
     config: any
   ) {
-    this.suiteBuilder = suiteBuilder;
+    SolidityRunner.LOGGER = getLogger(SolidityRunner.name);
+    this.storageManager = storageManager;
+    this.decoder = decoder;
+    this.tempTestDirectory = temporaryTestDirectory;
+    this.executionTimeout = executionTimeout;
+    this.testTimeout = testTimeout;
+    this.silenceTestOutput = silenceTestOutput;
+
     this.api = api;
     this.truffle = truffle;
     this.config = config;
   }
 
-  async execute(
-    subject: SoliditySubject,
-    testCase: SolidityTestCase
-  ): Promise<ExecutionResult> {
-    const testPath = path.join(CONFIG.tempTestDirectory, "tempTest.js");
-    await this.suiteBuilder.writeTestCase(testPath, testCase, subject.name);
+  async run(
+    paths: string[],
+    amount = 1
+  ) {
+    if (amount < 1) {
+      throw new Error(`Amount of tests cannot be smaller than 1`);
+    }
+    paths = paths.map((p) => path.resolve(p));
 
-    this.config.test_files = await getTestFilePaths(this.config);
+    this.config.test_files = paths
 
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
@@ -78,10 +96,10 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     // Run tests
     try {
       await this.truffle.test.run(this.config);
-    } catch (e) {
+    } catch (error) {
       // TODO
-      LOGGER.error(e);
-      console.trace(e);
+      SolidityRunner.LOGGER.error(error);
+      console.trace(error);
     }
     console.log = old;
 
@@ -91,11 +109,38 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
 
     // If one of the executions failed, log it
     if (stats.failures > 0) {
-      LOGGER.error("Test case has failed!");
+      SolidityRunner.LOGGER.error("Test case has failed!");
     }
 
-    // Retrieve execution traces
-    const instrumentationData = this.api.getInstrumentationData();
+        // Retrieve execution traces
+        const instrumentationData = this.api.getInstrumentationData();
+
+    return {
+      suites: mochaRunner.suite.suites,
+      stats: stats,
+      instrumentationData: instrumentationData,
+      metaData: {} // TODO
+    }
+  }
+
+  async execute(
+    subject: SoliditySubject,
+    testCase: SolidityTestCase
+  ): Promise<ExecutionResult> {
+    SolidityRunner.LOGGER.silly("Executing test case");
+
+    const decodedTestCase = this.decoder.decode(testCase, subject.name, false);
+
+    const testPath = this.storageManager.store(
+      [this.tempTestDirectory],
+      "tempTest.spec.js",
+      decodedTestCase,
+      true
+    );
+
+    const { suites, stats, instrumentationData } = await this.run([
+      testPath,
+    ]);
 
     const traces = [];
     for (const key of Object.keys(instrumentationData)) {
@@ -106,30 +151,27 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     // Retrieve execution information
     let executionResult: SolidityExecutionResult;
     if (
-      mochaRunner.suite.suites.length > 0 &&
-      mochaRunner.suite.suites[0].tests.length > 0
+      suites.length > 0 &&
+      suites[0].tests.length > 0
     ) {
-      const test = mochaRunner.suite.suites[0].tests[0];
+      const test = suites[0].tests[0];
 
       let status: SolidityExecutionStatus;
-      let exception: string = null;
-
+      let error: Error | undefined
       if (test.isPassed()) {
         status = SolidityExecutionStatus.PASSED;
       } else if (test.timedOut) {
         status = SolidityExecutionStatus.TIMED_OUT;
       } else {
         status = SolidityExecutionStatus.FAILED;
-        exception = test.err.message;
+        error = test.err
       }
-
-      const duration = test.duration;
 
       executionResult = new SolidityExecutionResult(
         status,
         traces,
-        duration,
-        exception
+        test.duration,
+        error
       );
     } else {
       executionResult = new SolidityExecutionResult(
@@ -143,8 +185,11 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     this.api.resetInstrumentationData();
 
     // Remove test file
-    await this.suiteBuilder.deleteTestCase(this.config.test_files[0]);
-
+    this.storageManager.deleteTemporary(
+      [this.tempTestDirectory],
+      "tempTest.spec.js"
+    );
+    
     return executionResult;
   }
 }

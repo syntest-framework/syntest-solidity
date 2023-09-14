@@ -18,15 +18,15 @@
 
 import { Statement } from "../Statement";
 import { EncodingSampler } from "@syntest/search";
-import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { Parameter, Type } from "@syntest/analysis-solidity";
 import { SolidityTestCase } from "../../SolidityTestCase";
 
 /**
  * @author Dimitri Stallenberg
  */
-export abstract class PrimitiveStatement<T> extends Statement {
-  get type(): Parameter {
-    return this.types[0];
+export abstract class PrimitiveStatement<T, X extends Type> extends Statement {
+  get type(): Parameter<X> {
+    return <Parameter<X>>this.types[0];
   }
 
   get varName(): string {
@@ -36,7 +36,7 @@ export abstract class PrimitiveStatement<T> extends Statement {
   get value(): T {
     return this._value;
   }
-  private _value: T;
+  protected _value: T;
 
   constructor(type: Parameter, uniqueId: string, value: T) {
     super([type], uniqueId);
@@ -46,9 +46,9 @@ export abstract class PrimitiveStatement<T> extends Statement {
   abstract mutate(
     sampler: EncodingSampler<SolidityTestCase>,
     depth: number
-  ): PrimitiveStatement<T>;
+  ): Statement;
 
-  abstract copy(): PrimitiveStatement<T>;
+  abstract copy(): PrimitiveStatement<T, X>;
 
   hasChildren(): boolean {
     return false;
@@ -56,9 +56,5 @@ export abstract class PrimitiveStatement<T> extends Statement {
 
   getChildren(): Statement[] {
     return [];
-  }
-
-  static getRandom() {
-    throw new Error("Unimplemented function!");
   }
 }

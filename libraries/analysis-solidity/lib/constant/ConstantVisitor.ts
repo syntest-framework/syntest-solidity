@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-import { SolidityVisitor } from "../../analysis/static/SolidityVisitor";
 import {
   EnumValue,
   VariableDeclaration,
@@ -28,7 +27,8 @@ import {
   DecimalNumber,
 } from "@solidity-parser/parser/dist/src/ast-types";
 import { ConstantPool } from "./ConstantPool";
-import { AbstractSyntaxTreeVisitor } from "@syntest/ast-visitor-solidity";
+import { AbstractSyntaxTreeVisitor } from "../ast/AbstractSyntaxTreeVisitor";
+import { NodePath } from "../ast/NodePath";
 
 /**
  * Visits the AST nodes of a contract to find all constants
@@ -53,51 +53,51 @@ export class ConstantVisitor extends AbstractSyntaxTreeVisitor {
     return this._constantPool;
   }
 
-  EnumValue(node: EnumValue): void {
-    this._constantPool.addString(node.name);
+  override EnumValue = (path: NodePath<EnumValue>): void => {
+    this._constantPool.addString(path.node.name);
   }
 
-  VariableDeclaration(node: VariableDeclaration): void {
-    this._constantPool.addString(node.name);
+  override VariableDeclaration = (path: NodePath<VariableDeclaration>): void => {
+    this._constantPool.addString(path.node.name);
   }
 
-  StringLiteral(node: StringLiteral): void {
-    if (this._isAddress(node.value)) {
-      this._constantPool.addAddress(node.value);
+  override StringLiteral = (path: NodePath<StringLiteral>): void => {
+    if (this._isAddress(path.node.value)) {
+      this._constantPool.addAddress(path.node.value);
       return;
     }
 
-    this._constantPool.addString(node.value);
+    this._constantPool.addString(path.node.value);
   }
 
-  NumberLiteral(node: NumberLiteral): void {
-    if (this._isAddress(node.number)) {
-      this._constantPool.addAddress(node.number);
+  override NumberLiteral = (path: NodePath<NumberLiteral>): void => {
+    if (this._isAddress(path.node.number)) {
+      this._constantPool.addAddress(path.node.number);
       return;
     }
 
-    this._constantPool.addInteger(Number.parseInt(node.number));
+    this._constantPool.addInteger(Number.parseInt(path.node.number));
   }
 
-  Identifier(node: Identifier): void {
-    if (!["require", "_"].includes(node.name)) this._constantPool.addString(node.name);
+  override Identifier = (path: NodePath<Identifier>): void => {
+    if (!["require", "_"].includes(path.node.name)) this._constantPool.addString(path.node.name);
   }
 
-  IndexAccess(): void {
+  override IndexAccess = (): void => {
     // TODO: check for index numbers
   }
 
-  MemberAccess(node: MemberAccess): void {
-    this._constantPool.addString(node.memberName);
+  override MemberAccess = (path: NodePath<MemberAccess>): void => {
+    this._constantPool.addString(path.node.memberName);
   }
 
-  HexNumber(node: HexNumber): void {
+  override HexNumber = (path: NodePath<HexNumber>): void => {
     // TODO: check for addresses
-    this._constantPool.addString(node.value);
+    this._constantPool.addString(path.node.value);
   }
 
-  DecimalNumber(node: DecimalNumber): void {
-    this._constantPool.addNumeric(Number.parseFloat(node.value));
+  override DecimalNumber = (path: NodePath<DecimalNumber>): void => {
+    this._constantPool.addNumeric(Number.parseFloat(path.node.value));
   }
 
   protected _isAddress(value: string): boolean {

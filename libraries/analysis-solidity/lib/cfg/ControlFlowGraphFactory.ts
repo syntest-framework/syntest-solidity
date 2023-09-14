@@ -17,16 +17,17 @@
  */
 
 import { ControlFlowGraphFactory as CoreControlFlowGraphFactory } from "@syntest/analysis";
-import { BaseASTNode, SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
+import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
 import { Factory } from "../Factory";
 import { ControlFlowGraphVisitor } from "./ControlFlowGraphVisitor";
 import { ControlFlowProgram, contractControlFlowProgram } from "@syntest/cfg";
-import { visit } from "@solidity-parser/parser"
+import { visit } from "../ast/visit";
+import { NodePath } from "../ast/NodePath";
 
-export class ControlFlowGraphFactory extends Factory implements CoreControlFlowGraphFactory<SourceUnit> {
-  convert(filePath: string, AST: BaseASTNode): ControlFlowProgram {
+export class ControlFlowGraphFactory extends Factory implements CoreControlFlowGraphFactory<NodePath<SourceUnit>> {
+  convert(filePath: string, ast: NodePath<SourceUnit>): ControlFlowProgram {
     const visitor = new ControlFlowGraphVisitor(filePath, this.syntaxForgiving);
-    visit(AST, visitor);
+    visit(ast, visitor);
     
     return contractControlFlowProgram(visitor.cfg);
   }

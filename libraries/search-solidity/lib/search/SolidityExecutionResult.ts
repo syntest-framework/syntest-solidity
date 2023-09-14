@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { ExecutionResult, Datapoint } from "@syntest/search";
+import { ExecutionResult, Trace } from "@syntest/search";
 
 export enum SolidityExecutionStatus {
   PASSED,
@@ -40,7 +40,7 @@ export class SolidityExecutionResult implements ExecutionResult {
    * Array of traces of the execution.
    * @protected
    */
-  protected _traces: Datapoint[];
+  protected _traces: Trace[];
 
   /**
    * Duration of the execution.
@@ -49,10 +49,10 @@ export class SolidityExecutionResult implements ExecutionResult {
   protected _duration: number;
 
   /**
-   * Exception of execution.
+   * Error of execution.
    * @protected
    */
-  protected _exception: string;
+  protected _error: Error | undefined;
 
   /**
    * Constructor.
@@ -64,21 +64,40 @@ export class SolidityExecutionResult implements ExecutionResult {
    */
   public constructor(
     status: SolidityExecutionStatus,
-    traces: Datapoint[],
+    traces: Trace[],
     duration: number,
-    exception: string = null
+    error?: Error | undefined
   ) {
     this._status = status;
     this._traces = traces;
     this._duration = duration;
-    this._exception = exception;
+    this._error = error;
 
-    this._traces.forEach((point) => {
+    for (const point of this._traces) {
       if (point.type === "requirePost") point.type = "probePost";
 
       if (point.type === "requirePre") point.type = "probePre";
       //point..satisfied = true;
-    });
+    }
+  }
+
+  /**
+   * @inheritDoc
+   */
+  public coversId(id: string): boolean {
+    const trace = this._traces.find((trace) => trace.id === id);
+
+    if (!trace) {
+      if (id.startsWith("placeholder")) {
+        return false;
+      }
+
+      throw new Error(
+        `Could not find a matching trace for the given id: ${id}`
+      );
+    }
+
+    return trace.hits > 0;
   }
 
   /**
@@ -91,7 +110,7 @@ export class SolidityExecutionResult implements ExecutionResult {
           trace.type === "function" ||
           trace.type === "requirePre" ||
           trace.type === "branch") && // this line is needed for branches with no control dependent statements
-        trace.line === line &&
+        trace.location.start.line === line &&
         trace.hits > 0
       )
         return true;
@@ -109,8 +128,8 @@ export class SolidityExecutionResult implements ExecutionResult {
   /**
    * @inheritDoc
    */
-  public getExceptions(): string {
-    return this._exception;
+  public getError(): Error {
+    return this._error;
   }
 
   /**
@@ -123,8 +142,8 @@ export class SolidityExecutionResult implements ExecutionResult {
   /**
    * @inheritDoc
    */
-  public hasExceptions(): boolean {
-    return this._exception !== null;
+  public hasError(): boolean {
+    return this._error !== null && this._error !== undefined;
   }
 
   /**

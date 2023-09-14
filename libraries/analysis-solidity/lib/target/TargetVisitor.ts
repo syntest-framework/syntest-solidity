@@ -20,11 +20,17 @@ import {
   ContractDefinition,
   FunctionDefinition,
   TypeName,
+  VariableDeclaration,
 } from "@solidity-parser/parser/dist/src/ast-types";
 
-import { AbstractSyntaxTreeVisitor } from "@syntest/ast-visitor-solidity";
 import { TargetType } from "@syntest/analysis";
-import { ContractFunctionMutability, ContractKind, ContractTarget, FunctionTarget, Parameter, SubTarget, Visibility } from "./Target";
+import { ContractKind, ContractTarget, FunctionTarget, SubTarget } from "./Target";
+import { AbstractSyntaxTreeVisitor } from "../ast/AbstractSyntaxTreeVisitor";
+import { NodePath } from "../ast/NodePath";
+import { Type, TypeEnum } from "../types/Type";
+import { Parameter } from "../types/Parameter";
+import { Visibility, getVisibility } from "../types/Visibility";
+import { getStateMutability } from "../types/StateMutability";
 
 /**
  * Visits the AST nodes of a contract to find all functions with public or external visibility.
@@ -34,6 +40,10 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
 
   private _subTargets: SubTarget[];
 
+  get subTargets() {
+    return this._subTargets;
+  }
+
   constructor(
     filePath: string,
     syntaxForgiving: boolean
@@ -42,12 +52,12 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
     this._subTargets = [];
   }
 
-  ContractDefinition = (node: ContractDefinition): void => {
-    const name = node.name;
-    const id = this._getNodeId(node)
+  override ContractDefinition = (path: NodePath<ContractDefinition>): void => {
+    const name = path.node.name;
+    const id = this._getNodeId(path)
     
     let kind: ContractKind;
-    switch (node.kind) {
+    switch (path.node.kind) {
       case "contract": {
         kind = ContractKind.Contract;
         break;
@@ -62,7 +72,7 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
       }
     }
 
-    const baseContracts = node.baseContracts.map((base) => {
+    const baseContracts = path.node.baseContracts.map((base) => {
       return base.baseName.namePath;
     });
 
@@ -80,31 +90,31 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  "ContractDefinition:exit" = (node: ContractDefinition): void => {
+  override "ContractDefinition:exit" = (path: NodePath<ContractDefinition>): void => {
     this._current = undefined;
   }
 
-  FunctionDefinition = (node: FunctionDefinition): void => {
+  override FunctionDefinition = (path: NodePath<FunctionDefinition>): void => {
     // Skip function if we are not in a contract
     if (!this._current) return;
 
-    let name = node.name;
-    const id = this._getNodeId(node)
+    let name = path.node.name;
+    const id = this._getNodeId(path)
 
-    if (name === null && node.isConstructor) {
+    if (name === null && path.node.isConstructor) {
       name = this._current.name;
     }
 
-    const parameters = node.parameters.map((parameter) => {
+    const parameters = path.get('parameters').map((parameter) => {
       const functionParameter: Parameter = {
-        name: parameter.name,
-        type: this.resolveTypes(parameter.typeName),
+        name: parameter.node.name,
+        type: this.resolveTypes(parameter.node.typeName),
       };
       return functionParameter;
     });
 
     let visibility;
-    switch (node.visibility) {
+    switch (path.node.visibility) {
       case "default": {
         visibility = Visibility.Public;
         break;
@@ -127,53 +137,34 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
       }
     }
 
-    let mutability;
-    switch (node.stateMutability) {
-      case "view": {
-        mutability = ContractFunctionMutability.View;
-        break;
-      }
-      case "pure": {
-        mutability = ContractFunctionMutability.Pure;
-        break;
-      }
-      case "payable": {
-        mutability = ContractFunctionMutability.Payable;
-        break;
-      }
-    }
+    const mutability = getStateMutability(path.node.stateMutability)
 
-    const overrides = node.override
-      ? node.override.map((override) => {
-          return override.namePath;
+    const overrides = path.node.override
+      ? path.get('override').map((override) => {
+          return override.node.namePath;
         })
       : [];
 
-    const modifiers = node.modifiers.map((modifier) => {
-      return modifier.name;
+    const modifiers = path.get('modifiers').map((modifier) => {
+      return modifier.node.name;
     });
 
-    const returnParameters = node.returnParameters
-      ? node.returnParameters.map((parameter) => {
+    const returnParameters = path.has('returnParameters')
+      ? path.get('returnParameters').map((parameter) => {
           const functionParameter: Parameter = {
-            name: parameter.name,
-            type: this.resolveTypes(parameter.typeName),
+            name: parameter.node.name,
+            type: this.resolveTypes(parameter.node.typeName),
           };
           return functionParameter;
         })
-      : [
-          <Parameter>{
-            name: "",
-            type: "void",
-          },
-        ];
+      : [];
 
     const contractFunction: FunctionTarget = {
       type: TargetType.FUNCTION,
       id: id,
       name: name,
-      isConstructor: node.isConstructor,
-      isFallback: !node.name,
+      isConstructor: path.node.isConstructor,
+      isFallback: !path.node.name,
       parameters: parameters,
       visibility: visibility,
       mutability: mutability,
@@ -186,52 +177,91 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
     this._subTargets.push(contractFunction)
   }
 
+  private resolveParameters(parameters: VariableDeclaration[]): Parameter[] {
+    return parameters.map((parameter) => {
+      const functionParameter: Parameter = {
+        name: parameter.name,
+        type: this.resolveTypes(parameter.typeName),
+      };
+      return functionParameter;
+    })
+  } 
+
   /**
    * Resolve a Solidity type name to a string.
    *
    * @param type The type to resolve
    * @protected
    */
-  public resolveTypes(type: TypeName): string {
-    let parameterType: string;
+  public resolveTypes(type: TypeName): Type {
     switch (type.type) {
       case "ElementaryTypeName": {
-        parameterType = type.name;
-        break;
+        if (type.name === 'address') {
+          return {
+            type: TypeEnum.ADDRESS,
+            stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
+          }
+        }  else if (type.name.startsWith('int')) {
+          return {
+            type: TypeEnum.INT,
+            bits: Number.parseInt(type.name.split('int')[0]),
+            signed: true,
+            stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
+          }
+        } else if (type.name.startsWith('uint')) {
+          return {
+            type: TypeEnum.INT,
+            bits: Number.parseInt(type.name.split('uint')[0]),
+            signed: false,
+            stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
+          }
+        } else if (type.name.startsWith('fixed')) {
+          return {
+            type: TypeEnum.INT,
+            bits: Number.parseInt(type.name.split('fixed')[0]),
+            signed: true,
+            stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
+          }
+        } else if (type.name.startsWith('ufixed')) {
+          return {
+            type: TypeEnum.INT,
+            bits: Number.parseInt(type.name.split('ufixed')[0]),
+            signed: false,
+            stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
+          }
+        }
+
+        throw new Error(`Unsupported type detected: ${type.type}`)
       }
       case "UserDefinedTypeName": {
-        parameterType = type.namePath;
-        break;
+        return {
+          type: TypeEnum.USER_DEFINED,
+          name: type.namePath
+        }
       }
       case "Mapping": {
-        parameterType = type.keyType.type === "ElementaryTypeName" ? `Map<${type.keyType.name},${this.resolveTypes(
-            type.valueType
-          )}>` : `Map<${type.keyType.namePath},${this.resolveTypes(
-            type.valueType
-          )}>`;
-        break;
+        return {
+          type: TypeEnum.MAPPING,
+          keyType: this.resolveTypes(type.keyType),
+          valueType: this.resolveTypes(type.valueType)
+        }
       }
       case "ArrayTypeName": {
-        parameterType = `${this.resolveTypes(type.baseTypeName)}[]`;
-        break;
+        return {
+          type: TypeEnum.ARRAY,
+          baseType: this.resolveTypes(type.baseTypeName)
+          // TODO lenght or something type.length
+        };
       }
       case "FunctionTypeName": {
-        const parameterTypes = type.parameterTypes
-          .map((parameter) => {
-            return parameter.name;
-          })
-          .join(",");
-
-        const returnTypes = type.returnTypes
-          .map((parameter) => {
-            return parameter.name;
-          })
-          .join(",");
-
-        parameterType = `function(${parameterTypes}):${returnTypes}`;
-        break;
+        return {
+          type: TypeEnum.FUNCTION,
+          parameters: this.resolveParameters(type.parameterTypes),
+          returns: this.resolveParameters(type.returnTypes),
+          visibility: getVisibility(type.visibility),
+          stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
+        }
       }
     }
-    return parameterType;
   }
 }

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { NodeType, BranchNode, Node } from "@syntest/cfg";
+import { NodeType, Node } from "@syntest/cfg";
 import {
   BranchDistance,
   Encoding,

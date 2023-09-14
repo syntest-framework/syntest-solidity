@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-import { prng, EncodingSampler, Encoding } from "@syntest/search";
-import { Parameter } from "../../analysis/static/parsing/Parameter";
+import { EncodingSampler, Encoding } from "@syntest/search";
+import { Parameter } from "@syntest/analysis-solidity";
 
 /**
- * @author Dimitri Stallenberg
+ * Statement
  */
 export abstract class Statement {
   public get varNames(): string[] {
     return this._varNames;
   }
-  public get id(): string {
+  public get uniqueId(): string {
     return this._uniqueId;
   }
   public get types(): Parameter[] {
@@ -46,7 +46,7 @@ export abstract class Statement {
     this._types = types;
     this._uniqueId = uniqueId;
     this._varNames = types.map((x) => {
-      return x.name + prng.uniqueId();
+      return x.name + uniqueId;
     });
   }
 

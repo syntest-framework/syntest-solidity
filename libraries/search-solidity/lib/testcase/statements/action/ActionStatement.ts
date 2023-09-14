@@ -19,21 +19,21 @@
 import { Statement } from "../Statement";
 import { EncodingSampler } from "@syntest/search";
 import { Encoding } from "@syntest/search";
-import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { Parameter } from "@syntest/analysis-solidity";
 
 /**
  * @author Dimitri Stallenberg
  */
 export abstract class ActionStatement extends Statement {
-  private _args: Statement[];
+  private _arguments_: Statement[];
 
   protected constructor(
     types: Parameter[],
     uniqueId: string,
-    args: Statement[]
+    arguments_: Statement[]
   ) {
     super(types, uniqueId);
-    this._args = args;
+    this._arguments_ = arguments_;
   }
 
   abstract mutate(
@@ -44,14 +44,14 @@ export abstract class ActionStatement extends Statement {
   abstract copy(): ActionStatement;
 
   hasChildren(): boolean {
-    return !!this._args.length;
+    return this._arguments_.length > 0;
   }
 
   getChildren(): Statement[] {
-    return [...this._args];
+    return [...this._arguments_];
   }
 
-  get args(): Statement[] {
-    return this._args;
+  get arguments_(): Statement[] {
+    return this._arguments_;
   }
 }

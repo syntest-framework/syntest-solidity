@@ -16,33 +16,25 @@
  * limitations under the License.
  */
 
-import { CONFIG, prng } from "@syntest/search";
-import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { prng } from "@syntest/prng";
+import { Bool, Parameter } from "@syntest/analysis-solidity";
 import { PrimitiveStatement } from "./PrimitiveStatement";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
 
 /**
  * @author Dimitri Stallenberg
  */
-export class BoolStatement extends PrimitiveStatement<boolean> {
+export class BoolStatement extends PrimitiveStatement<boolean, Bool> {
   constructor(type: Parameter, uniqueId: string, value: boolean) {
     super(type, uniqueId, value);
   }
 
-  mutate() {
-    if (prng.nextBoolean(CONFIG.resampleGeneProbability)) {
-      return BoolStatement.getRandom(this.type);
-    }
+  mutate(sampler: SoliditySampler) {
+    return prng.nextBoolean(sampler.deltaMutationProbability) ? new BoolStatement(this.type, this.uniqueId, !this.value) : BoolStatement.getRandom(this.type);
 
-    return new BoolStatement(this.type, this.id, !this.value);
   }
 
   copy() {
-    return new BoolStatement(this.type, this.id, this.value);
-  }
-
-  static getRandom(
-    type: Parameter = { type: "bool", name: "noname" }
-  ): BoolStatement {
-    return new BoolStatement(type, prng.uniqueId(), prng.nextBoolean());
+    return new BoolStatement(this.type, this.uniqueId, this.value);
   }
 }

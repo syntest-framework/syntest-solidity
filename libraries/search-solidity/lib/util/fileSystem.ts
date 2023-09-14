@@ -22,19 +22,7 @@ import { CONFIG, getUserInterface } from "@syntest/search";
 import globby = require("globby");
 import recursive = require("recursive-readdir");
 
-export async function setupTempFolders(tempArtifactsDir: string) {
-  if (existsSync(tempArtifactsDir)) {
-    await rmdirSync(tempArtifactsDir, { recursive: true });
-  }
 
-  await mkdirSync(tempArtifactsDir, {
-    recursive: true,
-  });
-}
-
-export async function tearDownTempFolders(tempArtifactsDir: string) {
-  await rmdirSync(tempArtifactsDir, { recursive: true });
-}
 
 export async function createTruffleConfig() {
   const filepath = "./truffle-config.js";

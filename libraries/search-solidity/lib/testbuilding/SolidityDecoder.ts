@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-import { CONFIG, Decoder } from "@syntest/search";
+import { Decoder } from "@syntest/search";
 
-import * as path from "path";
+import * as path from "node:path";
 import * as web3_utils from "web3-utils";
-import { ByteStatement } from "../testcase/statements/primitive/ByteStatement";
+import { ArrayStatement } from "../testcase/statements/complex/ArrayStatement";
 import { AddressStatement } from "../testcase/statements/primitive/AddressStatement";
 import { ConstructorCall } from "../testcase/statements/action/ConstructorCall";
 import { StringStatement } from "../testcase/statements/primitive/StringStatement";
@@ -28,22 +28,18 @@ import { ObjectFunctionCall } from "../testcase/statements/action/ObjectFunction
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
 import { Statement } from "../testcase/statements/Statement";
 import { PrimitiveStatement } from "../testcase/statements/primitive/PrimitiveStatement";
-import { Target } from "@syntest/search";
 
 /**
  * @author Dimitri Stallenberg
  * @author Mitchell Olsthoorn
  */
 export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
-  private imports: Map<string, string>;
-  private contractDependencies: Map<string, Target[]>;
+  private targetRootDirectory: string;
+  private tempLogDirectory: string;
 
-  constructor(
-    imports: Map<string, string>,
-    contractDependencies: Map<string, Target[]>
-  ) {
-    this.imports = imports;
-    this.contractDependencies = contractDependencies;
+  constructor(targetRootDirectory: string, temporaryLogDirectory: string) {
+    this.targetRootDirectory = targetRootDirectory;
+    this.tempLogDirectory = temporaryLogDirectory;
   }
 
   decodeConstructor(statement: Statement): string {
@@ -52,25 +48,25 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
 
     let string = "";
 
-    const args = (statement as ConstructorCall).args;
-    for (const arg of args) {
-      if (arg instanceof PrimitiveStatement) {
-        string = string + this.decodeStatement(arg) + "\n\t\t";
+    const arguments_ = (statement as ConstructorCall).arguments_;
+    for (const argument of arguments_) {
+      if (argument instanceof PrimitiveStatement) {
+        string = string + this.decodeStatement(argument) + "\n\t\t";
       }
     }
-    const formattedArgs = args
+    const formattedArguments = arguments_
       // eslint-disable-next-line
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
     const sender = (statement as ConstructorCall).getSender().getValue();
     const senderString =
-      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+      formattedArguments == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
     return (
       string +
       `const ${statement.varNames[0]} = await ${
         (statement as ConstructorCall).constructorName
-      }.new(${formattedArgs}${senderString});`
+      }.new(${formattedArguments}${senderString});`
     );
   }
 
@@ -80,32 +76,32 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
 
     let string = "";
 
-    const args = (statement as ConstructorCall).args;
-    for (const arg of args) {
-      if (arg instanceof PrimitiveStatement) {
-        string = string + this.decodeStatement(arg) + "\n\t\t";
+    const arguments_ = (statement as ConstructorCall).arguments_;
+    for (const argument of arguments_) {
+      if (argument instanceof PrimitiveStatement) {
+        string = string + this.decodeStatement(argument) + "\n\t\t";
       }
     }
-    const formattedArgs = args
+    const formattedArguments = arguments_
       // eslint-disable-next-line
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
     const sender = (statement as ConstructorCall).getSender().getValue();
     const senderString =
-      formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+      formattedArguments == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
     return (
       string +
       `await expect(${
         (statement as ConstructorCall).constructorName
-      }.new(${formattedArgs}${senderString}).to.be.rejectedWith(Error);`
+      }.new(${formattedArguments}${senderString}).to.be.rejectedWith(Error);`
     );
   }
 
   decodeStatement(statement: Statement): string {
     if (!(statement instanceof PrimitiveStatement)) {
-      throw new Error(`${statement} is not a primitive statement`);
+      throw new TypeError(`${statement} is not a primitive statement`);
     }
 
     // eslint-disable-next-line
@@ -117,14 +113,14 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       statement.type.type.startsWith("int") ||
       statement.type.type.startsWith("uint")
     ) {
-      const value = primitive.value.toFixed();
+      const value = primitive.value.toFixed(0);
       return `const ${statement.varName} = BigInt("${value}")`;
     } else if (statement instanceof StringStatement) {
       return `const ${statement.varName} = "${primitive.value}"`;
     } else if (statement instanceof AddressStatement) {
       return (statement as AddressStatement).toCode();
-    } else if (statement instanceof ByteStatement) {
-      const bytes = web3_utils.bytesToHex((statement as ByteStatement).value);
+    } else if (statement instanceof ArrayStatement) {
+      const bytes = web3_utils.bytesToHex((statement as ArrayStatement).value);
       return `const ${statement.varName} = "${bytes}"`;
     } else {
       return `const ${statement.varName} = ${primitive.value}`;
@@ -133,10 +129,10 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
 
   decodeFunctionCall(statement: Statement, objectName: string): string {
     if (statement instanceof ObjectFunctionCall) {
-      const args = (statement as ObjectFunctionCall).getChildren();
+      const arguments_ = (statement as ObjectFunctionCall).getChildren();
       // TODO the difficulty now is to select the correct var from the statements....
       // TODO now assuming its always the first one
-      const formattedArgs = args
+      const formattedArguments = arguments_
         .map((a: Statement) => a.varNames[0])
         .join(", ");
 
@@ -145,49 +141,49 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
 
       const sender = (statement as ObjectFunctionCall).getSender().getValue();
       const senderString =
-        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+        formattedArguments == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
       if (
-        statement.types.length &&
+        statement.types.length > 0 &&
         !(
           statement.types.length === 1 &&
           ["void", "none"].includes(statement.types[0].type)
         )
       ) {
-        let varNames = statement.varNames[0];
+        let variableNames = statement.varNames[0];
         if (statement.types.length > 1) {
-          varNames = `[${statement.varNames.join(", ")}]`;
+          variableNames = `[${statement.varNames.join(", ")}]`;
         }
-        return `const ${varNames} = await ${objectName}.${
+        return `const ${variableNames} = await ${objectName}.${
           (statement as ObjectFunctionCall).functionName
-        }.call(${formattedArgs}${senderString});`;
+        }.call(${formattedArguments}${senderString});`;
       }
       return `await ${objectName}.${
         (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs}${senderString});`;
+      }.call(${formattedArguments}${senderString});`;
     } else {
-      throw new Error(`${statement} is not a function call`);
+      throw new TypeError(`${statement} is not a function call`);
     }
   }
 
   decodeErroringFunctionCall(statement: Statement, objectName: string): string {
     if (statement instanceof ObjectFunctionCall) {
-      const args = (statement as ObjectFunctionCall).getChildren();
+      const arguments_ = (statement as ObjectFunctionCall).getChildren();
       // TODO the difficulty now is to select the correct var from the statements....
       // TODO now assuming its always the first one
-      const formattedArgs = args
+      const formattedArguments = arguments_
         .map((a: Statement) => a.varNames[0])
         .join(", ");
 
       const sender = (statement as ObjectFunctionCall).getSender().getValue();
       const senderString =
-        formattedArgs == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
+        formattedArguments == "" ? `{from: ${sender}}` : `, {from: ${sender}}`;
 
       return `await expect(${objectName}.${
         (statement as ObjectFunctionCall).functionName
-      }.call(${formattedArgs}${senderString})).to.be.rejectedWith(Error);`;
+      }.call(${formattedArguments}${senderString})).to.be.rejectedWith(Error);`;
     } else {
-      throw new Error(`${statement} is not a function call`);
+      throw new TypeError(`${statement} is not a function call`);
     }
   }
 
@@ -206,7 +202,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
   convertToStatementStack(ind: SolidityTestCase): Statement[] {
     const stack: Statement[] = [];
     const queue: Statement[] = [ind.root];
-    while (queue.length) {
+    while (queue.length > 0) {
       const current: Statement = queue.splice(0, 1)[0];
 
       if (current instanceof ConstructorCall) {
@@ -245,8 +241,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
         // Create link
         linkings.push(
           `\t\tconst lib${count} = await ${dependency.targetName}.new();`
-        );
-        linkings.push(
+        , 
           `\t\tawait ${contract}.link('${dependency.targetName}', lib${count}.address);`
         );
 
@@ -265,7 +260,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
 
   generateAssertions(ind: SolidityTestCase): string[] {
     const assertions: string[] = [];
-    if (ind.assertions.size !== 0) {
+    if (ind.assertions.size > 0) {
       for (const variableName of ind.assertions.keys()) {
         if (variableName === "error") {
           continue;
@@ -301,7 +296,8 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
   decode(
     testCase: SolidityTestCase | SolidityTestCase[],
     targetName: string,
-    addLogs = false
+    addLogs = false,
+    sourceDirectory = "../instrumented"
   ): string {
     if (testCase instanceof SolidityTestCase) {
       testCase = [testCase];
@@ -314,7 +310,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
     for (const ind of testCase) {
       // The stopAfter variable makes sure that when one of the function calls has thrown an exception the test case ends there.
       let stopAfter = -1;
-      if (ind.assertions.size !== 0 && ind.assertions.has("error")) {
+      if (ind.assertions.size > 0 && ind.assertions.has("error")) {
         stopAfter = ind.assertions.size;
       }
 
@@ -328,8 +324,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
             CONFIG.tempLogDirectory,
             ind.id
           )}', { recursive: true })\n`
-        );
-        testString.push("try {");
+        , "try {");
       }
 
       const importableGenes: ConstructorCall[] = [];
@@ -342,14 +337,12 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       const assertions: string[] = [];
 
       let count = 1;
-      while (stack.length) {
+      while (stack.length > 0) {
         const gene: Statement = stack.pop();
 
         if (gene instanceof ConstructorCall) {
-          if (count === stopAfter) {
-            // assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
-            if (CONFIG.testMinimization) break;
-          }
+          if (count === stopAfter && // assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
+            CONFIG.testMinimization) break;
           testString.push(`\t\t${this.decodeConstructor(gene)}`);
           importableGenes.push(<ConstructorCall>gene);
           count += 1;
@@ -370,28 +363,28 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
           );
           count += 1;
         } else {
-          throw Error(`The type of gene ${gene} is not recognized`);
+          throw new TypeError(`The type of gene ${gene} is not recognized`);
         }
 
         if (addLogs) {
           if (gene instanceof ObjectFunctionCall) {
-            for (const varName of gene.varNames) {
+            for (const variableName of gene.varNames) {
               functionCalls.push(
                 `\t\tawait fs.writeFileSync('${path.join(
                   CONFIG.tempLogDirectory,
                   ind.id,
-                  varName
-                )}', '' + ${varName})`
+                  variableName
+                )}', '' + ${variableName})`
               );
             }
           } else if (gene instanceof ConstructorCall) {
-            for (const varName of gene.varNames) {
+            for (const variableName of gene.varNames) {
               testString.push(
                 `\t\tawait fs.writeFileSync('${path.join(
                   CONFIG.tempLogDirectory,
                   ind.id,
-                  varName
-                )}', '' + ${varName})`
+                  variableName
+                )}', '' + ${variableName})`
               );
             }
           }
@@ -400,15 +393,14 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
 
       // filter non-required statements
       primitiveStatements = primitiveStatements.filter((s) => {
-        const varName = s.split(" ")[1];
+        const variableName = s.split(" ")[1];
         return (
-          functionCalls.find((f) => f.includes(varName)) ||
-          assertions.find((f) => f.includes(varName))
+          functionCalls.find((f) => f.includes(variableName)) ||
+          assertions.find((f) => f.includes(variableName))
         );
       });
 
-      testString.push(...primitiveStatements);
-      testString.push(...functionCalls);
+      testString.push(...primitiveStatements, ...functionCalls);
 
       if (addLogs) {
         testString.push(`} catch (e) {`);
@@ -418,29 +410,26 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
             ind.id,
             "error"
           )}', '' + e.stack)`
-        );
-        testString.push("}");
+        , "}");
       }
 
       const [importsOfTest, linkings] = this.gatherImports(importableGenes);
       imports.push(...importsOfTest);
 
-      if (ind.assertions.size) {
-        imports.push(`const chai = require('chai');`);
-        imports.push(`const expect = chai.expect;`);
-        imports.push(`chai.use(require('chai-as-promised'));`);
+      if (ind.assertions.size > 0) {
+        imports.push(`const chai = require('chai');`, `const expect = chai.expect;`, `chai.use(require('chai-as-promised'));`);
       }
 
       assertions.unshift(...this.generateAssertions(ind));
 
       const body = [];
-      if (linkings.length) {
+      if (linkings.length > 0) {
         body.push(`${linkings.join("\n")}`);
       }
-      if (testString.length) {
+      if (testString.length > 0) {
         body.push(`${testString.join("\n")}`);
       }
-      if (assertions.length) {
+      if (assertions.length > 0) {
         body.push(`${assertions.join("\n")}`);
       }
 

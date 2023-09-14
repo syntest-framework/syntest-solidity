@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-import { Crossover, CONFIG } from "@syntest/search";
+import { Crossover } from "@syntest/search";
 
-import { SolidityTestCase } from "../../../testcase/SolidityTestCase";
-import { ConstructorCall } from "../../../testcase/statements/action/ConstructorCall";
-import { NumericStatement } from "../../../testcase/statements/primitive/NumericStatement";
-import { Statement } from "../../../testcase/statements/Statement";
+import { SolidityTestCase } from "../../testcase/SolidityTestCase";
+import { ConstructorCall } from "../../testcase/statements/action/ConstructorCall";
+import { NumericStatement } from "../../testcase/statements/primitive/NumericStatement";
+import { Statement } from "../../testcase/statements/Statement";
+import { prng } from "@syntest/prng";
 
 interface QueueEntry {
   parent: Statement;
@@ -42,7 +43,7 @@ interface QueueEntry {
  * @author Annibale Panichella
  * @author Dimitri Stallenberg
  */
-export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
+export class SolidityTreeCrossover extends Crossover<SolidityTestCase> {
   public crossOver(parents: SolidityTestCase[]): SolidityTestCase[] {
     if (parents.length !== 2) {
       throw new Error("Expected 2 parents got: " + parents.length);
@@ -53,20 +54,20 @@ export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
     const queueA: QueueEntry[] = [];
 
     for (
-      let i = 0;
-      i < (rootA as ConstructorCall).getMethodCalls().length;
-      i++
+      let index = 0;
+      index < (rootA as ConstructorCall).getMethodCalls().length;
+      index++
     ) {
       queueA.push({
         parent: rootA,
-        childIndex: i,
-        child: (rootA as ConstructorCall).getMethodCalls()[i],
+        childIndex: index,
+        child: (rootA as ConstructorCall).getMethodCalls()[index],
       });
     }
 
     const crossoverOptions = [];
 
-    while (queueA.length) {
+    while (queueA.length > 0) {
       const pair = queueA.shift();
 
       if (pair.child.hasChildren()) {
@@ -79,7 +80,7 @@ export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
         });
       }
 
-      if (prng.nextBoolean(CONFIG.crossoverProbability)) {
+      if (prng.nextBoolean(this.crossoverStatementProbability)) {
         // crossover
         const donorSubtrees = this.findSimilarSubtree(pair.child, rootB);
 
@@ -92,7 +93,7 @@ export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
       }
     }
 
-    if (crossoverOptions.length) {
+    if (crossoverOptions.length > 0) {
       const crossoverChoice = prng.pickOne(crossoverOptions);
       const pair = crossoverChoice.p1;
       const donorTree = crossoverChoice.p2;
@@ -122,15 +123,15 @@ export class SolidityTreeCrossover implements Crossover<SolidityTestCase> {
     const queue: QueueEntry[] = [];
     const similar = [];
 
-    for (let i = 0; i < tree.getChildren().length; i++) {
+    for (let index = 0; index < tree.getChildren().length; index++) {
       queue.push({
         parent: tree,
-        childIndex: i,
-        child: tree.getChildren()[i],
+        childIndex: index,
+        child: tree.getChildren()[index],
       });
     }
 
-    while (queue.length) {
+    while (queue.length > 0) {
       const pair = queue.shift();
 
       if (pair.child.hasChildren()) {

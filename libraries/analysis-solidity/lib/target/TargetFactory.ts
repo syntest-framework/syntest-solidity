@@ -16,28 +16,26 @@
  * limitations under the License.
  */
 
-import { ContractVisitor } from "./TargetVisitor";
-
-import { ContractMetadata } from "./ContractMetadata";
-import { ContractFunction } from "./ContractFunction";
-import { BaseASTNode, SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
-import { visit } from "@solidity-parser/parser";
+import { TargetVisitor } from "./TargetVisitor";
+import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
 import { Factory } from "../Factory";
 import { TargetFactory as CoreTargetFactory, Target } from "@syntest/analysis";
 import path = require("path");
+import { visit } from "../ast/visit";
+import { NodePath } from "../ast/NodePath";
 
 /**
  * Function map generator for targets.
  */
-export class TargetFactory extends Factory implements CoreTargetFactory<BaseASTNode> {
+export class TargetFactory extends Factory implements CoreTargetFactory<NodePath<SourceUnit>> {
   /**
    * Generate function map for specified target.
    *
-   * @param AST The AST of the target
+   * @param ast The AST of the target
    */
-  extract(filePath: string, AST: BaseASTNode): Target {
-    const visitor = new ContractVisitor(filePath, this.syntaxForgiving);
-    visit(AST, visitor);
+  extract(filePath: string, ast: NodePath<SourceUnit>): Target {
+    const visitor = new TargetVisitor(filePath, this.syntaxForgiving);
+    visit(ast, visitor);
 
     return { 
       path: filePath,

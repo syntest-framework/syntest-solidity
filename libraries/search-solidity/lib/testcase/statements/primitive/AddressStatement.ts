@@ -16,17 +16,15 @@
  * limitations under the License.
  */
 
-import { CONFIG, prng } from "@syntest/search";
-import { Parameter } from "../../../analysis/static/parsing/Parameter";
-import { ConstantPool } from "../../../../../analysis-solidity/lib/constant/ConstantPool";
+import { prng } from "@syntest/prng";
+import { Address, Parameter } from "@syntest/analysis-solidity";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 
 /**
  * Special statement specific to solidity contracts
- * @author Dimitri Stallenberg
  */
-export class AddressStatement extends PrimitiveStatement<string> {
+export class AddressStatement extends PrimitiveStatement<string, Address> {
   private readonly _account: number;
 
   constructor(
@@ -40,70 +38,45 @@ export class AddressStatement extends PrimitiveStatement<string> {
   }
 
   mutate(sampler: SoliditySampler, depth: number): AddressStatement {
-    if (prng.nextBoolean(CONFIG.resampleGeneProbability)) {
+    if (prng.nextBoolean(sampler.deltaMutationProbability)) {
+      if (this.value.startsWith("0x")) {
+        const newAccount = prng.nextBoolean(0.5)
+          ? this.account + 1
+          : this.account - 1;
+        const value = "0x".concat((-newAccount).toString(16).padStart(40, "0"));
+        return new AddressStatement(
+          this.type,
+          prng.uniqueId(),
+          value,
+          newAccount
+        );
+      }
+  
+      return prng.nextBoolean ? new AddressStatement(
+          this.type,
+          prng.uniqueId(),
+          `accounts[${this._account + 1}]`,
+          this._account + 1
+        ) : new AddressStatement(
+          this.type,
+          prng.uniqueId(),
+          `accounts[${this._account - 1}]`,
+          this._account - 1
+        );
+    } else {
       return <AddressStatement>(
-        sampler.sampleStatement(depth, this.types, "primitive")
+        sampler.sampleArgument(depth, this.types)
       );
     }
-
-    if (this.value.startsWith("0x")) {
-      const newAccount = prng.nextBoolean(0.5)
-        ? this.account + 1
-        : this.account - 1;
-      const value = "0x".concat((-newAccount).toString(16).padStart(40, "0"));
-      return new AddressStatement(
-        this.type,
-        prng.uniqueId(),
-        value,
-        newAccount
-      );
-    }
-
-    if (prng.nextBoolean)
-      return new AddressStatement(
-        this.type,
-        prng.uniqueId(),
-        `accounts[${this._account + 1}]`,
-        this._account + 1
-      );
-    else
-      return new AddressStatement(
-        this.type,
-        prng.uniqueId(),
-        `accounts[${this._account - 1}]`,
-        this._account - 1
-      );
   }
 
   copy(): AddressStatement {
     return new AddressStatement(
       this.type,
-      prng.uniqueId(),
+      this.uniqueId,
       this.value,
       this._account
     );
-  }
-
-  static getRandom(type: Parameter = { type: "address", name: "noname" }) {
-    let account = -1;
-    if (
-      CONFIG.constantPool &&
-      prng.nextDouble(0, 1) <= CONFIG.constantPoolProbability
-    ) {
-      const value = ConstantPool.getInstance().getAddress();
-      if (value != null) {
-        return new AddressStatement(type, prng.uniqueId(), value, account);
-      }
-    }
-
-    account = prng.nextInt(-1, 5);
-    if (account < 0) {
-      const value = "0x".concat((-account).toString(16).padStart(40, "0"));
-      return new AddressStatement(type, prng.uniqueId(), value, account);
-    }
-
-    const value = `accounts[${account}]`;
-    return new AddressStatement(type, prng.uniqueId(), value, account);
   }
 
   get account(): number {

@@ -20,6 +20,9 @@ import {
     Target as CoreTarget,
     TargetType,
   } from "@syntest/analysis";
+import { Visibility } from "../types/Visibility";
+import { Parameter } from "../types/Parameter";
+import { StateMutability } from "../types/StateMutability";
 
 
 export interface Target extends CoreTarget {
@@ -28,20 +31,20 @@ export interface Target extends CoreTarget {
     subTargets: SubTarget[];
   }
   
-  export interface SubTarget extends CoreSubTarget {
-    type: TargetType;
+  export type SubTarget = ContractTarget | FunctionTarget
+  
+  export type ContractTarget = CoreSubTarget &  {
+    type: TargetType.CLASS
     id: string;
     name: string;
-  }
-  
-  export interface ContractTarget extends SubTarget {
-    type: TargetType.CLASS
     kind: ContractKind
     bases: string[]
   }
   
-  export interface FunctionTarget extends SubTarget {
+  export type FunctionTarget = CoreSubTarget & {
     type: TargetType.FUNCTION
+    id: string;
+    name: string;
 
       /**
    * Visibility of the action.
@@ -70,7 +73,7 @@ export interface Target extends CoreTarget {
     /**
      * Mutability of the function.
      */
-    mutability: ContractFunctionMutability | null;
+    mutability: StateMutability | null;
 
     /**
      * If the function is virtual (can be overridden).
@@ -87,53 +90,10 @@ export interface Target extends CoreTarget {
      */
     modifiers: string[];
   }
-
-  /**
- * Interface for a Parameter Description.
- *
- * @author Dimitri Stallenberg
- */
-export interface Parameter {
-    /**
-     * Name of the parameter.
-     */
-    name: string;
   
-    /**
-     * Type of the parameter.
-     */
-    type: string;
-  }
-  
-
-
   export enum ContractKind {
     Contract = "contract",
     Library = "library",
     Interface = "interface",
   }
   
-  export enum Visibility {
-    Public = "public",
-    Private = "private",
-    Internal = 'internal',
-    External = "external"
-  }
-
-  
-  export enum ContractFunctionMutability {
-    /**
-     * Function reads state but does not modify state.
-     */
-    View = "view",
-  
-    /**
-     * Function does not read or modify state.
-     */
-    Pure = "pure",
-  
-    /**
-     * Function accepts Ether.
-     */
-    Payable = "payable",
-  }

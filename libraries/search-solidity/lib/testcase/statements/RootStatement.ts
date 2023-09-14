@@ -17,12 +17,11 @@
  */
 
 import { Statement } from "./Statement";
-import { Encoding, EncodingSampler } from "@syntest/search";
 import { ActionStatement } from "./action/ActionStatement";
-import { Parameter } from "../../analysis/static/parsing/Parameter";
+import { Parameter } from "@syntest/analysis-solidity";
 
 /**
- * @author Dimitri Stallenberg
+ * RootStatement
  */
 export abstract class RootStatement extends ActionStatement {
   private _children: Statement[];
@@ -30,26 +29,19 @@ export abstract class RootStatement extends ActionStatement {
   protected constructor(
     types: Parameter[],
     uniqueId: string,
-    args: Statement[],
+    arguments_: Statement[],
     children: Statement[]
   ) {
-    super(types, uniqueId, args);
+    super(types, uniqueId, arguments_);
     this._children = children;
   }
 
-  abstract mutate(
-    sampler: EncodingSampler<Encoding>,
-    depth: number
-  ): RootStatement;
-
-  abstract copy(): RootStatement;
-
-  hasChildren(): boolean {
-    return !!this._children.length || !!this.args.length;
+  override hasChildren(): boolean {
+    return this._children.length > 0 || this.arguments_.length > 0;
   }
 
-  getChildren(): Statement[] {
-    return [...this._children, ...this.args];
+  override getChildren(): Statement[] {
+    return [...this._children, ...this.arguments_];
   }
 
   get children(): Statement[] {

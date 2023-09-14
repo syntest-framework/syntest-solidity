@@ -16,83 +16,73 @@
  * limitations under the License.
  */
 
-import { CONFIG, prng } from "@syntest/search";
-import { ConstantPool } from "../../../../../analysis-solidity/lib/constant/ConstantPool";
+import { prng } from "@syntest/prng";
+import { StringType } from "@syntest/analysis-solidity";
 import { PrimitiveStatement } from "./PrimitiveStatement";
-import { Parameter } from "../../../analysis/static/parsing/Parameter";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { Statement } from "../Statement";
 
 /**
- * @author Dimitri Stallenberg
+ * String statement
  */
-export class StringStatement extends PrimitiveStatement<string> {
-  private readonly alphabet: string;
-  private readonly maxlength: number;
+export class StringStatement extends PrimitiveStatement<string, StringType> {
 
-  constructor(
-    type: Parameter,
-    uniqueId: string,
-    value: string,
-    alphabet: string,
-    maxlength: number
-  ) {
-    super(type, uniqueId, value);
-    this.alphabet = alphabet;
-    this.maxlength = maxlength;
-  }
-
-  mutate(): StringStatement {
-    if (prng.nextBoolean(CONFIG.resampleGeneProbability)) {
-      return StringStatement.getRandom();
-    }
-
-    if (this.value.length > 0 && this.value.length < this.maxlength) {
-      const value = prng.nextInt(0, 3);
-
-      if (value === 0) {
-        return this.addMutation();
-      } else if (value === 1) {
-        return this.removeMutation();
-      } else if (value === 2) {
-        return this.replaceMutation();
+  mutate(sampler: SoliditySampler, depth: number): Statement {
+    if (prng.nextBoolean(sampler.deltaMutationProbability)) {
+      if (this.value.length > 0 && this.value.length < sampler.stringMaxLength) {
+        const value = prng.nextInt(0, 3);
+  
+        switch (value) {
+        case 0: {
+          return this.addMutation(sampler);
+        }
+        case 1: {
+          return this.removeMutation();
+        }
+        case 2: {
+          return this.replaceMutation(sampler);
+        }
+        default: {
+          return this.deltaMutation(sampler);
+        }
+        }
+      } else if (this.value.length > 0) {
+        const value = prng.nextInt(0, 2);
+  
+        if (value === 0) {
+          return this.removeMutation();
+        } else if (value === 1) {
+          return this.replaceMutation(sampler);
+        } else {
+          return this.deltaMutation(sampler);
+        }
       } else {
-        return this.deltaMutation();
-      }
-    } else if (this.value.length > 0) {
-      const value = prng.nextInt(0, 2);
-
-      if (value === 0) {
-        return this.removeMutation();
-      } else if (value === 1) {
-        return this.replaceMutation();
-      } else {
-        return this.deltaMutation();
+        return this.addMutation(sampler);
       }
     } else {
-      return this.addMutation();
+      return sampler.sampleArgument(depth, this.type)
     }
   }
 
-  addMutation(): StringStatement {
+  addMutation(sampler: SoliditySampler): StringStatement {
     const position = prng.nextInt(0, this.value.length - 1);
-    const addedChar = prng.pickOne(this.alphabet.split(""));
+    const addedChar = prng.pickOne([...sampler.stringAlphabet]);
 
     let newValue = "";
 
-    for (let i = 0; i < this.value.length; i++) {
-      if (i < position || i > position) {
-        newValue += this.value[i];
+    for (let index = 0; index < this.value.length; index++) {
+      if (index < position || index > position) {
+        newValue += this.value[index];
       } else {
         newValue += addedChar;
-        newValue += this.value[i];
+        newValue += this.value[index];
       }
     }
 
     return new StringStatement(
       this.type,
-      this.id,
-      newValue,
-      this.alphabet,
-      this.maxlength
+      this.uniqueId,
+      newValue
     );
   }
 
@@ -101,118 +91,63 @@ export class StringStatement extends PrimitiveStatement<string> {
 
     let newValue = "";
 
-    for (let i = 0; i < this.value.length; i++) {
-      if (i === position) {
+    for (let index = 0; index < this.value.length; index++) {
+      if (index === position) {
         continue;
       }
-      newValue += this.value[i];
+      newValue += this.value[index];
     }
 
     return new StringStatement(
       this.type,
-      this.id,
-      newValue,
-      this.alphabet,
-      this.maxlength
+      this.uniqueId,
+      newValue
     );
   }
 
-  replaceMutation(): StringStatement {
+  replaceMutation(sampler: SoliditySampler): StringStatement {
     const position = prng.nextInt(0, this.value.length - 1);
-    const newChar = prng.pickOne(this.alphabet.split(""));
+    const newChar = prng.pickOne([...sampler.stringAlphabet]);
 
     let newValue = "";
 
-    for (let i = 0; i < this.value.length; i++) {
-      if (i < position || i > position) {
-        newValue += this.value[i];
-      } else {
-        newValue += newChar;
-      }
+    for (let index = 0; index < this.value.length; index++) {
+      newValue += index < position || index > position ? this.value[index] : newChar;
     }
 
     return new StringStatement(
       this.type,
-      this.id,
-      newValue,
-      this.alphabet,
-      this.maxlength
+      this.uniqueId,
+      newValue
     );
   }
 
-  deltaMutation(): StringStatement {
+  deltaMutation(sampler: SoliditySampler): StringStatement {
     const position = prng.nextInt(0, this.value.length - 1);
     const oldChar = this.value[position];
-    const indexOldChar = this.alphabet.indexOf(oldChar);
+    const indexOldChar = sampler.stringAlphabet.indexOf(oldChar);
     const delta = prng.pickOne([-2, -1, 1, -2]);
     const newChar =
-      this.alphabet[(indexOldChar + delta) % this.alphabet.length];
+    sampler.stringAlphabet[(indexOldChar + delta) % sampler.stringAlphabet.length];
 
     let newValue = "";
 
-    for (let i = 0; i < this.value.length; i++) {
-      if (i < position || i > position) {
-        newValue += this.value[i];
-      } else {
-        newValue += newChar;
-      }
+    for (let index = 0; index < this.value.length; index++) {
+      newValue += index < position || index > position ? this.value[index] : newChar;
     }
 
     return new StringStatement(
       this.type,
-      this.id,
-      newValue,
-      this.alphabet,
-      this.maxlength
+      this.uniqueId,
+      newValue
     );
   }
 
   copy(): StringStatement {
     return new StringStatement(
       this.type,
-      this.id,
-      this.value,
-      this.alphabet,
-      this.maxlength
-    );
-  }
-
-  static getRandom(
-    type: Parameter = { type: "string", name: "noname" },
-    alphabet = CONFIG.stringAlphabet,
-    maxlength = CONFIG.stringMaxLength
-  ): StringStatement {
-    if (
-      CONFIG.constantPool &&
-      prng.nextDouble(0, 1) <= CONFIG.constantPoolProbability
-    ) {
-      const value = ConstantPool.getInstance().getString();
-      if (value != null) return StringStatement.createWithValue(type, value);
-    }
-
-    const valueLength = prng.nextInt(0, maxlength - 1);
-    let value = "";
-
-    for (let i = 0; i < valueLength; i++) {
-      value += prng.pickOne(alphabet.split(""));
-    }
-
-    return new StringStatement(
-      type,
-      prng.uniqueId(),
-      value,
-      alphabet,
-      maxlength
-    );
-  }
-
-  static createWithValue(type: Parameter, value: string): StringStatement {
-    return new StringStatement(
-      type,
-      prng.uniqueId(),
-      value,
-      CONFIG.stringAlphabet,
-      CONFIG.stringMaxLength
+      this.uniqueId,
+      this.value
     );
   }
 }

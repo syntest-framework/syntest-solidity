@@ -15,10 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
 import { Factory } from "../Factory";
 import { ConstantPool } from "./ConstantPool";
 import { ConstantVisitor } from "./ConstantVisitor";
-import { visit } from "@solidity-parser/parser"
+import { NodePath } from '../ast/NodePath';
+import { visit } from "../ast/visit";
 
 export class ConstantPoolFactory extends Factory {
     /**
@@ -28,7 +30,7 @@ export class ConstantPoolFactory extends Factory {
      */
     extract(
       filePath: string,
-      AST: t.Node,
+      ast: NodePath<SourceUnit>,
       constantPool?: ConstantPool | undefined
     ): ConstantPool {
       if (!constantPool) {
@@ -39,7 +41,7 @@ export class ConstantPoolFactory extends Factory {
         this.syntaxForgiving,
         constantPool
       );
-      visit(AST, constantVisitor);
+      visit(ast, constantVisitor);
   
       return constantPool;
     }
