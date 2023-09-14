@@ -17,27 +17,27 @@
  */
 
 export enum Visibility {
-    Public = "public",
-    Private = "private",
-    Internal = 'internal',
-    External = "external"
+  Public = "public",
+  Private = "private",
+  Internal = "internal",
+  External = "external",
 }
 
 export function getVisibility(visibility: string): Visibility {
-    switch (visibility) {
+  switch (visibility) {
     case Visibility.Public: {
-        return Visibility.Public
+      return Visibility.Public;
     }
     case Visibility.Private: {
-        return Visibility.Private
+      return Visibility.Private;
     }
     case Visibility.Internal: {
-        return Visibility.Internal
+      return Visibility.Internal;
     }
     case Visibility.External: {
-        return Visibility.External
+      return Visibility.External;
     }
     // No default
-    }
-    throw new Error('Invalid visibility')
+  }
+  throw new Error("Invalid visibility");
 }

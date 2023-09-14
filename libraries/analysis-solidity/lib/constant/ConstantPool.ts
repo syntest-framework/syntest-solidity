@@ -22,7 +22,6 @@ import { prng } from "@syntest/prng";
  * A pool with constants extracted from the subject under test.
  */
 export class ConstantPool {
-
   protected _numericPool: Map<number, number>;
   protected _integerPool: Map<number, number>;
   protected _stringPool: Map<string, number>;
@@ -33,17 +32,14 @@ export class ConstantPool {
   protected _stringCount: number;
   protected _addressCount: number;
 
-
   constructor() {
-    this._numericPool = new Map()
+    this._numericPool = new Map();
     this.addNumeric(Math.PI);
     this.addNumeric(Math.E);
 
-    this._integerPool = new Map()
-    this._stringPool = new Map()
-    this._addressPool = new Map()
-
-
+    this._integerPool = new Map();
+    this._stringPool = new Map();
+    this._addressPool = new Map();
   }
 
   addNumeric(value: number): void {
@@ -63,7 +59,7 @@ export class ConstantPool {
     }
     this._integerCount++;
   }
-  
+
   addString(value: string): void {
     if (this._stringPool.has(value)) {
       this._stringPool.set(value, this._stringPool.get(value) + 1);
@@ -81,7 +77,6 @@ export class ConstantPool {
     }
     this._addressCount++;
   }
-
 
   public getRandomNumeric(frequencyBased = false): number {
     if (this._numericPool.size === 0) {

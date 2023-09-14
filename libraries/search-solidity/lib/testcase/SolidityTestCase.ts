@@ -19,7 +19,7 @@
 import { Encoding, Decoder } from "@syntest/search";
 import { ConstructorCall } from "./statements/action/ConstructorCall";
 import { SoliditySampler } from "./sampling/SoliditySampler";
-import { Logger, getLogger } from "@syntest/logging"
+import { Logger, getLogger } from "@syntest/logging";
 /**
  * SolidityTestCase class
  *
@@ -27,7 +27,7 @@ import { Logger, getLogger } from "@syntest/logging"
  * @author Mitchell Olsthoorn
  */
 export class SolidityTestCase extends Encoding {
-  protected static LOGGER: Logger
+  protected static LOGGER: Logger;
   private _root: ConstructorCall;
 
   /**
@@ -37,7 +37,7 @@ export class SolidityTestCase extends Encoding {
    */
   constructor(root: ConstructorCall) {
     super();
-    SolidityTestCase.LOGGER = getLogger("SolidityTestCase")
+    SolidityTestCase.LOGGER = getLogger("SolidityTestCase");
     this._root = root;
   }
 

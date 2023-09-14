@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const web3Utils = require("web3-utils");
-const DataCollector = require("solidity-coverage/lib/collector");
+import web3Utils from "web3-utils";
+import DataCollector from "solidity-coverage/lib/collector";
 
 /**
  * @author Annibale Panichella
@@ -91,4 +91,4 @@ class SyntestDataCollector extends DataCollector {
   }
 }
 
-module.exports = SyntestDataCollector;
+export default SyntestDataCollector;

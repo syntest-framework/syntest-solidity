@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 export class Hub {
-    protected path: string
-    protected code: string
-    constructor(path: string, code: string) {
-        this.code = code
-    }
+  protected path: string;
+  protected code: string;
+  constructor(path: string, code: string) {
+    this.code = code;
+  }
 
-    getCode() {
-        return this.code
-    }
+  getCode() {
+    return this.code;
+  }
 }

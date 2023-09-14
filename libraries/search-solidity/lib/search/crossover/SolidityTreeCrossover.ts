@@ -71,6 +71,7 @@ export class SolidityTreeCrossover extends Crossover<SolidityTestCase> {
       const pair = queueA.shift();
 
       if (pair.child.hasChildren()) {
+        // eslint-disable-next-line unicorn/no-array-for-each
         pair.child.getChildren().forEach((child: Statement, index: number) => {
           queueA.push({
             parent: pair.child,
@@ -135,6 +136,7 @@ export class SolidityTreeCrossover extends Crossover<SolidityTestCase> {
       const pair = queue.shift();
 
       if (pair.child.hasChildren()) {
+        // eslint-disable-next-line unicorn/no-array-for-each
         pair.child.getChildren().forEach((child: Statement, index: number) => {
           queue.push({
             parent: pair.child,

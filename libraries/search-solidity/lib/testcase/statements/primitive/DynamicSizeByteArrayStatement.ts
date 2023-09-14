@@ -17,14 +17,18 @@
  */
 
 import { prng } from "@syntest/prng";
-import { PrimitiveStatement } from "../primitive/PrimitiveStatement";
-import { FixedSizeByteArray, Parameter } from "@syntest/analysis-solidity";
+import { PrimitiveStatement } from "./PrimitiveStatement";
+import { DynamicSizeByteArray, Parameter } from "@syntest/analysis-solidity";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { Statement } from "../Statement";
 
 /**
  * Special statement specific to solidity contracts
  */
-export class FixedSizeByteArrayStatement extends PrimitiveStatement<number[], FixedSizeByteArray> {
+export class DynamicSizeByteArrayStatement extends PrimitiveStatement<
+  number[],
+  DynamicSizeByteArray
+> {
   public static upper_bound = 256;
   public static lower_bound = 0;
 
@@ -33,7 +37,9 @@ export class FixedSizeByteArrayStatement extends PrimitiveStatement<number[], Fi
   }
 
   copy() {
-    return new FixedSizeByteArrayStatement(this.type, this.uniqueId, [...this.value]);
+    return new DynamicSizeByteArrayStatement(this.type, prng.uniqueId(), [
+      ...this.value,
+    ]);
   }
 
   mutate(sampler: SoliditySampler, depth: number): Statement {
@@ -44,12 +50,22 @@ export class FixedSizeByteArrayStatement extends PrimitiveStatement<number[], Fi
       const newBytes = [...this.value];
 
       const newValue = Math.round(newBytes[index] + change);
-      newBytes[index] = Math.max(FixedSizeByteArrayStatement.lower_bound, newValue);
-      newBytes[index] = Math.min(FixedSizeByteArrayStatement.upper_bound, newValue);
+      newBytes[index] = Math.max(
+        DynamicSizeByteArrayStatement.lower_bound,
+        newValue
+      );
+      newBytes[index] = Math.min(
+        DynamicSizeByteArrayStatement.upper_bound,
+        newValue
+      );
 
-      return new FixedSizeByteArrayStatement(this.type, prng.uniqueId(), newBytes);
+      return new DynamicSizeByteArrayStatement(
+        this.type,
+        prng.uniqueId(),
+        newBytes
+      );
     } else {
-      return sampler.sampleArgument(depth, this.type)
+      return sampler.sampleArgument(depth, this.type);
     }
   }
 }

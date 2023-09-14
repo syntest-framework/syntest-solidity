@@ -30,8 +30,9 @@ export class BoolStatement extends PrimitiveStatement<boolean, Bool> {
   }
 
   mutate(sampler: SoliditySampler) {
-    return prng.nextBoolean(sampler.deltaMutationProbability) ? new BoolStatement(this.type, this.uniqueId, !this.value) : BoolStatement.getRandom(this.type);
-
+    return prng.nextBoolean(sampler.deltaMutationProbability)
+      ? new BoolStatement(this.type, this.uniqueId, !this.value)
+      : BoolStatement.getRandom(this.type);
   }
 
   copy() {

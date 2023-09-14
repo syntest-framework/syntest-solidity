@@ -99,7 +99,7 @@ export class RequireObjectiveFunction<
     });
 
     // find the closest covered branch to the objective branch
-    let closestHitNode = null;
+    let closestHitNode;
     let approachLevel = Number.MAX_VALUE;
     for (const n of this._subject.cfg.nodes) {
       const traces = executionResult
@@ -127,10 +127,7 @@ export class RequireObjectiveFunction<
       return Number.MAX_VALUE;
     }
 
-    let branchDistance: number;
-
-    if (closestHitNode.type === "function") branchDistance = 1;
-    else branchDistance = this.computeBranchDistance(closestHitNode);
+    const branchDistance: number = closestHitNode.type === "function" ? 1 : this.calculateDistance(closestHitNode);
 
     // add the distances
     return approachLevel + branchDistance;

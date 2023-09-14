@@ -22,7 +22,19 @@ import { SolidityRandomSampler } from "../../../lib/testcase/sampling/SolidityRa
 
 const expect = chai.expect;
 
-const mockSampler = new SolidityRandomSampler(undefined, undefined, false, 0, false, 0, 0, "abcdef", 10, 0.5, true)
+const mockSampler = new SolidityRandomSampler(
+  undefined,
+  undefined,
+  false,
+  0,
+  false,
+  0,
+  0,
+  "abcdef",
+  10,
+  0.5,
+  true
+);
 
 describe("StringStatement", () => {
   it("Add mutation increases statement's length by one", () => {

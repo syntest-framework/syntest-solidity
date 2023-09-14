@@ -32,19 +32,18 @@ import { Statement } from "../Statement";
  * Documentation on BigNumber:
  * https://www.npmjs.com/package/bignumber.js
  */
-export class IntegerStatement extends PrimitiveStatement<BigNumber, Int | Uint> {
+export class IntegerStatement extends PrimitiveStatement<
+  BigNumber,
+  Int | Uint
+> {
   private readonly _upper_bound: BigNumber;
   private readonly _lower_bound: BigNumber;
 
-  constructor(
-    type: Parameter<Int | Uint>,
-    uniqueId: string,
-    value: BigNumber
-  ) {
+  constructor(type: Parameter<Int | Uint>, uniqueId: string, value: BigNumber) {
     super(type, uniqueId, value);
     if (type.type.signed) {
       this._upper_bound = new BigNumber(2).pow(type.type.bits - 1).minus(1);
-      this._lower_bound = this.upper_bound.negated()
+      this._lower_bound = this.upper_bound.negated();
     } else {
       this._upper_bound = new BigNumber(2).pow(type.type.bits).minus(1);
       this._lower_bound = new BigNumber(0);
@@ -56,7 +55,7 @@ export class IntegerStatement extends PrimitiveStatement<BigNumber, Int | Uint> 
       return this.deltaMutation(sampler);
     }
 
-    return sampler.sampleArgument(depth, this.type)
+    return sampler.sampleArgument(depth, this.type);
   }
 
   deltaMutation(sampler: SoliditySampler): Statement {
@@ -79,18 +78,14 @@ export class IntegerStatement extends PrimitiveStatement<BigNumber, Int | Uint> 
       }
     }
 
-    return new IntegerStatement(
-      this.type,
-      this.uniqueId,
-      newValue
-    );
+    return new IntegerStatement(this.type, this.uniqueId, newValue);
   }
 
   copy() {
     return new IntegerStatement(
       this.type,
       this.uniqueId,
-      new BigNumber(this.value),
+      new BigNumber(this.value)
     );
   }
 
@@ -107,6 +102,6 @@ export class IntegerStatement extends PrimitiveStatement<BigNumber, Int | Uint> 
   }
 
   override get value(): BigNumber {
-    return new BigNumber(this._value.toPrecision(0))
+    return new BigNumber(this._value.toPrecision(0));
   }
 }

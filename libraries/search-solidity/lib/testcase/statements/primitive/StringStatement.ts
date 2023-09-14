@@ -26,29 +26,31 @@ import { Statement } from "../Statement";
  * String statement
  */
 export class StringStatement extends PrimitiveStatement<string, StringType> {
-
   mutate(sampler: SoliditySampler, depth: number): Statement {
     if (prng.nextBoolean(sampler.deltaMutationProbability)) {
-      if (this.value.length > 0 && this.value.length < sampler.stringMaxLength) {
+      if (
+        this.value.length > 0 &&
+        this.value.length < sampler.stringMaxLength
+      ) {
         const value = prng.nextInt(0, 3);
-  
+
         switch (value) {
-        case 0: {
-          return this.addMutation(sampler);
-        }
-        case 1: {
-          return this.removeMutation();
-        }
-        case 2: {
-          return this.replaceMutation(sampler);
-        }
-        default: {
-          return this.deltaMutation(sampler);
-        }
+          case 0: {
+            return this.addMutation(sampler);
+          }
+          case 1: {
+            return this.removeMutation();
+          }
+          case 2: {
+            return this.replaceMutation(sampler);
+          }
+          default: {
+            return this.deltaMutation(sampler);
+          }
         }
       } else if (this.value.length > 0) {
         const value = prng.nextInt(0, 2);
-  
+
         if (value === 0) {
           return this.removeMutation();
         } else if (value === 1) {
@@ -60,7 +62,7 @@ export class StringStatement extends PrimitiveStatement<string, StringType> {
         return this.addMutation(sampler);
       }
     } else {
-      return sampler.sampleArgument(depth, this.type)
+      return sampler.sampleArgument(depth, this.type);
     }
   }
 
@@ -79,11 +81,7 @@ export class StringStatement extends PrimitiveStatement<string, StringType> {
       }
     }
 
-    return new StringStatement(
-      this.type,
-      this.uniqueId,
-      newValue
-    );
+    return new StringStatement(this.type, this.uniqueId, newValue);
   }
 
   removeMutation(): StringStatement {
@@ -98,11 +96,7 @@ export class StringStatement extends PrimitiveStatement<string, StringType> {
       newValue += this.value[index];
     }
 
-    return new StringStatement(
-      this.type,
-      this.uniqueId,
-      newValue
-    );
+    return new StringStatement(this.type, this.uniqueId, newValue);
   }
 
   replaceMutation(sampler: SoliditySampler): StringStatement {
@@ -112,14 +106,11 @@ export class StringStatement extends PrimitiveStatement<string, StringType> {
     let newValue = "";
 
     for (let index = 0; index < this.value.length; index++) {
-      newValue += index < position || index > position ? this.value[index] : newChar;
+      newValue +=
+        index < position || index > position ? this.value[index] : newChar;
     }
 
-    return new StringStatement(
-      this.type,
-      this.uniqueId,
-      newValue
-    );
+    return new StringStatement(this.type, this.uniqueId, newValue);
   }
 
   deltaMutation(sampler: SoliditySampler): StringStatement {
@@ -128,26 +119,21 @@ export class StringStatement extends PrimitiveStatement<string, StringType> {
     const indexOldChar = sampler.stringAlphabet.indexOf(oldChar);
     const delta = prng.pickOne([-2, -1, 1, -2]);
     const newChar =
-    sampler.stringAlphabet[(indexOldChar + delta) % sampler.stringAlphabet.length];
+      sampler.stringAlphabet[
+        (indexOldChar + delta) % sampler.stringAlphabet.length
+      ];
 
     let newValue = "";
 
     for (let index = 0; index < this.value.length; index++) {
-      newValue += index < position || index > position ? this.value[index] : newChar;
+      newValue +=
+        index < position || index > position ? this.value[index] : newChar;
     }
 
-    return new StringStatement(
-      this.type,
-      this.uniqueId,
-      newValue
-    );
+    return new StringStatement(this.type, this.uniqueId, newValue);
   }
 
   copy(): StringStatement {
-    return new StringStatement(
-      this.type,
-      this.uniqueId,
-      this.value
-    );
+    return new StringStatement(this.type, this.uniqueId, this.value);
   }
 }

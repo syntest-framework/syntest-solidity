@@ -34,7 +34,10 @@ import { Statement } from "../Statement";
  * Documentation on BigNumber:
  * https://www.npmjs.com/package/bignumber.js
  */
-export class NumericStatement extends PrimitiveStatement<BigNumber, Fixed | Ufixed> {
+export class NumericStatement extends PrimitiveStatement<
+  BigNumber,
+  Fixed | Ufixed
+> {
   private readonly _upper_bound: BigNumber;
   private readonly _lower_bound: BigNumber;
 
@@ -46,7 +49,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber, Fixed | Ufix
     super(type, uniqueId, value);
     if (type.type.signed) {
       this._upper_bound = new BigNumber(2).pow(type.type.bits - 1).minus(1);
-      this._lower_bound = this.upper_bound.negated()
+      this._lower_bound = this.upper_bound.negated();
     } else {
       this._upper_bound = new BigNumber(2).pow(type.type.bits).minus(1);
       this._lower_bound = new BigNumber(0);
@@ -58,7 +61,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber, Fixed | Ufix
       return this.deltaMutation(sampler);
     }
 
-    return sampler.sampleArgument(depth, this.type)
+    return sampler.sampleArgument(depth, this.type);
   }
 
   deltaMutation(sampler: SoliditySampler) {
@@ -81,11 +84,7 @@ export class NumericStatement extends PrimitiveStatement<BigNumber, Fixed | Ufix
       }
     }
 
-    return new NumericStatement(
-      this.type,
-      this.uniqueId,
-      newValue
-    );
+    return new NumericStatement(this.type, this.uniqueId, newValue);
   }
 
   copy() {
@@ -95,7 +94,6 @@ export class NumericStatement extends PrimitiveStatement<BigNumber, Fixed | Ufix
       new BigNumber(this.value)
     );
   }
-
 
   get signed(): boolean {
     return this.type.type.signed;

@@ -5,5 +5,10 @@
     "rootDir": ".",
     "composite": true
   },
-  "include": ["**/*.ts", "../../analysis-solidity/lib/cfg/ControlFlowGraphFactory.ts", "../../analysis-solidity/lib/constant/ConstantPool.ts", "../../instrumentation-solidity/lib/bin.ts"]
+  "include": [
+    "**/*.ts",
+    "../../analysis-solidity/lib/cfg/ControlFlowGraphFactory.ts",
+    "../../analysis-solidity/lib/constant/ConstantPool.ts",
+    "../../instrumentation-solidity/lib/bin.ts"
+  ]
 }

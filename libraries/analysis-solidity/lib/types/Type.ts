@@ -21,111 +21,125 @@ import { StateMutability } from "./StateMutability";
 import { Visibility } from "./Visibility";
 
 export enum TypeEnum {
-    ADDRESS = 'address',
-    BOOL = 'bool',
+  ADDRESS = "address",
+  BOOL = "bool",
 
-    INT = 'int',
-    FIXED = 'fixed',
-    FIXED_SIZE_BYTE_ARRAY = 'fixed-size-byte-array',
-    DYNAMIC_SIZE_BYTE_ARRAY = 'dynamic-size-byte-array',
+  INT = "int",
+  FIXED = "fixed",
+  FIXED_SIZE_BYTE_ARRAY = "fixed-size-byte-array",
+  DYNAMIC_SIZE_BYTE_ARRAY = "dynamic-size-byte-array",
 
-    STRING = 'string',
+  STRING = "string",
 
-    CONTRACT = 'contract', // TODO
-    USER_DEFINED = 'user-defined', 
-    FUNCTION = 'function', // TODO
+  CONTRACT = "contract", // TODO
+  USER_DEFINED = "user-defined",
+  FUNCTION = "function", // TODO
 
-    MAPPING = 'mapping',
-    ARRAY = 'array'
+  MAPPING = "mapping",
+  ARRAY = "array",
 }
 
 export type BaseType = {
-    /**
-     * Type of the parameter.
-     */
-    type: TypeEnum;
-}
+  /**
+   * Type of the parameter.
+   */
+  type: TypeEnum;
+};
 
 export type Address = {
-    type: TypeEnum.ADDRESS
-    stateMutability: StateMutability | null
-}
+  type: TypeEnum.ADDRESS;
+  stateMutability: StateMutability | null;
+};
 
 export type Bool = {
-    type: TypeEnum.BOOL
-    stateMutability: StateMutability | null
-}
+  type: TypeEnum.BOOL;
+  stateMutability: StateMutability | null;
+};
 
 export type Int = {
-    type: TypeEnum.INT
-    bits: number
-    signed: true
-    stateMutability: StateMutability | null
-}
+  type: TypeEnum.INT;
+  bits: number;
+  signed: true;
+  stateMutability: StateMutability | null;
+};
 
 export type Uint = {
-    type: TypeEnum.INT
-    bits: number
-    signed: false
-    stateMutability: StateMutability | null
-}
+  type: TypeEnum.INT;
+  bits: number;
+  signed: false;
+  stateMutability: StateMutability | null;
+};
 
 export type Fixed = {
-    type: TypeEnum.FIXED
-    bits: number
-    signed: true
-    decimals: number
-    stateMutability: StateMutability | null
-}
+  type: TypeEnum.FIXED;
+  bits: number;
+  signed: true;
+  decimals: number;
+  stateMutability: StateMutability | null;
+};
 
 export type Ufixed = {
-    type: TypeEnum.FIXED
-    bits: number
-    signed: false
-    decimals: number
-    stateMutability: StateMutability | null
-}
+  type: TypeEnum.FIXED;
+  bits: number;
+  signed: false;
+  decimals: number;
+  stateMutability: StateMutability | null;
+};
 
 export type FixedSizeByteArray = {
-    type: TypeEnum.FIXED_SIZE_BYTE_ARRAY
-    bytes: number
-}
+  type: TypeEnum.FIXED_SIZE_BYTE_ARRAY;
+  bytes: number;
+};
 
 export type DynamicSizeByteArray = {
-    type: TypeEnum.DYNAMIC_SIZE_BYTE_ARRAY
-}
+  type: TypeEnum.DYNAMIC_SIZE_BYTE_ARRAY;
+};
 
 export type StringType = {
-    type: TypeEnum.STRING
-}
+  type: TypeEnum.STRING;
+};
 
 export type Contract = {
-    type: TypeEnum.CONTRACT
-}
+  type: TypeEnum.CONTRACT;
+};
 
 export type UserDefined = {
-    type: TypeEnum.USER_DEFINED,
-    name: string
-}
+  type: TypeEnum.USER_DEFINED;
+  name: string;
+};
 
 export type FunctionType = {
-    type: TypeEnum.FUNCTION
-    parameters: Parameter[]
-    returns: Parameter[]
-    visibility: Visibility
-    stateMutability: StateMutability | null
-}
+  type: TypeEnum.FUNCTION;
+  parameters: Parameter[];
+  returns: Parameter[];
+  visibility: Visibility;
+  stateMutability: StateMutability | null;
+};
 
 export type Mapping = {
-    type: TypeEnum.MAPPING
-    keyType: Type
-    valueType: Type
-}
+  type: TypeEnum.MAPPING;
+  keyType: Type;
+  valueType: Type;
+};
 
 export type ArrayType = {
-    type: TypeEnum.ARRAY
-    baseType: Type
-    // TODO length
-}
+  type: TypeEnum.ARRAY;
+  baseType: Type;
+  // TODO length
+};
 
-export type Type = Address | Bool | Int | Uint | Fixed | Ufixed | FixedSizeByteArray | DynamicSizeByteArray | StringType | Contract | UserDefined | FunctionType | Mapping | ArrayType
+export type Type =
+  | Address
+  | Bool
+  | Int
+  | Uint
+  | Fixed
+  | Ufixed
+  | FixedSizeByteArray
+  | DynamicSizeByteArray
+  | StringType
+  | Contract
+  | UserDefined
+  | FunctionType
+  | Mapping
+  | ArrayType;

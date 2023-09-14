@@ -19,31 +19,30 @@ import { SourceUnit } from "@solidity-parser/parser/dist/src/ast-types";
 import { Factory } from "../Factory";
 import { ConstantPool } from "./ConstantPool";
 import { ConstantVisitor } from "./ConstantVisitor";
-import { NodePath } from '../ast/NodePath';
+import { NodePath } from "../ast/NodePath";
 import { visit } from "../ast/visit";
 
 export class ConstantPoolFactory extends Factory {
-    /**
-     * Generate function map for specified target.
-     *
-     * @param AST The AST of the target
-     */
-    extract(
-      filePath: string,
-      ast: NodePath<SourceUnit>,
-      constantPool?: ConstantPool | undefined
-    ): ConstantPool {
-      if (!constantPool) {
-        constantPool = new ConstantPool();
-      }
-      const constantVisitor = new ConstantVisitor(
-        filePath,
-        this.syntaxForgiving,
-        constantPool
-      );
-      visit(ast, constantVisitor);
-  
-      return constantPool;
+  /**
+   * Generate function map for specified target.
+   *
+   * @param AST The AST of the target
+   */
+  extract(
+    filePath: string,
+    ast: NodePath<SourceUnit>,
+    constantPool?: ConstantPool | undefined
+  ): ConstantPool {
+    if (!constantPool) {
+      constantPool = new ConstantPool();
     }
+    const constantVisitor = new ConstantVisitor(
+      filePath,
+      this.syntaxForgiving,
+      constantPool
+    );
+    visit(ast, constantVisitor);
+
+    return constantPool;
   }
-  
+}

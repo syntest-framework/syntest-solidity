@@ -15,67 +15,108 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ArgumentsObject, PluginType, CrossoverPlugin, FileSelector, Launcher, ObjectiveManagerPlugin, ProcreationPlugin, PropertyName, SearchAlgorithmPlugin, SecondaryObjectivePlugin, TargetSelector, TerminationTriggerPlugin } from "@syntest/base-language";
+import {
+  ArgumentsObject,
+  PluginType,
+  CrossoverPlugin,
+  FileSelector,
+  Launcher,
+  ObjectiveManagerPlugin,
+  ProcreationPlugin,
+  PropertyName,
+  SearchAlgorithmPlugin,
+  SecondaryObjectivePlugin,
+  TargetSelector,
+  TerminationTriggerPlugin,
+} from "@syntest/base-language";
 import { TestCommandOptions } from "./commands/test";
-import { ItemizationItem, TableObject, UserInterface } from "@syntest/cli-graphics";
+import {
+  ItemizationItem,
+  TableObject,
+  UserInterface,
+} from "@syntest/cli-graphics";
 import { Logger, getLogger } from "@syntest/logging";
 import { MetricManager } from "@syntest/metric";
 import { ModuleManager } from "@syntest/module";
 import { StorageManager } from "@syntest/storage";
-import { Archive, EncodingSampler, IterationBudget, EvaluationBudget, SearchTimeBudget, TotalTimeBudget, BudgetManager, BudgetType, TerminationManager } from "@syntest/search";
-import {SolidityDecoder, SolidityRandomSampler, SolidityRunner, SoliditySampler, SoliditySubject, SoliditySuiteBuilder, SolidityTestCase} from "@syntest/search-solidity"
+import {
+  Archive,
+  EncodingSampler,
+  IterationBudget,
+  EvaluationBudget,
+  SearchTimeBudget,
+  TotalTimeBudget,
+  BudgetManager,
+  BudgetType,
+  TerminationManager,
+} from "@syntest/search";
+import {
+  SolidityDecoder,
+  SolidityRandomSampler,
+  SolidityRunner,
+  SoliditySampler,
+  SoliditySubject,
+  SoliditySuiteBuilder,
+  SolidityTestCase,
+} from "@syntest/search-solidity";
 
 import * as path from "node:path";
 import TruffleConfig = require("@truffle/config");
 import API = require("./api");
 
-import {
-  createTruffleConfig,
-} from "./util/fileSystem";
+import { createTruffleConfig } from "./util/fileSystem";
 
 import { setNetwork, setNetworkFrom } from "./util/network";
 import { SourceFactory } from "@syntest/analysis";
-import { AbstractSyntaxTreeFactory, ConstantPoolFactory, ControlFlowGraphFactory, DependencyFactory, Instrumenter, RootContext, TargetFactory, Target } from "@syntest/analysis-solidity";
+import {
+  AbstractSyntaxTreeFactory,
+  ConstantPoolFactory,
+  ControlFlowGraphFactory,
+  DependencyFactory,
+  Instrumenter,
+  RootContext,
+  TargetFactory,
+  Target,
+} from "@syntest/analysis-solidity";
 const Web3 = require("web3");
 
 export type SolidityArguments = ArgumentsObject & TestCommandOptions;
 
 export class SolidityLauncher extends Launcher {
-    private static LOGGER: Logger;
+  private static LOGGER: Logger;
 
-    private targets: Target[];
+  private targets: Target[];
 
-    private rootContext: RootContext;
-    private archive: Archive<SolidityTestCase>;
-  
-    private dependencyMap: Map<string, string[]>;
-  
-    private coveredInPath = new Map<string, Archive<SolidityTestCase>>();
-  
-    private decoder: SolidityDecoder;
-    private runner: SolidityRunner;
+  private rootContext: RootContext;
+  private archive: Archive<SolidityTestCase>;
 
-    private api;
-    private config;
-    private truffle;
-    
-    constructor(
-        arguments_: SolidityArguments,
-        moduleManager: ModuleManager,
-        metricManager: MetricManager,
-        storageManager: StorageManager,
-        userInterface: UserInterface
-      ) {
-        super(
-          arguments_,
-          moduleManager,
-          metricManager,
-          storageManager,
-          userInterface
-        );
-        SolidityLauncher.LOGGER = getLogger("SolidityLauncher");
-      }
+  private dependencyMap: Map<string, string[]>;
 
+  private coveredInPath = new Map<string, Archive<SolidityTestCase>>();
+
+  private decoder: SolidityDecoder;
+  private runner: SolidityRunner;
+
+  private api;
+  private config;
+  private truffle;
+
+  constructor(
+    arguments_: SolidityArguments,
+    moduleManager: ModuleManager,
+    metricManager: MetricManager,
+    storageManager: StorageManager,
+    userInterface: UserInterface
+  ) {
+    super(
+      arguments_,
+      moduleManager,
+      metricManager,
+      storageManager,
+      userInterface
+    );
+    SolidityLauncher.LOGGER = getLogger("SolidityLauncher");
+  }
 
   async initialize(): Promise<void> {
     SolidityLauncher.LOGGER.info("Initialization started");
@@ -111,7 +152,7 @@ export class SolidityLauncher extends Launcher {
         [this.arguments_.testDirectory],
         [this.arguments_.logDirectory],
         [this.arguments_.instrumentedDirectory],
-        ['artifacts'] // TODO make config param
+        ["artifacts"], // TODO make config param
       ],
       true
     );
@@ -120,10 +161,10 @@ export class SolidityLauncher extends Launcher {
       this.arguments_.tempSyntestDirectory,
       this.arguments_.fid,
       this.arguments_.testDirectory
-    )
+    );
 
     await createTruffleConfig(temporaryTestDirectory);
-    const config = TruffleConfig.default()
+    const config = TruffleConfig.default();
     config.workingDir = config.working_directory;
     config.contractsDir = config.contracts_directory;
     config.testDir = config.test_directory;
@@ -147,7 +188,8 @@ export class SolidityLauncher extends Launcher {
     config.testDir = temporaryTestDirectory;
     config.compilers = {
       solc: {
-        version: (<SolidityArguments>(<unknown>this.arguments_)).solcCompilerVersion,
+        version: (<SolidityArguments>(<unknown>this.arguments_))
+          .solcCompilerVersion,
         parser: "solcjs",
         settings: {
           optimizer: {
@@ -178,7 +220,7 @@ export class SolidityLauncher extends Launcher {
 
     // TODO rootcontext
 
-    const sourceFactory = new SourceFactory()
+    const sourceFactory = new SourceFactory();
     const abstractSyntaxTreeFactory = new AbstractSyntaxTreeFactory();
     const targetFactory = new TargetFactory(
       (<SolidityArguments>this.arguments_).syntaxForgiving
@@ -250,9 +292,9 @@ export class SolidityLauncher extends Launcher {
       `${timeInMs}`
     );
 
-    this.api = api
-    this.config = config
-    this.truffle = truffle
+    this.api = api;
+    this.config = config;
+    this.truffle = truffle;
 
     SolidityLauncher.LOGGER.info("Initialization done");
   }
@@ -424,7 +466,7 @@ export class SolidityLauncher extends Launcher {
         this.arguments_.logDirectory
       )
     );
-    
+
     this.runner = new SolidityRunner(
       this.storageManager,
       this.decoder,
@@ -488,7 +530,7 @@ export class SolidityLauncher extends Launcher {
       true,
       false
     );
-    this.config.test_files = paths
+    this.config.test_files = paths;
     await suiteBuilder.runSuite(paths, this.archive.size);
 
     // reset states
@@ -670,7 +712,7 @@ export class SolidityLauncher extends Launcher {
       this.arguments_.stringAlphabet
     );
 
-    const rootTargets = currentSubject.getPossibleActions()
+    const rootTargets = currentSubject.getPossibleActions();
 
     if (rootTargets.length === 0) {
       SolidityLauncher.LOGGER.info(

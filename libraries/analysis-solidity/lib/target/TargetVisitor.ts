@@ -24,7 +24,12 @@ import {
 } from "@solidity-parser/parser/dist/src/ast-types";
 
 import { TargetType } from "@syntest/analysis";
-import { ContractKind, ContractTarget, FunctionTarget, SubTarget } from "./Target";
+import {
+  ContractKind,
+  ContractTarget,
+  FunctionTarget,
+  SubTarget,
+} from "./Target";
 import { AbstractSyntaxTreeVisitor } from "../ast/AbstractSyntaxTreeVisitor";
 import { NodePath } from "../ast/NodePath";
 import { Type, TypeEnum } from "../types/Type";
@@ -44,18 +49,15 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
     return this._subTargets;
   }
 
-  constructor(
-    filePath: string,
-    syntaxForgiving: boolean
-  ) {
+  constructor(filePath: string, syntaxForgiving: boolean) {
     super(filePath, syntaxForgiving);
     this._subTargets = [];
   }
 
   override ContractDefinition = (path: NodePath<ContractDefinition>): void => {
     const name = path.node.name;
-    const id = this._getNodeId(path)
-    
+    const id = this._getNodeId(path);
+
     let kind: ContractKind;
     switch (path.node.kind) {
       case "contract": {
@@ -81,31 +83,33 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
       name: name,
       type: TargetType.CLASS,
       kind: kind,
-      bases: baseContracts
-    }
+      bases: baseContracts,
+    };
 
-    this._subTargets.push(target)
+    this._subTargets.push(target);
 
     this._current = target;
-  }
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  override "ContractDefinition:exit" = (path: NodePath<ContractDefinition>): void => {
+  override "ContractDefinition:exit" = (
+    path: NodePath<ContractDefinition>
+  ): void => {
     this._current = undefined;
-  }
+  };
 
   override FunctionDefinition = (path: NodePath<FunctionDefinition>): void => {
     // Skip function if we are not in a contract
     if (!this._current) return;
 
     let name = path.node.name;
-    const id = this._getNodeId(path)
+    const id = this._getNodeId(path);
 
     if (name === null && path.node.isConstructor) {
       name = this._current.name;
     }
 
-    const parameters = path.get('parameters').map((parameter) => {
+    const parameters = path.get("parameters").map((parameter) => {
       const functionParameter: Parameter = {
         name: parameter.node.name,
         type: this.resolveTypes(parameter.node.typeName),
@@ -137,20 +141,20 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
       }
     }
 
-    const mutability = getStateMutability(path.node.stateMutability)
+    const mutability = getStateMutability(path.node.stateMutability);
 
     const overrides = path.node.override
-      ? path.get('override').map((override) => {
+      ? path.get("override").map((override) => {
           return override.node.namePath;
         })
       : [];
 
-    const modifiers = path.get('modifiers').map((modifier) => {
+    const modifiers = path.get("modifiers").map((modifier) => {
       return modifier.node.name;
     });
 
-    const returnParameters = path.has('returnParameters')
-      ? path.get('returnParameters').map((parameter) => {
+    const returnParameters = path.has("returnParameters")
+      ? path.get("returnParameters").map((parameter) => {
           const functionParameter: Parameter = {
             name: parameter.node.name,
             type: this.resolveTypes(parameter.node.typeName),
@@ -174,8 +178,8 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
       returnParameters: returnParameters,
     };
 
-    this._subTargets.push(contractFunction)
-  }
+    this._subTargets.push(contractFunction);
+  };
 
   private resolveParameters(parameters: VariableDeclaration[]): Parameter[] {
     return parameters.map((parameter) => {
@@ -184,8 +188,8 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
         type: this.resolveTypes(parameter.typeName),
       };
       return functionParameter;
-    })
-  } 
+    });
+  }
 
   /**
    * Resolve a Solidity type name to a string.
@@ -196,60 +200,70 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
   public resolveTypes(type: TypeName): Type {
     switch (type.type) {
       case "ElementaryTypeName": {
-        if (type.name === 'address') {
+        if (type.name === "address") {
           return {
             type: TypeEnum.ADDRESS,
-            stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
-          }
-        }  else if (type.name.startsWith('int')) {
+            stateMutability: type.stateMutability
+              ? getStateMutability(type.stateMutability)
+              : undefined,
+          };
+        } else if (type.name.startsWith("int")) {
           return {
             type: TypeEnum.INT,
-            bits: Number.parseInt(type.name.split('int')[0]),
+            bits: Number.parseInt(type.name.split("int")[0]),
             signed: true,
-            stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
-          }
-        } else if (type.name.startsWith('uint')) {
+            stateMutability: type.stateMutability
+              ? getStateMutability(type.stateMutability)
+              : undefined,
+          };
+        } else if (type.name.startsWith("uint")) {
           return {
             type: TypeEnum.INT,
-            bits: Number.parseInt(type.name.split('uint')[0]),
+            bits: Number.parseInt(type.name.split("uint")[0]),
             signed: false,
-            stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
-          }
-        } else if (type.name.startsWith('fixed')) {
+            stateMutability: type.stateMutability
+              ? getStateMutability(type.stateMutability)
+              : undefined,
+          };
+        } else if (type.name.startsWith("fixed")) {
           return {
             type: TypeEnum.INT,
-            bits: Number.parseInt(type.name.split('fixed')[0]),
+            bits: Number.parseInt(type.name.split("fixed")[0]),
             signed: true,
-            stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
-          }
-        } else if (type.name.startsWith('ufixed')) {
+            stateMutability: type.stateMutability
+              ? getStateMutability(type.stateMutability)
+              : undefined,
+          };
+        } else if (type.name.startsWith("ufixed")) {
           return {
             type: TypeEnum.INT,
-            bits: Number.parseInt(type.name.split('ufixed')[0]),
+            bits: Number.parseInt(type.name.split("ufixed")[0]),
             signed: false,
-            stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
-          }
+            stateMutability: type.stateMutability
+              ? getStateMutability(type.stateMutability)
+              : undefined,
+          };
         }
 
-        throw new Error(`Unsupported type detected: ${type.type}`)
+        throw new Error(`Unsupported type detected: ${type.type}`);
       }
       case "UserDefinedTypeName": {
         return {
           type: TypeEnum.USER_DEFINED,
-          name: type.namePath
-        }
+          name: type.namePath,
+        };
       }
       case "Mapping": {
         return {
           type: TypeEnum.MAPPING,
           keyType: this.resolveTypes(type.keyType),
-          valueType: this.resolveTypes(type.valueType)
-        }
+          valueType: this.resolveTypes(type.valueType),
+        };
       }
       case "ArrayTypeName": {
         return {
           type: TypeEnum.ARRAY,
-          baseType: this.resolveTypes(type.baseTypeName)
+          baseType: this.resolveTypes(type.baseTypeName),
           // TODO lenght or something type.length
         };
       }
@@ -259,8 +273,10 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
           parameters: this.resolveParameters(type.parameterTypes),
           returns: this.resolveParameters(type.returnTypes),
           visibility: getVisibility(type.visibility),
-          stateMutability: type.stateMutability ? getStateMutability(type.stateMutability) : undefined
-        }
+          stateMutability: type.stateMutability
+            ? getStateMutability(type.stateMutability)
+            : undefined,
+        };
       }
     }
   }

@@ -15,7 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { RootContext as CoreRootContext, SourceFactory } from "@syntest/analysis";
+import {
+  RootContext as CoreRootContext,
+  SourceFactory,
+} from "@syntest/analysis";
 
 import { Logger, getLogger } from "@syntest/logging";
 import { ConstantPool } from "./constant/ConstantPool";
@@ -28,37 +31,37 @@ import { DependencyFactory } from "./dependency/DependencyFactory";
 import { NodePath } from "./ast/NodePath";
 
 export class RootContext extends CoreRootContext<NodePath<SourceUnit>> {
-    protected static LOGGER: Logger;
+  protected static LOGGER: Logger;
 
-    protected _constantPoolFactory: ConstantPoolFactory;
+  protected _constantPoolFactory: ConstantPoolFactory;
 
-    protected _targetFiles: Set<string>;
-    protected _analysisFiles: Set<string>;
+  protected _targetFiles: Set<string>;
+  protected _analysisFiles: Set<string>;
 
-    constructor(
-        rootPath: string,
-        sourceFactory: SourceFactory,
-        targetFiles: Set<string>,
-        analysisFiles: Set<string>,
-        abstractSyntaxTreeFactory: AbstractSyntaxTreeFactory,
-        controlFlowGraphFactory: ControlFlowGraphFactory,
-        targetFactory: TargetFactory,
-        dependencyFactory: DependencyFactory,
-        constantPoolFactory: ConstantPoolFactory
-      ) {
-        super(
-          rootPath,
-          sourceFactory,
-          abstractSyntaxTreeFactory,
-          controlFlowGraphFactory,
-          targetFactory,
-          dependencyFactory
-        );
-        RootContext.LOGGER = getLogger("RootContext");
-        this._targetFiles = targetFiles;
-        this._analysisFiles = analysisFiles;
-        this._constantPoolFactory = constantPoolFactory;
-      }
+  constructor(
+    rootPath: string,
+    sourceFactory: SourceFactory,
+    targetFiles: Set<string>,
+    analysisFiles: Set<string>,
+    abstractSyntaxTreeFactory: AbstractSyntaxTreeFactory,
+    controlFlowGraphFactory: ControlFlowGraphFactory,
+    targetFactory: TargetFactory,
+    dependencyFactory: DependencyFactory,
+    constantPoolFactory: ConstantPoolFactory
+  ) {
+    super(
+      rootPath,
+      sourceFactory,
+      abstractSyntaxTreeFactory,
+      controlFlowGraphFactory,
+      targetFactory,
+      dependencyFactory
+    );
+    RootContext.LOGGER = getLogger("RootContext");
+    this._targetFiles = targetFiles;
+    this._analysisFiles = analysisFiles;
+    this._constantPoolFactory = constantPoolFactory;
+  }
 
   // TODO cache
   getConstantPool(filepath: string): ConstantPool {
@@ -67,16 +70,13 @@ export class RootContext extends CoreRootContext<NodePath<SourceUnit>> {
     RootContext.LOGGER.info("Extracting constants");
     const ast = this.getAbstractSyntaxTree(absolutePath);
 
-    const constantPool = this._constantPoolFactory.extract(
-      absolutePath,
-      ast
-    );
+    const constantPool = this._constantPoolFactory.extract(absolutePath, ast);
 
     RootContext.LOGGER.info("Extracting constants done");
     return constantPool;
   }
 
   get rootPath() {
-    return this._rootPath
+    return this._rootPath;
   }
 }

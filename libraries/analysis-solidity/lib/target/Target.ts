@@ -16,37 +16,36 @@
  * limitations under the License.
  */
 import {
-    SubTarget as CoreSubTarget,
-    Target as CoreTarget,
-    TargetType,
-  } from "@syntest/analysis";
+  SubTarget as CoreSubTarget,
+  Target as CoreTarget,
+  TargetType,
+} from "@syntest/analysis";
 import { Visibility } from "../types/Visibility";
 import { Parameter } from "../types/Parameter";
 import { StateMutability } from "../types/StateMutability";
 
-
 export interface Target extends CoreTarget {
-    path: string;
-    name: string;
-    subTargets: SubTarget[];
-  }
-  
-  export type SubTarget = ContractTarget | FunctionTarget
-  
-  export type ContractTarget = CoreSubTarget &  {
-    type: TargetType.CLASS
-    id: string;
-    name: string;
-    kind: ContractKind
-    bases: string[]
-  }
-  
-  export type FunctionTarget = CoreSubTarget & {
-    type: TargetType.FUNCTION
-    id: string;
-    name: string;
+  path: string;
+  name: string;
+  subTargets: SubTarget[];
+}
 
-      /**
+export type SubTarget = ContractTarget | FunctionTarget;
+
+export type ContractTarget = CoreSubTarget & {
+  type: TargetType.CLASS;
+  id: string;
+  name: string;
+  kind: ContractKind;
+  bases: string[];
+};
+
+export type FunctionTarget = CoreSubTarget & {
+  type: TargetType.FUNCTION;
+  id: string;
+  name: string;
+
+  /**
    * Visibility of the action.
    */
   visibility: Visibility;
@@ -65,35 +64,34 @@ export interface Target extends CoreTarget {
    */
   returnParameters: Parameter[];
 
-    /**
-     * If the function is the fallback function.
-     */
-    isFallback: boolean;
+  /**
+   * If the function is the fallback function.
+   */
+  isFallback: boolean;
 
-    /**
-     * Mutability of the function.
-     */
-    mutability: StateMutability | null;
+  /**
+   * Mutability of the function.
+   */
+  mutability: StateMutability | null;
 
-    /**
-     * If the function is virtual (can be overridden).
-     */
-    isVirtual: boolean;
+  /**
+   * If the function is virtual (can be overridden).
+   */
+  isVirtual: boolean;
 
-    /**
-     * If the function overrides another function.
-     */
-    override: string[] | null;
+  /**
+   * If the function overrides another function.
+   */
+  override: string[] | null;
 
-    /**
-     * Modifiers of the function.
-     */
-    modifiers: string[];
-  }
-  
-  export enum ContractKind {
-    Contract = "contract",
-    Library = "library",
-    Interface = "interface",
-  }
-  
+  /**
+   * Modifiers of the function.
+   */
+  modifiers: string[];
+};
+
+export enum ContractKind {
+  Contract = "contract",
+  Library = "library",
+  Interface = "interface",
+}

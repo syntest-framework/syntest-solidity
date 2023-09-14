@@ -30,8 +30,7 @@ import { Statement } from "../testcase/statements/Statement";
 import { PrimitiveStatement } from "../testcase/statements/primitive/PrimitiveStatement";
 
 /**
- * @author Dimitri Stallenberg
- * @author Mitchell Olsthoorn
+ * Solidity Decoder
  */
 export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
   private targetRootDirectory: string;
@@ -55,7 +54,6 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       }
     }
     const formattedArguments = arguments_
-      // eslint-disable-next-line
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
@@ -83,7 +81,6 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       }
     }
     const formattedArguments = arguments_
-      // eslint-disable-next-line
       .map((a: PrimitiveStatement<any>) => a.varName)
       .join(", ");
 
@@ -104,9 +101,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       throw new TypeError(`${statement} is not a primitive statement`);
     }
 
-    // eslint-disable-next-line
     const primitive: PrimitiveStatement<any> =
-      // eslint-disable-next-line
       statement as PrimitiveStatement<any>;
     // TODO what happened to float support?
     if (
@@ -240,8 +235,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
 
         // Create link
         linkings.push(
-          `\t\tconst lib${count} = await ${dependency.targetName}.new();`
-        , 
+          `\t\tconst lib${count} = await ${dependency.targetName}.new();`,
           `\t\tawait ${contract}.link('${dependency.targetName}', lib${count}.address);`
         );
 
@@ -323,8 +317,9 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
           `\t\tawait fs.mkdirSync('${path.join(
             CONFIG.tempLogDirectory,
             ind.id
-          )}', { recursive: true })\n`
-        , "try {");
+          )}', { recursive: true })\n`,
+          "try {"
+        );
       }
 
       const importableGenes: ConstructorCall[] = [];
@@ -341,8 +336,11 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
         const gene: Statement = stack.pop();
 
         if (gene instanceof ConstructorCall) {
-          if (count === stopAfter && // assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
-            CONFIG.testMinimization) break;
+          if (
+            count === stopAfter && // assertions.push(`\t\t${this.decodeErroringConstructorCall(gene)}`);
+            CONFIG.testMinimization
+          )
+            break;
           testString.push(`\t\t${this.decodeConstructor(gene)}`);
           importableGenes.push(<ConstructorCall>gene);
           count += 1;
@@ -403,21 +401,25 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       testString.push(...primitiveStatements, ...functionCalls);
 
       if (addLogs) {
-        testString.push(`} catch (e) {`);
-        testString.push(
+        testString.push(`} catch (e) {`, 
           `await fs.writeFileSync('${path.join(
             CONFIG.tempLogDirectory,
             ind.id,
             "error"
-          )}', '' + e.stack)`
-        , "}");
+          )}', '' + e.stack)`,
+          "}"
+        );
       }
 
       const [importsOfTest, linkings] = this.gatherImports(importableGenes);
       imports.push(...importsOfTest);
 
       if (ind.assertions.size > 0) {
-        imports.push(`const chai = require('chai');`, `const expect = chai.expect;`, `chai.use(require('chai-as-promised'));`);
+        imports.push(
+          `const chai = require('chai');`,
+          `const expect = chai.expect;`,
+          `chai.use(require('chai-as-promised'));`
+        );
       }
 
       assertions.unshift(...this.generateAssertions(ind));

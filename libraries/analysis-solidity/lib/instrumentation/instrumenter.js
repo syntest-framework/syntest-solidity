@@ -18,12 +18,12 @@
 /**
  * Copied from Soldity Coverage to override one of the imports
  */
-const SolidityParser = require("@solidity-parser/parser");
+import SolidityParser from "@solidity-parser/parser";
 
-const Injector = require("./injector"); // Local copy
-const preprocess = require("solidity-coverage/lib/preprocessor");
+import Injector from "./injector"; // Local copy
+import preprocess from "solidity-coverage/lib/preprocessor";
 
-const parse = require("./parse"); // Local copy
+import parse from "./parse"; // Local copy
 
 /**
  * Top level controller for the instrumentation sequence. Also hosts the instrumentation data map
@@ -101,7 +101,7 @@ class Instrumenter {
     const root = ast.children.filter((node) => this._isRootNode(node));
 
     // Handle contracts which only contain import statements
-    contract.contractName = root.length > 0 ? root[0].name : null;
+    contract.contractName = root.length > 0 ? root[0].name : undefined;
     parse[ast.type](contract, ast);
     // We have to iterate through these points in descending order
     const sortedPoints = Object.keys(contract.injectionPoints).sort(
@@ -129,9 +129,9 @@ class Instrumenter {
     returnValue.runnableLines = contract.runnableLines;
     returnValue.contract = contract.instrumented;
     returnValue.contractName = contract.contractName;
-    returnValue.contracts = root.length > 0 ? root.map((n) => n.name) : null;
+    returnValue.contracts = root.length > 0 ? root.map((n) => n.name) : undefined;
     return returnValue;
   }
 }
 
-module.exports = Instrumenter;
+export default Instrumenter;

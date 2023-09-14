@@ -54,13 +54,18 @@ export class FunctionCall extends ActionStatement {
       if (this.arguments_.length === 0) {
         return this.copy();
       }
-      
+
       // randomly mutate one of the args
       const arguments_ = this.arguments_.map((a: Statement) => a.copy());
       const index = prng.nextInt(0, arguments_.length - 1);
       arguments_[index] = arguments_[index].mutate(sampler, depth + 1);
 
-      return new FunctionCall(this.types, this.uniqueId, this.functionName, arguments_);
+      return new FunctionCall(
+        this.types,
+        this.uniqueId,
+        this.functionName,
+        arguments_
+      );
     } else {
       // resample the gene
       return sampler.sampleStatement(depth, this.types, "functionCall");

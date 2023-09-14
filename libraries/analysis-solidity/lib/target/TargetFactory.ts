@@ -27,7 +27,10 @@ import { NodePath } from "../ast/NodePath";
 /**
  * Function map generator for targets.
  */
-export class TargetFactory extends Factory implements CoreTargetFactory<NodePath<SourceUnit>> {
+export class TargetFactory
+  extends Factory
+  implements CoreTargetFactory<NodePath<SourceUnit>>
+{
   /**
    * Generate function map for specified target.
    *
@@ -37,10 +40,10 @@ export class TargetFactory extends Factory implements CoreTargetFactory<NodePath
     const visitor = new TargetVisitor(filePath, this.syntaxForgiving);
     visit(ast, visitor);
 
-    return { 
+    return {
       path: filePath,
       name: path.basename(filePath),
-      subTargets: visitor.subTargets
-     };
+      subTargets: visitor.subTargets,
+    };
   }
 }

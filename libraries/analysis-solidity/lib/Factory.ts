@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 export class Factory {
-    private _syntaxForgiving: boolean;
-  
-    constructor(syntaxForgiving: boolean) {
-      this._syntaxForgiving = syntaxForgiving;
-    }
-  
-    get syntaxForgiving() {
-      return this._syntaxForgiving;
-    }
+  private _syntaxForgiving: boolean;
+
+  constructor(syntaxForgiving: boolean) {
+    this._syntaxForgiving = syntaxForgiving;
   }
+
+  get syntaxForgiving() {
+    return this._syntaxForgiving;
+  }
+}

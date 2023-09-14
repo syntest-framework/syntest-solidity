@@ -27,13 +27,10 @@ export class DependencyVisitor extends AbstractSyntaxTreeVisitor {
   protected _imports: Set<string>;
 
   get imports() {
-    return this._imports
+    return this._imports;
   }
 
-  constructor(
-    filePath: string,
-    syntaxForgiving: boolean
-  ) {
+  constructor(filePath: string, syntaxForgiving: boolean) {
     super(filePath, syntaxForgiving);
     this._imports = new Set<string>();
   }
@@ -43,7 +40,7 @@ export class DependencyVisitor extends AbstractSyntaxTreeVisitor {
    */
   override ImportDirective = (path: NodePath<ImportDirective>): void => {
     this._imports.add(path.node.path);
-  }
+  };
 
   /**
    * Return the found imports.

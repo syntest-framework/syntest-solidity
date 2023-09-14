@@ -68,10 +68,7 @@ export class ConstructorCall extends ActionStatement {
     }
 
     let changed = false;
-    if (
-      prng.nextDouble(0, 1) <= 1 / 3 &&
-      this.getMethodCalls().length > 1
-    ) {
+    if (prng.nextDouble(0, 1) <= 1 / 3 && this.getMethodCalls().length > 1) {
       this.deleteMethodCall();
       changed = true;
     }
@@ -129,9 +126,7 @@ export class ConstructorCall extends ActionStatement {
 
   copy() {
     const deepCopyArguments = this.arguments_.map((a: Statement) => a.copy());
-    const deepCopyCalls = 
-      this._calls.map((a: ActionStatement) => a.copy())
-    ;
+    const deepCopyCalls = this._calls.map((a: ActionStatement) => a.copy());
     return new ConstructorCall(
       this.types,
       this.uniqueId,

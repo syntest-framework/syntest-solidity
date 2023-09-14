@@ -18,14 +18,16 @@
 
 import { prng } from "@syntest/prng";
 import { PrimitiveStatement } from "../primitive/PrimitiveStatement";
-import { DynamicSizeByteArray, Parameter } from "@syntest/analysis-solidity";
+import { FixedSizeByteArray, Parameter } from "@syntest/analysis-solidity";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
-import { Statement } from "../Statement";
 
 /**
  * Special statement specific to solidity contracts
  */
-export class DynamicSizeByteArrayStatement extends PrimitiveStatement<number[], DynamicSizeByteArray> {
+export class FixedSizeByteArrayStatement extends PrimitiveStatement<
+  number[],
+  FixedSizeByteArray
+> {
   public static upper_bound = 256;
   public static lower_bound = 0;
 
@@ -34,7 +36,9 @@ export class DynamicSizeByteArrayStatement extends PrimitiveStatement<number[], 
   }
 
   copy() {
-    return new DynamicSizeByteArrayStatement(this.type, prng.uniqueId(), [...this.value]);
+    return new FixedSizeByteArrayStatement(this.type, this.uniqueId, [
+      ...this.value,
+    ]);
   }
 
   mutate(sampler: SoliditySampler, depth: number): Statement {
@@ -45,12 +49,22 @@ export class DynamicSizeByteArrayStatement extends PrimitiveStatement<number[], 
       const newBytes = [...this.value];
 
       const newValue = Math.round(newBytes[index] + change);
-      newBytes[index] = Math.max(DynamicSizeByteArrayStatement.lower_bound, newValue);
-      newBytes[index] = Math.min(DynamicSizeByteArrayStatement.upper_bound, newValue);
+      newBytes[index] = Math.max(
+        FixedSizeByteArrayStatement.lower_bound,
+        newValue
+      );
+      newBytes[index] = Math.min(
+        FixedSizeByteArrayStatement.upper_bound,
+        newValue
+      );
 
-      return new DynamicSizeByteArrayStatement(this.type, prng.uniqueId(), newBytes);
+      return new FixedSizeByteArrayStatement(
+        this.type,
+        prng.uniqueId(),
+        newBytes
+      );
     } else {
-      return sampler.sampleArgument(depth, this.type)
+      return sampler.sampleArgument(depth, this.type);
     }
   }
 }

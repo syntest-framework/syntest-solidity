@@ -283,8 +283,8 @@ class API {
   makeKeysRelative(map, wd) {
     const newCoverage = {};
 
-    for (const pathKey of Object.keys(map)) (newCoverage[path.relative(wd, pathKey)] = map[pathKey])
-    ;
+    for (const pathKey of Object.keys(map))
+      newCoverage[path.relative(wd, pathKey)] = map[pathKey];
 
     return newCoverage;
   }

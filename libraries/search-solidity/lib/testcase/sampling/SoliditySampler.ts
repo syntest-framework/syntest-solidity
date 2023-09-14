@@ -32,7 +32,7 @@ import { BoolStatement } from "../statements/primitive/BoolStatement";
 import { IntegerStatement } from "../statements/primitive/IntegerStatement";
 import { StringStatement } from "../statements/primitive/StringStatement";
 import { FixedSizeByteArrayStatement } from "../statements/complex/FixedSizeByteArrayStatement";
-import { DynamicSizeByteArrayStatement } from "../statements/complex/DynamicSizeByteArrayStatement";
+import { DynamicSizeByteArrayStatement } from "../statements/primitive/DynamicSizeByteArrayStatement";
 
 /**
  * SolidityRandomSampler class
@@ -59,9 +59,9 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
 
   private _statementPool: StatementPool | null;
 
-  private _maxDepth = 10
+  private _maxDepth = 10;
 
-  private _numericDecimals: number
+  private _numericDecimals: number;
 
   constructor(
     subject: SoliditySubject,
@@ -76,7 +76,6 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
     deltaMutationProbability: number,
     exploreIllegalValues: boolean,
     numericDecimals: number
-
   ) {
     super(subject);
     this._constantPool = constantPool;
@@ -91,9 +90,8 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
     this._stringMaxLength = stringMaxLength;
     this._deltaMutationProbability = deltaMutationProbability;
     this._exploreIllegalValues = exploreIllegalValues;
-    this._numericDecimals = numericDecimals
+    this._numericDecimals = numericDecimals;
   }
-
 
   get rootContext() {
     return this._rootContext;
@@ -102,7 +100,6 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
   set rootContext(rootContext: RootContext) {
     this._rootContext = rootContext;
   }
-
 
   get statementPool() {
     return this._statementPool;
@@ -118,19 +115,36 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
     root: ConstructorCall
   ): ObjectFunctionCall;
 
-  abstract sampleArgument(
+  abstract sampleArgument(depth: number, type: Parameter): Statement;
+
+  abstract sampleAddressStatement(
     depth: number,
     type: Parameter
-  ): Statement;
-
-  abstract sampleAddressStatement(depth: number, type: Parameter): AddressStatement
-  abstract sampleBoolStatement(depth: number, type: Parameter): BoolStatement
-  abstract sampleIntegerStatement(depth: number, type: Parameter): IntegerStatement
-  abstract sampleNumericStatement(depth: number, type: Parameter): NumericStatement
-  abstract sampleFixedSizeByteArrayStatement(depth: number, type: Parameter): FixedSizeByteArrayStatement
-  abstract sampleDynamicSizeByteArrayStatement(depth: number, type: Parameter): DynamicSizeByteArrayStatement
-  abstract sampleStringStatement(depth: number, type: Parameter): StringStatement
+  ): AddressStatement;
+  abstract sampleBoolStatement(depth: number, type: Parameter): BoolStatement;
+  abstract sampleIntegerStatement(
+    depth: number,
+    type: Parameter
+  ): IntegerStatement;
+  abstract sampleNumericStatement(
+    depth: number,
+    type: Parameter
+  ): NumericStatement;
+  abstract sampleFixedSizeByteArrayStatement(
+    depth: number,
+    type: Parameter
+  ): FixedSizeByteArrayStatement;
+  abstract sampleDynamicSizeByteArrayStatement(
+    depth: number,
+    type: Parameter
+  ): DynamicSizeByteArrayStatement;
+  abstract sampleStringStatement(
+    depth: number,
+    type: Parameter
+  ): StringStatement;
   // abstract sampleHexStatement(depth: number, type: Parameter): StringStatement
+  // abstract sampleMappingStatement(depth: number, type: Parameter): StringStatement
+  // abstract sampleArrayStatement(depth: number, type: Parameter): StringStatement
 
   get constantPool(): ConstantPool {
     return this._constantPool;
@@ -173,10 +187,10 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
   }
 
   get maxDepth(): number {
-    return this._maxDepth
+    return this._maxDepth;
   }
 
   get numericDecimals(): number {
-    return this._numericDecimals
+    return this._numericDecimals;
   }
 }

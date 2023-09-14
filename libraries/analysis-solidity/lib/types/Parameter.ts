@@ -22,13 +22,13 @@ import { Type } from "./Type";
  * Interface for a Parameter Description.
  */
 export interface Parameter<T extends Type = Type> {
-    /**
-     * Name of the parameter.
-     */
-    name: string;
-  
-    /**
-     * Type of the parameter.
-     */
-    type: T;
-  }
+  /**
+   * Name of the parameter.
+   */
+  name: string;
+
+  /**
+   * Type of the parameter.
+   */
+  type: T;
+}

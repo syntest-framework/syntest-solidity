@@ -17,14 +17,16 @@
  */
 
 import { Runner } from "mocha";
-import { SolidityExecutionResult, SolidityExecutionStatus } from "../../search/SolidityExecutionResult";
+import {
+  SolidityExecutionResult,
+  SolidityExecutionStatus,
+} from "../../search/SolidityExecutionResult";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { SolidityDecoder } from "../../testbuilding/SolidityDecoder";
-import { getTestFilePaths } from "../../util/fileSystem";
 import { SolidityTestCase } from "../SolidityTestCase";
-import { EncodingRunner, ExecutionResult } from "@syntest/search"
-import { Logger, getLogger } from "@syntest/logging"
-import { StorageManager } from "@syntest/storage"
+import { EncodingRunner, ExecutionResult } from "@syntest/search";
+import { Logger, getLogger } from "@syntest/logging";
+import { StorageManager } from "@syntest/storage";
 import path = require("node:path");
 
 export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
@@ -40,11 +42,11 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
 
   protected silenceTestOutput: boolean;
 
-  // eslint-disable-next-line
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected api: any;
-  // eslint-disable-next-line
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected truffle: any;
-  // eslint-disable-next-line
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected config: any;
 
   constructor(
@@ -54,12 +56,12 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     executionTimeout: number,
     testTimeout: number,
     silenceTestOutput: boolean,
-    // eslint-disable-next-line
-    api: any,
-    // eslint-disable-next-line
-    truffle: any,
-    // eslint-disable-next-line
-    config: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  api: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  truffle: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config: any
   ) {
     SolidityRunner.LOGGER = getLogger(SolidityRunner.name);
     this.storageManager = storageManager;
@@ -74,16 +76,13 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     this.config = config;
   }
 
-  async run(
-    paths: string[],
-    amount = 1
-  ) {
+  async run(paths: string[], amount = 1) {
     if (amount < 1) {
       throw new Error(`Amount of tests cannot be smaller than 1`);
     }
     paths = paths.map((p) => path.resolve(p));
 
-    this.config.test_files = paths
+    this.config.test_files = paths;
 
     // Reset instrumentation data (no hits)
     this.api.resetInstrumentationData();
@@ -112,15 +111,15 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
       SolidityRunner.LOGGER.error("Test case has failed!");
     }
 
-        // Retrieve execution traces
-        const instrumentationData = this.api.getInstrumentationData();
+    // Retrieve execution traces
+    const instrumentationData = this.api.getInstrumentationData();
 
     return {
       suites: mochaRunner.suite.suites,
       stats: stats,
       instrumentationData: instrumentationData,
-      metaData: {} // TODO
-    }
+      metaData: {}, // TODO
+    };
   }
 
   async execute(
@@ -138,9 +137,7 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
       true
     );
 
-    const { suites, stats, instrumentationData } = await this.run([
-      testPath,
-    ]);
+    const { suites, stats, instrumentationData } = await this.run([testPath]);
 
     const traces = [];
     for (const key of Object.keys(instrumentationData)) {
@@ -150,21 +147,18 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
 
     // Retrieve execution information
     let executionResult: SolidityExecutionResult;
-    if (
-      suites.length > 0 &&
-      suites[0].tests.length > 0
-    ) {
+    if (suites.length > 0 && suites[0].tests.length > 0) {
       const test = suites[0].tests[0];
 
       let status: SolidityExecutionStatus;
-      let error: Error | undefined
+      let error: Error | undefined;
       if (test.isPassed()) {
         status = SolidityExecutionStatus.PASSED;
       } else if (test.timedOut) {
         status = SolidityExecutionStatus.TIMED_OUT;
       } else {
         status = SolidityExecutionStatus.FAILED;
-        error = test.err
+        error = test.err;
       }
 
       executionResult = new SolidityExecutionResult(
@@ -189,7 +183,7 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
       [this.tempTestDirectory],
       "tempTest.spec.js"
     );
-    
+
     return executionResult;
   }
 }

@@ -27,7 +27,12 @@ import {
 
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
 import { ControlFlowGraph, Edge, EdgeType } from "@syntest/cfg";
-import { RootContext, SubTarget, Target, Visibility } from "@syntest/analysis-solidity";
+import {
+  RootContext,
+  SubTarget,
+  Target,
+  Visibility,
+} from "@syntest/analysis-solidity";
 import { TargetType } from "@syntest/analysis";
 import { BranchDistance } from "../criterion/BranchDistance";
 
@@ -202,7 +207,7 @@ export class SoliditySubject extends SearchSubject<SolidityTestCase> {
   ): ObjectiveFunction<SolidityTestCase>[] {
     let childObjectives: ObjectiveFunction<SolidityTestCase>[] = [];
 
-    let edges2Visit = [...graph.getOutgoingEdges(object.getIdentifier())]
+    let edges2Visit = [...graph.getOutgoingEdges(object.getIdentifier())];
 
     const visitedEdges: Edge[] = [];
 
@@ -213,7 +218,7 @@ export class SoliditySubject extends SearchSubject<SolidityTestCase> {
         // this condition is made to avoid infinite loops
         continue;
       }
-        
+
       if (edge.type === EdgeType.BACK_EDGE) {
         continue;
       }
@@ -236,23 +241,28 @@ export class SoliditySubject extends SearchSubject<SolidityTestCase> {
   }
 
   getActionableTargets(): SubTarget[] {
-    return (<SubTarget[]>(this._target.subTargets)).filter((t) => {
+    return (<SubTarget[]>this._target.subTargets).filter((t) => {
       return (
-        (t.type === TargetType.FUNCTION && (t.visibility === Visibility.External || t.visibility === Visibility.Public)) 
-        || t.type === TargetType.CLASS
+        (t.type === TargetType.FUNCTION &&
+          (t.visibility === Visibility.External ||
+            t.visibility === Visibility.Public)) ||
+        t.type === TargetType.CLASS
       );
     });
   }
 
   getActionableTargetsByType(type: TargetType): SubTarget[] {
-    return (<SubTarget[]>(this._target.subTargets)).filter((t) => {
-
+    return (<SubTarget[]>this._target.subTargets).filter((t) => {
       if (type === TargetType.FUNCTION) {
-        return t.type === TargetType.FUNCTION && (t.visibility === Visibility.External || t.visibility === Visibility.Public)
+        return (
+          t.type === TargetType.FUNCTION &&
+          (t.visibility === Visibility.External ||
+            t.visibility === Visibility.Public)
+        );
       } else if (type === TargetType.CLASS) {
-        return t.type === TargetType.CLASS
+        return t.type === TargetType.CLASS;
       } else {
-        throw new Error(`Invalid target type: ${type}`)
+        throw new Error(`Invalid target type: ${type}`);
       }
     });
   }

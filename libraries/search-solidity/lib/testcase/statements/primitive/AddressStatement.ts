@@ -51,22 +51,22 @@ export class AddressStatement extends PrimitiveStatement<string, Address> {
           newAccount
         );
       }
-  
-      return prng.nextBoolean ? new AddressStatement(
-          this.type,
-          prng.uniqueId(),
-          `accounts[${this._account + 1}]`,
-          this._account + 1
-        ) : new AddressStatement(
-          this.type,
-          prng.uniqueId(),
-          `accounts[${this._account - 1}]`,
-          this._account - 1
-        );
+
+      return prng.nextBoolean
+        ? new AddressStatement(
+            this.type,
+            prng.uniqueId(),
+            `accounts[${this._account + 1}]`,
+            this._account + 1
+          )
+        : new AddressStatement(
+            this.type,
+            prng.uniqueId(),
+            `accounts[${this._account - 1}]`,
+            this._account - 1
+          );
     } else {
-      return <AddressStatement>(
-        sampler.sampleArgument(depth, this.types)
-      );
+      return <AddressStatement>sampler.sampleArgument(depth, this.types);
     }
   }
 

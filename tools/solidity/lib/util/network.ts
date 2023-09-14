@@ -50,7 +50,9 @@ export function setNetwork(config: TruffleConfig, api: any): void {
         api.providerOptions.network_id &&
         api.providerOptions.network_id !== Number.parseInt(network.network_id)
       ) {
-        getUserInterface().info("id-clash " + [Number.parseInt(network.network_id)]);
+        getUserInterface().info(
+          "id-clash " + [Number.parseInt(network.network_id)]
+        );
       }
 
       // Prefer network defined id.

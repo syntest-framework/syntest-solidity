@@ -17,17 +17,20 @@
  */
 
 export type InstrumentationData = {
-    source: string,
-    instrumented: string
-    contractName: string
-    runnableLines: []
-    fnMap: {}
-    fnId: number
-    branchMap: {}
-    branchId: number
-    statementMap: {}
-    statementId: 0
-    injectionPoints: {
-        [key: number]: { type: string }[]
-    }
-}
+  source: string;
+  instrumented: string;
+  contractName: string;
+  runnableLines: [];
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  fnMap: {};
+  fnId: number;
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  branchMap: {};
+  branchId: number;
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  statementMap: {};
+  statementId: 0;
+  injectionPoints: {
+    [key: number]: { type: string }[];
+  };
+};

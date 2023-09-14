@@ -16,3 +16,6 @@
  * limitations under the License.
  */
 //TODO
+export class HexStatement {
+    // TODO
+}

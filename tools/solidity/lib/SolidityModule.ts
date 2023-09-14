@@ -22,16 +22,15 @@ import { ModuleManager, Module, Tool } from "@syntest/module";
 import { StorageManager } from "@syntest/storage";
 import yargs = require("yargs");
 
-export default class SolidityModule extends TestingToolModule{
-    constructor() {
-        super(
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
-          require("../../package.json").name,
-          // eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
-          require("../../package.json").version
-        );
-      }
-
+export default class SolidityModule extends TestingToolModule {
+  constructor() {
+    super(
+      // eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
+      require("../../package.json").name,
+      // eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
+      require("../../package.json").version
+    );
+  }
 
   override register(
     moduleManager: ModuleManager,

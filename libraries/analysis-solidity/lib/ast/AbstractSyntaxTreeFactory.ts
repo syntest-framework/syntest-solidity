@@ -25,7 +25,9 @@ import { Hub } from "./Hub";
 /**
  * Abstract Syntax Trees (AST) generator for targets.
  */
-export class AbstractSyntaxTreeFactory implements CoreAbstractSyntaxTreeFactory<NodePath<SourceUnit>> {
+export class AbstractSyntaxTreeFactory
+  implements CoreAbstractSyntaxTreeFactory<NodePath<SourceUnit>>
+{
   /**
    * Generate Abstract Syntax Tree (AST) for specified target.
    *
@@ -38,6 +40,6 @@ export class AbstractSyntaxTreeFactory implements CoreAbstractSyntaxTreeFactory<
       range: true,
     });
 
-    return new NodePath(new Hub(filepath, source), sourceUnit, undefined)
+    return new NodePath(new Hub(filepath, source), sourceUnit, undefined);
   }
 }

@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const web3Utils = require("web3-utils");
-const Injector = require("solidity-coverage/lib/injector");
-const crypto = require("node:crypto");
+import web3Utils from "web3-utils";
+import Injector from "solidity-coverage/lib/injector";
+import crypto from "node:crypto";
 
 class SyntestInjector extends Injector {
   constructor() {
@@ -225,4 +225,4 @@ class SyntestInjector extends Injector {
   }
 }
 
-module.exports = SyntestInjector;
+export default SyntestInjector;

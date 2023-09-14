@@ -23,8 +23,8 @@
 /**
  * This file is copies from https://github.com/sc-forks/solidity-coverage/blob/master/lib/parse.js to override the register
  */
-const semver = require("semver");
-const Registrar = require("./registrar"); // Load local version
+import semver from "semver";
+import Registrar from "./registrar"; // Load local version
 const register = new Registrar();
 
 const FILE_SCOPED_ID = "fileScopedId";
@@ -281,4 +281,4 @@ parse.WhileStatement = function (contract, expression) {
     parse[expression.body.type](contract, expression.body);
 };
 
-module.exports = parse;
+export default parse;

@@ -16,13 +16,11 @@
  * limitations under the License.
  */
 
-import { existsSync, mkdirSync, rmdirSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, rmdirSync, writeFileSync } from "node:fs";
 
 import { CONFIG, getUserInterface } from "@syntest/search";
 import globby = require("globby");
 import recursive = require("recursive-readdir");
-
-
 
 export async function createTruffleConfig() {
   const filepath = "./truffle-config.js";
@@ -55,11 +53,11 @@ export async function getTestFilePaths(config) {
 
   // Filter native solidity tests and warn that they're skipped
   const solregex = /.*\.(sol)$/;
-  const hasSols = target.filter((f) => f.match(solregex) != null);
+  const hasSols = target.filter((f) => f.match(solregex) != undefined);
 
   if (hasSols.length > 0) LOGGER.info("sol-tests " + [hasSols.length]);
 
   // Return list of test files
   const testregex = /.*\.(js|ts|es|es6|jsx)$/;
-  return target.filter((f) => f.match(testregex) != null);
+  return target.filter((f) => f.match(testregex) != undefined);
 }

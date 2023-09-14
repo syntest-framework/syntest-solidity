@@ -18,10 +18,7 @@
 
 import { Archive } from "@syntest/search";
 
-import {
-  readdirSync,
-  readFileSync,
-} from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
 import { SolidityDecoder } from "./SolidityDecoder";
@@ -36,30 +33,16 @@ export class SoliditySuiteBuilder {
   private runner: SolidityRunner;
   private tempLogDirectory: string;
 
-  // eslint-disable-next-line
-  private api: any;
-  // eslint-disable-next-line
-  private truffle: any;
-  // eslint-disable-next-line
-  private readonly config: any;
-
-  // eslint-disable-next-line
   constructor(
     storageManager: StorageManager,
-    decoder: SolidityDecoder, 
+    decoder: SolidityDecoder,
     runner: SolidityRunner,
-    temporaryLogDirectory: string,
-    api: any, 
-    truffle: any, 
-    config: any
-    ) {
-      this.storageManager = storageManager;
-      this.decoder = decoder;
-      this.runner = runner;
-      this.tempLogDirectory = temporaryLogDirectory;
-      this.api = api;
-    this.truffle = truffle;
-    this.config = config;
+    temporaryLogDirectory: string
+  ) {
+    this.storageManager = storageManager;
+    this.decoder = decoder;
+    this.runner = runner;
+    this.tempLogDirectory = temporaryLogDirectory;
   }
 
   reduceArchive(
@@ -102,57 +85,56 @@ export class SoliditySuiteBuilder {
     addLogs: boolean,
     compact: boolean,
     final = false
-    
-    ): string[] {
-      const paths: string[] = [];
+  ): string[] {
+    const paths: string[] = [];
 
-   // write the test cases with logs to know what to assert
-   if (compact) {
-    for (const key of archive.keys()) {
-      const decodedTest = this.decoder.decode(
-        archive.get(key),
-        `${key}`,
-        addLogs,
-        sourceDirectory
-      );
-      const testPath = this.storageManager.store(
-        [testDirectory],
-        `test-${key}.spec.js`,
-        decodedTest,
-        !final
-      );
-      paths.push(testPath);
-    }
-  } else {
-    for (const key of archive.keys()) {
-      for (const testCase of archive.get(key)) {
+    // write the test cases with logs to know what to assert
+    if (compact) {
+      for (const key of archive.keys()) {
         const decodedTest = this.decoder.decode(
-          testCase,
-          "",
+          archive.get(key),
+          `${key}`,
           addLogs,
           sourceDirectory
         );
         const testPath = this.storageManager.store(
           [testDirectory],
-          `test${key}${testCase.id}.spec.js`,
+          `test-${key}.spec.js`,
           decodedTest,
           !final
         );
-
         paths.push(testPath);
       }
+    } else {
+      for (const key of archive.keys()) {
+        for (const testCase of archive.get(key)) {
+          const decodedTest = this.decoder.decode(
+            testCase,
+            "",
+            addLogs,
+            sourceDirectory
+          );
+          const testPath = this.storageManager.store(
+            [testDirectory],
+            `test${key}${testCase.id}.spec.js`,
+            decodedTest,
+            !final
+          );
+
+          paths.push(testPath);
+        }
+      }
     }
+
+    return paths;
   }
 
-  return paths;
-}
+  async runSuite(paths: string[], amount: number) {
+    const { stats, instrumentationData } = await this.runner.run(paths, amount);
+    // TODO use the results of the tests to show some statistics
 
-    async runSuite(paths: string[], amount: number) {
-      const { stats, instrumentationData } = await this.runner.run(paths, amount);
-      // TODO use the results of the tests to show some statistics
-  
-      return { stats, instrumentationData };
-    }
+    return { stats, instrumentationData };
+  }
 
   async gatherAssertions(testCases: SolidityTestCase[]): Promise<void> {
     for (const testCase of testCases) {

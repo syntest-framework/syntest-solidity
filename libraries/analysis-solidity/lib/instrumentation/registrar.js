@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const Registrar = require("solidity-coverage/lib/registrar");
+import Registrar from "solidity-coverage/lib/registrar";
 
 /**
  * This class overrides the Soldity-Coverage library to add line numbers for identification.
@@ -60,10 +60,13 @@ class SyntestRegistrar extends Registrar {
       startline + (contract, expressionContent.match("/\n/g") || []).length;
 
     let endcol;
-    endcol = expressionContent.lastIndexOf("\n") >= 0 ? contract.instrumented.slice(
-        expressionContent.lastIndexOf("\n"),
-        expression.range[1]
-      ).length : startcol + (contract, expressionContent.length - 1);
+    endcol =
+      expressionContent.lastIndexOf("\n") >= 0
+        ? contract.instrumented.slice(
+            expressionContent.lastIndexOf("\n"),
+            expression.range[1]
+          ).length
+        : startcol + (contract, expressionContent.length - 1);
 
     contract.statementId += 1;
     contract.statementMap[contract.statementId] = {
@@ -124,7 +127,7 @@ class SyntestRegistrar extends Registrar {
         copy =
           copy.slice(0, Math.max(0, modifier.range[0])) +
           string_ +
-          copy.substring(modifier.range[1] + 1, copy.length);
+          copy.slice(modifier.range[1] + 1, copy.length);
       }
     }
     return copy;
@@ -143,7 +146,7 @@ class SyntestRegistrar extends Registrar {
     const value = contract.instrumented;
     const start = expression.arguments[0].range[0];
     const end = expression.arguments[0].range[1];
-    const condition = value.substring(start, end + 1);
+    const condition = value.slice(start, end + 1);
 
     this._createInjectionPoint(contract, expression.range[0], {
       type: "injectRequirePre",
@@ -228,4 +231,4 @@ class SyntestRegistrar extends Registrar {
   }
 }
 
-module.exports = SyntestRegistrar;
+export default SyntestRegistrar;

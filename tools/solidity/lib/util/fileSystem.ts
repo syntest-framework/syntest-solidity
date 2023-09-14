@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-import { existsSync, writeFileSync } from "fs";
+import { existsSync, writeFileSync } from "node:fs";
 
 export async function createTruffleConfig(temporaryTestDirectory: string) {
   const filepath = "./truffle-config.js";

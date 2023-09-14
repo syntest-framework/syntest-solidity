@@ -55,11 +55,13 @@ export class ConstantVisitor extends AbstractSyntaxTreeVisitor {
 
   override EnumValue = (path: NodePath<EnumValue>): void => {
     this._constantPool.addString(path.node.name);
-  }
+  };
 
-  override VariableDeclaration = (path: NodePath<VariableDeclaration>): void => {
+  override VariableDeclaration = (
+    path: NodePath<VariableDeclaration>
+  ): void => {
     this._constantPool.addString(path.node.name);
-  }
+  };
 
   override StringLiteral = (path: NodePath<StringLiteral>): void => {
     if (this._isAddress(path.node.value)) {
@@ -68,7 +70,7 @@ export class ConstantVisitor extends AbstractSyntaxTreeVisitor {
     }
 
     this._constantPool.addString(path.node.value);
-  }
+  };
 
   override NumberLiteral = (path: NodePath<NumberLiteral>): void => {
     if (this._isAddress(path.node.number)) {
@@ -77,28 +79,29 @@ export class ConstantVisitor extends AbstractSyntaxTreeVisitor {
     }
 
     this._constantPool.addInteger(Number.parseInt(path.node.number));
-  }
+  };
 
   override Identifier = (path: NodePath<Identifier>): void => {
-    if (!["require", "_"].includes(path.node.name)) this._constantPool.addString(path.node.name);
-  }
+    if (!["require", "_"].includes(path.node.name))
+      this._constantPool.addString(path.node.name);
+  };
 
   override IndexAccess = (): void => {
     // TODO: check for index numbers
-  }
+  };
 
   override MemberAccess = (path: NodePath<MemberAccess>): void => {
     this._constantPool.addString(path.node.memberName);
-  }
+  };
 
   override HexNumber = (path: NodePath<HexNumber>): void => {
     // TODO: check for addresses
     this._constantPool.addString(path.node.value);
-  }
+  };
 
   override DecimalNumber = (path: NodePath<DecimalNumber>): void => {
     this._constantPool.addNumeric(Number.parseFloat(path.node.value));
-  }
+  };
 
   protected _isAddress(value: string): boolean {
     if (value === "0x0") return true;

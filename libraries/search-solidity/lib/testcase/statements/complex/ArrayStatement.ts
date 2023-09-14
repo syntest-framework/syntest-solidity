@@ -18,12 +18,14 @@
 
 import { prng } from "@syntest/prng";
 import { PrimitiveStatement } from "../primitive/PrimitiveStatement";
-import { Parameter } from "@syntest/analysis-solidity";
+import { ArrayType, Parameter } from "@syntest/analysis-solidity";
+import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { Statement } from "../Statement";
 
 /**
  * Special statement specific to solidity contracts
  */
-export class ArrayStatement extends PrimitiveStatement<number[]> {
+export class ArrayStatement extends PrimitiveStatement<number[], ArrayType> {
   private static _upper_bound = 32;
   private static _lower_bound = 0;
 
@@ -32,10 +34,10 @@ export class ArrayStatement extends PrimitiveStatement<number[]> {
   }
 
   copy() {
-    return new ArrayStatement(this.type, prng.uniqueId(), [...this.value]);
+    return new ArrayStatement(this.type, this.uniqueId, [...this.value]);
   }
 
-  mutate(sampler: SoliditySampler): ArrayStatement {
+  mutate(sampler: SoliditySampler, depth: number): Statement {
     if (prng.nextBoolean(sampler.deltaMutationProbability)) {
       const index = prng.nextInt(0, this.value.length - 1);
 
@@ -48,22 +50,7 @@ export class ArrayStatement extends PrimitiveStatement<number[]> {
 
       return new ArrayStatement(this.type, prng.uniqueId(), newBytes);
     } else {
-      return ArrayStatement.getRandom(this.type, this.value.length);
+      return sampler.sampleArgument(depth, this.type)
     }
-  }
-
-  static getRandom(
-    type: Parameter = { type: "byte", name: "noname" },
-    nBytes = 1
-  ) {
-    const bytes: number[] = [];
-    for (let index = 0; index < nBytes; index++) {
-      bytes[index] = prng.nextInt(
-        ArrayStatement._lower_bound,
-        ArrayStatement._upper_bound
-      );
-    }
-
-    return new ArrayStatement(type, prng.uniqueId(), bytes);
   }
 }

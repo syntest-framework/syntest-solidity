@@ -15,38 +15,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-  export enum StateMutability {
-    /**
-     * Function reads state but does not modify state.
-     */
-    View = "view",
-  
-    /**
-     * Function does not read or modify state.
-     */
-    Pure = "pure",
-  
-    /**
-     * Function accepts Ether.
-     */
-    Payable = "payable",
-  }
+export enum StateMutability {
+  /**
+   * Function reads state but does not modify state.
+   */
+  View = "view",
 
-  export function getStateMutability(stateMutability: string) {
-    switch (stateMutability) {
+  /**
+   * Function does not read or modify state.
+   */
+  Pure = "pure",
+
+  /**
+   * Function accepts Ether.
+   */
+  Payable = "payable",
+}
+
+export function getStateMutability(stateMutability: string) {
+  switch (stateMutability) {
     case StateMutability.View: {
-        return StateMutability.View
+      return StateMutability.View;
     }
     case StateMutability.Pure: {
-        return StateMutability.Pure
-
+      return StateMutability.Pure;
     }
     case StateMutability.Payable: {
-        return StateMutability.Payable
-
+      return StateMutability.Payable;
     }
     // No default
-    }
-
-    throw new Error("Invalid State mutability")
   }
+
+  throw new Error("Invalid State mutability");
+}

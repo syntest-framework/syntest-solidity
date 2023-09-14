@@ -15,165 +15,231 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ASTNode, Expression, NameValueList, Statement, astNodeTypes, AssemblyItem, DoWhileStatement, ForStatement, BooleanLiteral, HexLiteral, NumberLiteral, StringLiteral, WhileStatement } from "@solidity-parser/parser/dist/src/ast-types";
+import {
+  ASTNode,
+  Expression,
+  NameValueList,
+  Statement,
+  astNodeTypes,
+  AssemblyItem,
+  DoWhileStatement,
+  ForStatement,
+  BooleanLiteral,
+  HexLiteral,
+  NumberLiteral,
+  StringLiteral,
+  WhileStatement,
+} from "@solidity-parser/parser/dist/src/ast-types";
 import { Hub } from "./Hub";
 
 export class NodePath<T extends ASTNode = ASTNode> {
-  hub: Hub
-    node: T
-    type: T['type']
-    parentPath: NodePath<ASTNode> | undefined
+  hub: Hub;
+  node: T;
+  type: T["type"];
+  parentPath: NodePath<ASTNode> | undefined;
 
-    constructor(hub: Hub, node: T, parentPath: NodePath<ASTNode>) {
-      this.hub = hub
-        this.node = node
-        this.type = node.type
-        this.parentPath = parentPath
+  constructor(hub: Hub, node: T, parentPath: NodePath<ASTNode>) {
+    this.hub = hub;
+    this.node = node;
+    this.type = node.type;
+    this.parentPath = parentPath;
+  }
+
+  getSource() {
+    const node = this.node;
+    if (node.range) {
+      const code = this.hub.getCode();
+      if (code) return code.slice(node.range[0], node.range[1]);
+    }
+    return "";
+  }
+
+  has<K extends keyof T>(key: K): boolean {
+    const node = this.node;
+    const container = node[key];
+
+    return isASTNode(container);
+  }
+
+  get<K extends keyof T>(
+    key: K
+  ): T[K] extends Array<ASTNode | null | undefined>
+    ? Array<NodePath<T[K][number]>>
+    : T[K] extends ASTNode | null | undefined
+    ? NodePath<T[K]>
+    : never;
+
+  get<K extends keyof T>(key: K): NodePath | NodePath[] {
+    const node = this.node;
+    const container = node[key];
+
+    if (!isASTNode(container)) {
+      return undefined;
     }
 
-    getSource() {
-      const node = this.node;
-      if (node.range) {
-        const code = this.hub.getCode();
-        if (code) return code.slice(node.range[0], node.range[1]);
-      }
-      return "";
+    // eslint-disable-next-line unicorn/prefer-ternary
+    if (Array.isArray(container)) {
+      // requested a container so give them all the paths
+      return container.map((c) => {
+        return new NodePath(this.hub, c, this);
+      });
+    } else {
+      return new NodePath(this.hub, container, this);
     }
+  }
 
-    has<K extends keyof T>(key: K): boolean {
-        const node = this.node;
-        const container = node[key];
+  // groups
+  isAssemblyItem<T extends ASTNode>(): this is NodePath<T & AssemblyItem> {
+    return AssemblyItemTypes.has(this.node.type);
+  }
 
-        return isASTNode(container)
-    }
+  isAssemblyExpression<T extends ASTNode>(): this is NodePath<T & Expression> {
+    return AssemblyExpressionTypes.has(this.node.type);
+  }
 
-    get<K extends keyof T>(
-        key: K
-        ): T[K] extends Array<ASTNode | null | undefined>
-        ? Array<NodePath<T[K][number]>>
-        : T[K] extends ASTNode | null | undefined 
-        ? NodePath<T[K]> 
-        : never;
-        
-    get<K extends keyof T>(
-        key: K
-        ): NodePath | NodePath[] {
-        const node = this.node;
-        const container = node[key];
+  isExpression<T extends ASTNode>(): this is NodePath<T & Expression> {
+    return ExpressionTypes.has(this.node.type);
+  }
 
-        if (!isASTNode(container)) {
-            return undefined
-        }
+  isPrimaryExpression<T extends ASTNode>(): this is NodePath<T & Expression> {
+    return PrimaryExpressionTypes.has(this.node.type);
+  }
 
-        // eslint-disable-next-line unicorn/prefer-ternary
-        if (Array.isArray(container)) {
-            // requested a container so give them all the paths
-            return container.map((c) => {
-                return new NodePath(this.hub, c, this)
-            });
-        } else {
-            return new NodePath(this.hub, container, this)
-        }
-    } 
+  isSimpleStatement<T extends ASTNode>(): this is NodePath<T & Expression> {
+    return SimpleStatementTypes.has(this.node.type);
+  }
 
+  isTypeName<T extends ASTNode>(): this is NodePath<T & Expression> {
+    return TypeNameTypes.has(this.node.type);
+  }
 
-    // groups
-    isAssemblyItem<T extends ASTNode>(): this is NodePath<T & AssemblyItem> {
-        return (AssemblyItemTypes).has(this.node.type)
-    }
+  isStatement<T extends ASTNode>(): this is NodePath<T & Statement> {
+    return StatementTypes.has(this.node.type);
+  }
 
-    isAssemblyExpression<T extends ASTNode>(): this is NodePath<T & Expression> {
-        return (AssemblyExpressionTypes).has(this.node.type)
-    }
+  isLiteral<T extends ASTNode>(): this is NodePath<T & Literal> {
+    return LiteralTypes.has(this.node.type);
+  }
 
-    isExpression<T extends ASTNode>(): this is NodePath<T & Expression> {
-        return (ExpressionTypes).has(this.node.type)
-    }
+  isLoop<T extends ASTNode>(): this is NodePath<T & Loop> {
+    return loopTypes.has(this.node.type);
+  }
 
-    isPrimaryExpression<T extends ASTNode>(): this is NodePath<T & Expression> {
-        return (PrimaryExpressionTypes).has(this.node.type)
-    }
-
-    isSimpleStatement<T extends ASTNode>(): this is NodePath<T & Expression> {
-        return (SimpleStatementTypes).has(this.node.type)
-    }
-
-    isTypeName<T extends ASTNode>(): this is NodePath<T & Expression> {
-        return (TypeNameTypes).has(this.node.type)
-    }
-
-    isStatement<T extends ASTNode>(): this is NodePath<T & Statement> {
-        return (StatementTypes).has(this.node.type)
-    }
-
-    isLiteral<T extends ASTNode>(): this is NodePath<T & Literal> {
-        return (LiteralTypes).has(this.node.type)
-    }
-
-    isLoop<T extends ASTNode>(): this is NodePath<T & Loop> {
-        return (loopTypes).has(this.node.type)
-    }
-
-    // specific
-    isNameValueList<T extends ASTNode>(): this is NodePath<T & NameValueList> {
-        return this.node.type === 'NameValueList'
-    }
+  // specific
+  isNameValueList<T extends ASTNode>(): this is NodePath<T & NameValueList> {
+    return this.node.type === "NameValueList";
+  }
 }
 
 function isASTNode(node: unknown): node is ASTNode {
-    if (typeof node !== 'object' || node === null) {
-      return false
-    }
-  
-    const nodeAsASTNode = node as ASTNode
-  
-    if (
-      Object.prototype.hasOwnProperty.call(nodeAsASTNode, 'type') &&
-      typeof nodeAsASTNode.type === 'string'
-    ) {
-      return astNodeTypes.includes(nodeAsASTNode.type)
-    }
-  
-    return false
+  if (typeof node !== "object" || node === null) {
+    return false;
   }
 
-  const AssemblyItemTypes = new Set([
-    "Identifier",
-    "AssemblyBlock",
-    "AssemblyExpression", "AssemblyLocalDefinition", "AssemblyAssignment", "AssemblyStackAssignment", "LabelDefinition", "AssemblySwitch", "AssemblyFunctionDefinition", "AssemblyFor", "AssemblyIf", "Break", "Continue", "SubAssembly", "NumberLiteral", "StringLiteral", "HexNumber", "HexLiteral", "DecimalNumber"
-  ])
-  const AssemblyExpressionTypes = new Set([
-    "AssemblyCall",
-    "AssemblyLiteral"
-  ])
+  const nodeAsASTNode = node as ASTNode;
 
-  const ExpressionTypes = new Set([
-    "IndexAccess", "IndexRangeAccess", "TupleExpression", "BinaryOperation", "Conditional", "MemberAccess", "FunctionCall", "UnaryOperation", "NewExpression", "PrimaryExpression", "NameValueExpression"
-  ])
+  if (
+    Object.prototype.hasOwnProperty.call(nodeAsASTNode, "type") &&
+    typeof nodeAsASTNode.type === "string"
+  ) {
+    return astNodeTypes.includes(nodeAsASTNode.type);
+  }
 
-  const LiteralTypes = new Set([
-    "BooleanLiteral", "HexLiteral", "StringLiteral", "NumberLiteral"
-  ])
+  return false;
+}
 
-  const SimpleStatementTypes = new Set([
-    "VariableDeclarationStatement", "ExpressionStatement"
-  ])
+const AssemblyItemTypes = new Set([
+  "Identifier",
+  "AssemblyBlock",
+  "AssemblyExpression",
+  "AssemblyLocalDefinition",
+  "AssemblyAssignment",
+  "AssemblyStackAssignment",
+  "LabelDefinition",
+  "AssemblySwitch",
+  "AssemblyFunctionDefinition",
+  "AssemblyFor",
+  "AssemblyIf",
+  "Break",
+  "Continue",
+  "SubAssembly",
+  "NumberLiteral",
+  "StringLiteral",
+  "HexNumber",
+  "HexLiteral",
+  "DecimalNumber",
+]);
+const AssemblyExpressionTypes = new Set(["AssemblyCall", "AssemblyLiteral"]);
 
-  const TypeNameTypes = new Set([
-    "ElementaryTypeName", "UserDefinedTypeName", "Mapping", "ArrayTypeName", "FunctionTypeName"
-  ])
+const ExpressionTypes = new Set([
+  "IndexAccess",
+  "IndexRangeAccess",
+  "TupleExpression",
+  "BinaryOperation",
+  "Conditional",
+  "MemberAccess",
+  "FunctionCall",
+  "UnaryOperation",
+  "NewExpression",
+  "PrimaryExpression",
+  "NameValueExpression",
+]);
 
-  const PrimaryExpressionTypes = new Set([
-    ...LiteralTypes, "Identifier", "TupleExpression", ...TypeNameTypes
-  ])
+const LiteralTypes = new Set([
+  "BooleanLiteral",
+  "HexLiteral",
+  "StringLiteral",
+  "NumberLiteral",
+]);
 
-  const StatementTypes = new Set([
-    "IfStatement", "WhileStatement", "ForStatement", "Block", "InlineAssemblyStatement", "DoWhileStatement", "ContinueStatement", "BreakStatement", "ReturnStatement", "EmitStatement", "ThrowStatement", "VariableDeclarationStatement", "UncheckedStatement", "TryStatement", "RevertStatement", ...SimpleStatementTypes
-  ])
+const SimpleStatementTypes = new Set([
+  "VariableDeclarationStatement",
+  "ExpressionStatement",
+]);
 
-  const loopTypes = new Set([
-    "WhileStatement", "ForStatement", "DoWhileStatement"
-  ])
+const TypeNameTypes = new Set([
+  "ElementaryTypeName",
+  "UserDefinedTypeName",
+  "Mapping",
+  "ArrayTypeName",
+  "FunctionTypeName",
+]);
 
-  export declare type Literal = BooleanLiteral | HexLiteral | StringLiteral | NumberLiteral
-  export declare type Loop = WhileStatement | ForStatement | DoWhileStatement
+const PrimaryExpressionTypes = new Set([
+  ...LiteralTypes,
+  "Identifier",
+  "TupleExpression",
+  ...TypeNameTypes,
+]);
+
+const StatementTypes = new Set([
+  "IfStatement",
+  "WhileStatement",
+  "ForStatement",
+  "Block",
+  "InlineAssemblyStatement",
+  "DoWhileStatement",
+  "ContinueStatement",
+  "BreakStatement",
+  "ReturnStatement",
+  "EmitStatement",
+  "ThrowStatement",
+  "VariableDeclarationStatement",
+  "UncheckedStatement",
+  "TryStatement",
+  "RevertStatement",
+  ...SimpleStatementTypes,
+]);
+
+const loopTypes = new Set([
+  "WhileStatement",
+  "ForStatement",
+  "DoWhileStatement",
+]);
+
+export declare type Literal =
+  | BooleanLiteral
+  | HexLiteral
+  | StringLiteral
+  | NumberLiteral;
+export declare type Loop = WhileStatement | ForStatement | DoWhileStatement;
