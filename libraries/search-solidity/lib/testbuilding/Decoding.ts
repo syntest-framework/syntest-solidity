@@ -1,7 +1,7 @@
 /*
  * Copyright 2020-2023 Delft University of Technology and SynTest contributors
  *
- * This file is part of SynTest Framework - SynTest JavaScript.
+ * This file is part of SynTest Framework - SynTest Solidity.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import * as chai from "chai";
 
-import { TreeCrossoverPlugin } from "../lib/plugins/crossover/TreeCrossoverPlugin";
+import { Statement } from "../testcase/statements/Statement";
 
-const expect = chai.expect;
-
-/**
- * This test is only added such that the github action does not fail.
- */
-describe("example test", () => {
-  it("test", () => {
-    new TreeCrossoverPlugin();
-    expect(true);
-  });
-});
+export type Decoding = {
+    decoded: string;
+    
+    reference: Statement;
+  }
+  

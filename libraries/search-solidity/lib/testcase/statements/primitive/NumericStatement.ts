@@ -23,6 +23,8 @@ import { PrimitiveStatement } from "./PrimitiveStatement";
 import { Fixed, Parameter, Ufixed } from "@syntest/analysis-solidity";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { Statement } from "../Statement";
+import { ContextBuilder } from "../../../testbuilding/ContextBuilder";
+import { Decoding } from "../../../testbuilding/Decoding";
 
 /**
  * Generic number class
@@ -103,5 +105,15 @@ export class NumericStatement extends PrimitiveStatement<
 
   get lower_bound(): BigNumber {
     return this._lower_bound;
+  }
+
+  decode(context: ContextBuilder): Decoding[] {
+    const asString = this.value.toString();
+    return [
+      {
+        decoded: `const ${context.getOrCreateVariableName(this.type)} = BigNumber(${asString});`,
+        reference: this,
+      },
+    ];
   }
 }

@@ -21,11 +21,10 @@ import { prng } from "@syntest/prng";
 import { SoliditySampler } from "./SoliditySampler";
 import { AddressStatement } from "../statements/primitive/AddressStatement";
 import BigNumber from "bignumber.js";
-import { ArrayStatement } from "../statements/complex/ArrayStatement";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
-import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
+import { ContractFunctionCall } from "../statements/action/ContractFunctionCall";
 import { NumericStatement } from "../statements/primitive/NumericStatement";
 import { BoolStatement } from "../statements/primitive/BoolStatement";
 import { StringStatement } from "../statements/primitive/StringStatement";
@@ -35,21 +34,25 @@ import {
   Address,
   Bool,
   ConstantPool,
+  Contract,
   DynamicSizeByteArray,
   Fixed,
   FixedSizeByteArray,
+  FunctionType,
   Int,
   Parameter,
   StringType,
   TypeEnum,
   Ufixed,
   Uint,
+  isExternal,
 } from "@syntest/analysis-solidity";
 import { TargetType } from "@syntest/analysis";
 import { FunctionTarget } from "@syntest/analysis-solidity";
 import { IntegerStatement } from "../statements/primitive/IntegerStatement";
 import { DynamicSizeByteArrayStatement } from "../statements/primitive/DynamicSizeByteArrayStatement";
 import { FixedSizeByteArrayStatement } from "../statements/primitive/FixedSizeByteArrayStatement";
+import { StatementPool } from "../StatementPool";
 
 /**
  * SolidityRandomSampler class
@@ -91,26 +94,82 @@ export class SolidityRandomSampler extends SoliditySampler {
   }
 
   sample(): SolidityTestCase {
-    const root = this.sampleConstructor(0);
+    const roots: ActionStatement[] = [];
 
-    return new SolidityTestCase(root);
+    for (
+      let index = 0;
+      index < prng.nextInt(1, this.maxActionStatements); // (i think its better to start with a single statement)
+      index++
+    ) {
+      this.statementPool = new StatementPool(roots);
+      roots.push(this.sampleRoot());
+    }
+    this.statementPool = undefined;
+
+    return new SolidityTestCase(roots);
   }
 
-  sampleContractFunction(
+  sampleRoot(): ActionStatement {
+    const targets = (<SoliditySubject>this._subject).getActionableTargets();
+
+    const action = prng.pickOne(
+      targets.filter(
+        (target) => 
+          (target.type === TargetType.CLASS) ||
+          (target.type === TargetType.FUNCTION && isExternal(target))
+      )
+    )
+
+    switch (action.type) {
+      case TargetType.CLASS: {
+        return this.sampleConstructorCall(0, {
+          name: action.name,
+          type: {
+            type: TypeEnum.CONTRACT,
+            id: action.id
+          }
+        })
+      }
+      case TargetType.FUNCTION: {
+        if (action.isConstructor) {
+          return this.sampleConstructorCall(0, {
+            name: action.name,
+            type: {
+              type: TypeEnum.CONTRACT,
+              id: action.id
+            }
+          })
+        }
+        return this.sampleContractFunctionCall(0, {
+          name: action.name,
+          type: {
+            type: TypeEnum.FUNCTION,
+            parameters: action.parameters,
+            returns: action.returnParameters,
+            visibility: action.visibility,
+            stateMutability: action.mutability
+          }
+        })
+      }
+    }
+  }
+
+  sampleContractFunctionCall(
     depth: number,
-    root: ConstructorCall
-  ): ObjectFunctionCall {
+    type: Parameter<FunctionType>
+  ): ContractFunctionCall {
     const actions = (<SoliditySubject>this._subject)
       .getActionableTargetsByType(TargetType.FUNCTION)
-      .filter((x) => (<FunctionTarget>x).name !== "constructor");
-
-    // TODO make sure these actions are available on this root
+      .filter((x) => (<FunctionTarget>x).name !== "constructor")
 
     if (actions.length === 0) {
       throw new Error("There are no functions to test!");
     }
 
     const action = <FunctionTarget>prng.pickOne(actions);
+    const contractTarget = (<SoliditySubject>this._subject)
+      .getActionableTargetsByType(TargetType.FUNCTION)
+      .find((x) => x.id === action.contractId)
 
     const arguments_: Statement[] = [];
 
@@ -118,14 +177,9 @@ export class SolidityRandomSampler extends SoliditySampler {
       arguments_.push(this.sampleArgument(depth + 1, parameter));
     }
 
-    const uniqueID = prng.uniqueId();
-    // TODO not sure why this is needed
-    // if (action.returnType == "") uniqueID = "var" + uniqueID;
-
-    return new ObjectFunctionCall(
-      action.returnParameters,
-      uniqueID,
-      root,
+    return new ContractFunctionCall(
+      type,
+      prng.uniqueId(),
       action.name,
       arguments_,
       this.sampleAddressStatement(depth + 1, {
@@ -134,29 +188,35 @@ export class SolidityRandomSampler extends SoliditySampler {
           type: TypeEnum.ADDRESS,
           stateMutability: undefined
         }
+      }),
+      this.sampleConstructorCall(depth +1, {
+        name: contractTarget.name,
+        type: {
+          type: TypeEnum.CONTRACT,
+          id: contractTarget.id
+        }
       })
     );
   }
 
-  sampleConstructor(depth: number): ConstructorCall {
+  sampleConstructorCall(depth: number, type: Parameter<Contract>): ConstructorCall {
     const constructors = (<SoliditySubject>this._subject)
       .getActionableTargetsByType(TargetType.FUNCTION)
-      .filter((x) => (<FunctionTarget>x).name === "constructor");
+      .filter((x) => (<FunctionTarget>x).name === "constructor")
+      .filter((x) => (<FunctionTarget>x).contractId === type.type.id)
 
     if (constructors.length > 0) {
       const action = <FunctionTarget>prng.pickOne(constructors);
 
       const arguments_: Statement[] = [];
       for (const parameter of action.parameters) {
-        arguments_.push(this.sampleArgument(1, parameter));
+        arguments_.push(this.sampleArgument(depth + 1, parameter));
       }
 
-      const root = new ConstructorCall(
-        [{ type: action.name, name: "contract" }],
+      return new ConstructorCall(
+        type,
         prng.uniqueId(),
-        `${action.name}`,
         arguments_,
-        [],
         this.sampleAddressStatement(depth + 1, {
           name: 'address',
           type: {
@@ -165,22 +225,11 @@ export class SolidityRandomSampler extends SoliditySampler {
           }
         })
       );
-
-      const nCalls = prng.nextInt(1, 5);
-      for (let index = 0; index <= nCalls; index++) {
-        const call = this.sampleContractFunction(depth + 1, root);
-        root.setMethodCall(index, call as ActionStatement);
-      }
-
-      // constructors do not have return parameters...
-      return root;
     } else {
       // if no constructors is available, we invoke the default (implicit) constructor
-      const root = new ConstructorCall(
-        [{ type: this._subject.name, name: "contract" }],
+      return new ConstructorCall(
+        type,
         prng.uniqueId(),
-        `${this._subject.name}`,
-        [],
         [],
         this.sampleAddressStatement(depth + 1, {
           name: 'address',
@@ -190,14 +239,6 @@ export class SolidityRandomSampler extends SoliditySampler {
           }
         })
       );
-
-      const nCalls = prng.nextInt(1, 5);
-      for (let index = 0; index <= nCalls; index++) {
-        const call = this.sampleContractFunction(depth + 1, root);
-        root.setMethodCall(index, call as ActionStatement);
-      }
-
-      return root;
     }
   }
 

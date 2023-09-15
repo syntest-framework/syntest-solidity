@@ -16,9 +16,7 @@
  * limitations under the License.
  */
 
-export * from "./lib/criterion/RequireObjectiveFunction";
-
-export * from "./lib/search/crossover/SolidityTreeCrossover";
+export * from "./lib/search/crossover/TreeCrossover";
 export * from "./lib/search/SolidityExecutionResult";
 export * from "./lib/search/SoliditySubject";
 
@@ -32,8 +30,7 @@ export * from "./lib/testcase/sampling/SoliditySampler";
 
 export * from "./lib/testcase/statements/action/ActionStatement";
 export * from "./lib/testcase/statements/action/ConstructorCall";
-export * from "./lib/testcase/statements/action/FunctionCall";
-export * from "./lib/testcase/statements/action/ObjectFunctionCall";
+export * from "./lib/testcase/statements/action/ContractFunctionCall";
 
 export * from "./lib/testcase/statements/primitive/AddressStatement";
 export * from "./lib/testcase/statements/primitive/BoolStatement";
@@ -42,7 +39,6 @@ export * from "./lib/testcase/statements/primitive/NumericStatement";
 export * from "./lib/testcase/statements/primitive/PrimitiveStatement";
 export * from "./lib/testcase/statements/primitive/StringStatement";
 
-export * from "./lib/testcase/statements/RootStatement";
 export * from "./lib/testcase/statements/Statement";
 
 export * from "./lib/testcase/SolidityTestCase";

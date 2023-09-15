@@ -22,33 +22,26 @@ import { Parameter, Type } from "@syntest/analysis-solidity";
 import { SolidityTestCase } from "../../SolidityTestCase";
 
 /**
- * @author Dimitri Stallenberg
+ * PrimitiveStatement
  */
-export abstract class PrimitiveStatement<T, X extends Type> extends Statement {
-  get type(): Parameter<X> {
-    return <Parameter<X>>this.types[0];
-  }
-
-  get varName(): string {
-    return this.varNames[0];
-  }
+export abstract class PrimitiveStatement<T, X extends Type> extends Statement<X> {
 
   get value(): T {
     return this._value;
   }
   protected _value: T;
 
-  constructor(type: Parameter, uniqueId: string, value: T) {
-    super([type], uniqueId);
+  constructor(type: Parameter<X>, uniqueId: string, value: T) {
+    super(type, uniqueId);
     this._value = value;
   }
 
-  abstract mutate(
+  abstract override mutate(
     sampler: EncodingSampler<SolidityTestCase>,
     depth: number
   ): Statement;
 
-  abstract copy(): PrimitiveStatement<T, X>;
+  abstract override copy(): PrimitiveStatement<T, X>;
 
   hasChildren(): boolean {
     return false;
@@ -56,5 +49,9 @@ export abstract class PrimitiveStatement<T, X extends Type> extends Statement {
 
   getChildren(): Statement[] {
     return [];
+  }
+
+  override setChild(): void {
+    throw new Error(`Cannot set child of PrimitiveStatement!`)
   }
 }

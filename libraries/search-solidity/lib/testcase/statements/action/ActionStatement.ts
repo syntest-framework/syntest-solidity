@@ -16,23 +16,27 @@
  * limitations under the License.
  */
 
+import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { Statement } from "../Statement";
-import { Parameter } from "@syntest/analysis-solidity";
+import { Parameter, Type } from "@syntest/analysis-solidity";
 
 /**
- * @author Dimitri Stallenberg
+ * ActionStatement
  */
-export abstract class ActionStatement extends Statement {
+export abstract class ActionStatement<T extends Type = Type> extends Statement<T> {
   private _arguments_: Statement[];
 
   protected constructor(
-    types: Parameter[],
+    type: Parameter<T>,
     uniqueId: string,
     arguments_: Statement[]
   ) {
-    super(types, uniqueId);
+    super(type, uniqueId);
     this._arguments_ = arguments_;
   }
+
+  abstract override mutate(sampler: SoliditySampler, depth: number): ActionStatement<T>
+  abstract override copy(): ActionStatement<T>
 
   hasChildren(): boolean {
     return this._arguments_.length > 0;

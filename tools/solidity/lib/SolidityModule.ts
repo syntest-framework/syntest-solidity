@@ -21,6 +21,9 @@ import { MetricManager } from "@syntest/metric";
 import { ModuleManager, Module, Tool } from "@syntest/module";
 import { StorageManager } from "@syntest/storage";
 import yargs = require("yargs");
+import { getTestCommand } from "./commands/test";
+import { TreeCrossoverPlugin } from "./plugins/crossover/TreeCrossoverPlugin";
+import { RandomSamplerPlugin } from "./plugins/sampler/RandomSamplerPlugin";
 
 export default class SolidityModule extends TestingToolModule {
   constructor() {

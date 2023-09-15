@@ -94,8 +94,7 @@ export class SoliditySuiteBuilder {
         const decodedTest = this.decoder.decode(
           archive.get(key),
           `${key}`,
-          addLogs,
-          sourceDirectory
+          addLogs
         );
         const testPath = this.storageManager.store(
           [testDirectory],
@@ -111,8 +110,7 @@ export class SoliditySuiteBuilder {
           const decodedTest = this.decoder.decode(
             testCase,
             "",
-            addLogs,
-            sourceDirectory
+            addLogs
           );
           const testPath = this.storageManager.store(
             [testDirectory],

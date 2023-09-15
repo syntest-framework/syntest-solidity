@@ -23,6 +23,8 @@ import { PrimitiveStatement } from "./PrimitiveStatement";
 import { Int, Parameter, Uint } from "@syntest/analysis-solidity";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { Statement } from "../Statement";
+import { ContextBuilder } from "../../../testbuilding/ContextBuilder";
+import { Decoding } from "../../../testbuilding/Decoding";
 
 /**
  * Generic number class
@@ -103,5 +105,15 @@ export class IntegerStatement extends PrimitiveStatement<
 
   override get value(): BigNumber {
     return new BigNumber(this._value.toPrecision(0));
+  }
+
+  decode(context: ContextBuilder): Decoding[] {
+    const asString = this.value.toString();
+    return [
+      {
+        decoded: `const ${context.getOrCreateVariableName(this.type)} = BigInt(${asString});`,
+        reference: this,
+      },
+    ];
   }
 }

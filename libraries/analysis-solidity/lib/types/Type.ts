@@ -20,6 +20,7 @@ import { Parameter } from "./Parameter";
 import { StateMutability } from "./StateMutability";
 import { Visibility } from "./Visibility";
 
+
 export enum TypeEnum {
   ADDRESS = "address",
   BOOL = "bool",
@@ -101,6 +102,7 @@ export type StringType = {
 
 export type Contract = {
   type: TypeEnum.CONTRACT;
+  id: string;
 };
 
 export type UserDefined = {
@@ -143,3 +145,40 @@ export type Type =
   | FunctionType
   | Mapping
   | ArrayType;
+
+
+
+export function typeToString(type: Type): string {
+  switch (type.type) {
+    case TypeEnum.ADDRESS:
+    case TypeEnum.STRING:
+      case TypeEnum.DYNAMIC_SIZE_BYTE_ARRAY:
+        case TypeEnum.CONTRACT:
+
+
+    case TypeEnum.BOOL: {
+      return type.type // TODO statementMutatbility
+    }
+    case TypeEnum.INT:
+    case TypeEnum.FIXED: {
+      return `${type.signed ? '' : 'u'}${type.type}${type.bits}`
+    }
+    case TypeEnum.FIXED_SIZE_BYTE_ARRAY: {
+      return `${type.type}${type.bytes}`
+    }
+      case TypeEnum.FUNCTION: {
+        return `${type.type} (${type.parameters.map((t) => typeToString(t.type)).join(', ')}) {${type.visibility}} [${type.stateMutability}] [returns (${type.parameters.map((t) => typeToString(t.type)).join(', ')})]`
+      }
+      case TypeEnum.MAPPING: {
+        return `${type.type} (${typeToString(type.keyType)} => ${typeToString(type.valueType)})`
+      }
+      case TypeEnum.USER_DEFINED: {
+        return `${type.type} (${type.name})`
+      }
+
+        case TypeEnum.ARRAY:  {
+          return `${type.baseType}[]`
+        }
+
+  }
+}

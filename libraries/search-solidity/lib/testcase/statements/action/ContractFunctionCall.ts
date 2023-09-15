@@ -16,75 +16,86 @@
  * limitations under the License.
  */
 
+import { ConstructorCall } from "./ConstructorCall";
 import { AddressStatement } from "../primitive/AddressStatement";
+
 import { prng } from "@syntest/prng";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { ActionStatement } from "./ActionStatement";
 import { Statement } from "../Statement";
-import { Contract, Parameter } from "@syntest/analysis-solidity";
+import { Parameter, FunctionType } from "@syntest/analysis-solidity";
 import { ContextBuilder } from "../../../testbuilding/ContextBuilder";
 import { Decoding } from "../../../testbuilding/Decoding";
 import { shouldNeverHappen } from "@syntest/search";
 
-/**
- * ConstructorCall
- */
-export class ConstructorCall extends ActionStatement<Contract> {
+export class ContractFunctionCall extends ActionStatement<FunctionType> {
+  private readonly _functionName: string;
   private _sender: AddressStatement;
+
+  private _constructor: ConstructorCall;
 
   /**
    * Constructor
-   * @param types the return types of the constructor
-   * @param uniqueId optional argument
-   * @param constructorName the name of the constructor
-   * @param args the arguments of the constructor
-   * @param calls the methods calls of the constructor
-   * @param sender the sender of the message
+   * @param types the return types of the function
+   * @param uniqueId id of the gene
+   * @param constructor the object to call the function on
+   * @param functionName the name of the function
+   * @param args the arguments of the function
    */
   constructor(
-    type: Parameter<Contract>,
+    type: Parameter<FunctionType>,
     uniqueId: string,
+    functionName: string,
     arguments_: Statement[],
-    sender: AddressStatement
+    sender: AddressStatement,
+    constructor: ConstructorCall
   ) {
-    super(type, uniqueId, arguments_);
+    super(type, uniqueId, [...arguments_]);
+    this._functionName = functionName;
     this._sender = sender;
+    this._constructor = constructor;
   }
 
-  mutate(sampler: SoliditySampler, depth: number) {
-    if (sampler.deltaMutationProbability) {
+  mutate(sampler: SoliditySampler, depth: number): ContractFunctionCall {
+    if (prng.nextBoolean(sampler.deltaMutationProbability)) {
       const arguments_ = this.arguments_.map((a: Statement) => a.copy());
+      let constructor_ = this._constructor.copy()
       let sender = this._sender.copy()
 
-      if (arguments_.length > 0) {
-        const index = prng.nextInt(0, arguments_.length + 1);
-        if (arguments_[index] === undefined) {
-          sender = <AddressStatement>sender.mutate(sampler, depth + 1)
-        } else {
-          arguments_[index] = arguments_[index].mutate(sampler, depth + 1);
-        }
+      const index = prng.nextInt(0, arguments_.length + 1);
+
+      if (index < arguments_.length) {
+        arguments_[index] = arguments_[index].mutate(sampler, depth + 1);
+      } else if (index === arguments_.length) {
+        constructor_ = constructor_.mutate(sampler, depth + 1);
       } else {
         sender = <AddressStatement>sender.mutate(sampler, depth + 1)
       }
-  
-      return new ConstructorCall(
+
+      return new ContractFunctionCall(
         this.type,
-        prng.uniqueId(),
-        this.arguments_,
-        sender
+        this.uniqueId,
+        this._functionName,
+        arguments_,
+        sender,
+        constructor_
       );
     } else {
-      return sampler.sampleConstructorCall(depth, this.type)
+      // resample the gene
+      return sampler.sampleContractFunctionCall(depth, this.type)
     }
   }
 
   copy() {
     const deepCopyArguments = this.arguments_.map((a: Statement) => a.copy());
-    return new ConstructorCall(
+
+    return new ContractFunctionCall(
       this.type,
       this.uniqueId,
+      this._functionName,
       deepCopyArguments,
-      this._sender.copy()
+      this._sender.copy(),
+      this._constructor.copy()
     );
   }
 
@@ -94,7 +105,7 @@ export class ConstructorCall extends ActionStatement<Contract> {
   }
 
   override getChildren(): Statement[] {
-    return [...this.arguments_, this._sender];
+    return [...this.arguments_, this._sender, this._constructor];
   }
 
   override setChild(index: number, newChild: Statement) {
@@ -106,7 +117,12 @@ export class ConstructorCall extends ActionStatement<Contract> {
       throw new Error(shouldNeverHappen(`Invalid index used index: ${index}`));
     }
 
-    if (index === this.arguments_.length) {
+    if (index === this.arguments_.length + 1) {
+      if (!(newChild instanceof ConstructorCall)) {
+        throw new TypeError(shouldNeverHappen("should be a constructor"));
+      }
+      this._constructor = newChild;
+    } else if (index === this.arguments_.length) {
       if (!(newChild instanceof AddressStatement)) {
         throw new TypeError(shouldNeverHappen("should be a constructor"));
       }
@@ -117,17 +133,26 @@ export class ConstructorCall extends ActionStatement<Contract> {
   }
 
   decode(context: ContextBuilder, exception: boolean): Decoding[] {
+    const constructorName = context.getOrCreateVariableName(this._constructor.type)
     const senderName = context.getOrCreateVariableName(this._sender.type)
     const argumentNames = this.arguments_.map((a) => context.getOrCreateVariableName(a.type)).join(", ");
 
+    const returnValues: string[] = this.type.type.returns.map((returnValue) => context.getOrCreateVariableName(returnValue))
     const senderString = argumentNames == "" ? `{ from: ${senderName} }` : `, { from: ${senderName} }`
 
+    const constructorDecoding: Decoding[] = this._constructor.decode(context, exception)
     const senderDecoding: Decoding[] = this._sender.decode(context)
     const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) => a.decode(context, exception))
 
-    const decoded = exception ? `await expect(${this.type.name}.new(${argumentNames}${senderString})).to.be.rejectedWith(Error);` : `const ${context.getOrCreateVariableName(this.type)} = await ${this.type.name}.new(${argumentNames}${senderString});`;
+    let decoded: string
+    if (exception) {
+      decoded = returnValues.length > 0 ? `await expect(${constructorName}.${this._functionName}.call(${argumentNames}${senderString})).to.be.rejectedWith(Error);` : `await expect(${constructorName}.${this._functionName}.call(${argumentNames}${senderString})).to.be.rejectedWith(Error);`;
+    } else {
+      decoded = returnValues.length > 0 ? `const [${returnValues.join(', ') }] = await ${constructorName}.${this._functionName}.call(${argumentNames}${senderString});` : `await ${constructorName}.${this._functionName}.call(${argumentNames}${senderString});`;
+    }
 
     return [
+      ...constructorDecoding,
       ...senderDecoding,
       ...argumentDecodings,
       {

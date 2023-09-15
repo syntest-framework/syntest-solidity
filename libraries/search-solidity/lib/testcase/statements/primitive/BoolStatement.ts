@@ -20,22 +20,34 @@ import { prng } from "@syntest/prng";
 import { Bool, Parameter } from "@syntest/analysis-solidity";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
+import { Statement } from "../Statement";
+import { ContextBuilder } from "../../../testbuilding/ContextBuilder";
+import { Decoding } from "../../../testbuilding/Decoding";
 
 /**
  * @author Dimitri Stallenberg
  */
 export class BoolStatement extends PrimitiveStatement<boolean, Bool> {
-  constructor(type: Parameter, uniqueId: string, value: boolean) {
+  constructor(type: Parameter<Bool>, uniqueId: string, value: boolean) {
     super(type, uniqueId, value);
   }
 
-  mutate(sampler: SoliditySampler) {
+  mutate(sampler: SoliditySampler, depth: number): Statement {
     return prng.nextBoolean(sampler.deltaMutationProbability)
       ? new BoolStatement(this.type, this.uniqueId, !this.value)
-      : BoolStatement.getRandom(this.type);
+      : sampler.sampleArgument(depth, this.type)
   }
 
   copy() {
     return new BoolStatement(this.type, this.uniqueId, this.value);
+  }
+
+  decode(context: ContextBuilder): Decoding[] {
+    return [
+      {
+        decoded: `const ${context.getOrCreateVariableName(this.type)} = ${this.value};`,
+        reference: this,
+      },
+    ];
   }
 }

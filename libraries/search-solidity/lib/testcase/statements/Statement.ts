@@ -17,37 +17,32 @@
  */
 
 import { EncodingSampler, Encoding } from "@syntest/search";
-import { Parameter } from "@syntest/analysis-solidity";
+import { Parameter, Type } from "@syntest/analysis-solidity";
+import { Decoding } from "../../testbuilding/Decoding";
+import { ContextBuilder } from "../../testbuilding/ContextBuilder";
 
 /**
  * Statement
  */
-export abstract class Statement {
-  public get varNames(): string[] {
-    return this._varNames;
-  }
+export abstract class Statement<T extends Type = Type> {
   public get uniqueId(): string {
     return this._uniqueId;
   }
-  public get types(): Parameter[] {
-    return this._types;
+  public get type(): Parameter<T> {
+    return this._type;
   }
 
-  private _varNames: string[];
-  private _types: Parameter[];
+  private _type: Parameter<T>;
   private _uniqueId: string;
 
   /**
    * Constructor
-   * @param types
+   * @param type
    * @param uniqueId
    */
-  protected constructor(types: Parameter[], uniqueId: string) {
-    this._types = types;
+  protected constructor(type: Parameter<T>, uniqueId: string) {
+    this._type = type;
     this._uniqueId = uniqueId;
-    this._varNames = types.map((x) => {
-      return x.name + uniqueId;
-    });
   }
 
   /**
@@ -62,7 +57,7 @@ export abstract class Statement {
    * Creates an exact copy of the current gene
    * @return  the copy of the gene
    */
-  abstract copy(): Statement;
+  abstract copy(): Statement<T>;
 
   /**
    * Checks whether the gene has children
@@ -75,4 +70,22 @@ export abstract class Statement {
    * @return  The set of children of this gene
    */
   abstract getChildren(): Statement[];
+
+   /**
+   * Set a new child at a specified position
+   *
+   * WARNING: This function has side effects
+   *
+   * @param index the index position of the new child
+   * @param newChild the new child
+   */
+  abstract setChild(index: number, child: Statement): void;
+
+  /**
+   * Decodes the statement
+   */
+    abstract decode(
+      context: ContextBuilder,
+      exception: boolean
+    ): Decoding[];
 }

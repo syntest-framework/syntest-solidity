@@ -34,7 +34,7 @@ import { AbstractSyntaxTreeVisitor } from "../ast/AbstractSyntaxTreeVisitor";
 import { NodePath } from "../ast/NodePath";
 import { Type, TypeEnum } from "../types/Type";
 import { Parameter } from "../types/Parameter";
-import { Visibility, getVisibility } from "../types/Visibility";
+import { getVisibility } from "../types/Visibility";
 import { getStateMutability } from "../types/StateMutability";
 
 /**
@@ -117,30 +117,7 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
       return functionParameter;
     });
 
-    let visibility;
-    switch (path.node.visibility) {
-      case "default": {
-        visibility = Visibility.Public;
-        break;
-      }
-      case "public": {
-        visibility = Visibility.Public;
-        break;
-      }
-      case "external": {
-        visibility = Visibility.External;
-        break;
-      }
-      case "internal": {
-        visibility = Visibility.Internal;
-        break;
-      }
-      case "private": {
-        visibility = Visibility.Private;
-        break;
-      }
-    }
-
+    const visibility = getVisibility(path.node.visibility)
     const mutability = getStateMutability(path.node.stateMutability);
 
     const overrides = path.node.override
@@ -166,6 +143,7 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
     const contractFunction: FunctionTarget = {
       type: TargetType.FUNCTION,
       id: id,
+      contractId: this._current.id,
       name: name,
       isConstructor: path.node.isConstructor,
       isFallback: !path.node.name,

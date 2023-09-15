@@ -17,40 +17,120 @@
  */
 
 import { prng } from "@syntest/prng";
-import { PrimitiveStatement } from "../primitive/PrimitiveStatement";
 import { ArrayType, Parameter } from "@syntest/analysis-solidity";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { Statement } from "../Statement";
+import { ContextBuilder } from "../../../testbuilding/ContextBuilder";
+import { Decoding } from "../../../testbuilding/Decoding";
+import { shouldNeverHappen } from "@syntest/search";
 
 /**
  * Special statement specific to solidity contracts
  */
-export class ArrayStatement extends PrimitiveStatement<number[], ArrayType> {
-  private static _upper_bound = 32;
-  private static _lower_bound = 0;
+export class ArrayStatement extends Statement<ArrayType> {
+  private _elements: Statement[]
 
-  constructor(type: Parameter, uniqueId: string, bytes: number[]) {
-    super(type, uniqueId, bytes);
+  constructor(type: Parameter<ArrayType>, uniqueId: string, elements: Statement[]) {
+    super(type, uniqueId, );
+    this._elements = elements
   }
 
   copy() {
-    return new ArrayStatement(this.type, this.uniqueId, [...this.value]);
+    return new ArrayStatement(this.type, this.uniqueId, this._elements.map((element) => element.copy()));
   }
 
   mutate(sampler: SoliditySampler, depth: number): Statement {
     if (prng.nextBoolean(sampler.deltaMutationProbability)) {
-      const index = prng.nextInt(0, this.value.length - 1);
+      const children = this._elements.map((a: Statement) => a.copy());
 
-      const change = prng.nextGaussian(0, 3);
-      const newBytes = [...this.value];
+      const choice = prng.nextDouble();
 
-      const newValue = Math.round(newBytes[index] + change);
-      newBytes[index] = Math.max(ArrayStatement._lower_bound, newValue);
-      newBytes[index] = Math.min(ArrayStatement._upper_bound, newValue);
+      if (children.length > 0) {
+        if (choice < 0.33) {
+          // 33% chance to add a child on this position
+          const index = prng.nextInt(0, children.length);
+          children.splice(
+            index,
+            0,
+            sampler.sampleArgument(depth + 1, {
+              name: `${index}`,
+              type: this.type.type.baseType
+            })
+          );
+        } else if (choice < 0.66) {
+          // 33% chance to remove a child on this position
+          const index = prng.nextInt(0, children.length - 1);
+          children.splice(index, 1);
+        } else {
+          // 33% chance to mutate a child on this position
+          const index = prng.nextInt(0, children.length - 1);
+          children.splice(
+            index,
+            1,
+            sampler.sampleArgument(depth + 1, {
+              name: `${index}`,
+              type: this.type.type.baseType
+            })
+          );
+        }
+      } else {
+        // no children found so we always add
+        children.push(
+          sampler.sampleArgument(depth + 1, {
+            name: `${0}`,
+            type: this.type.type.baseType
+          })
+        );
+      }
 
-      return new ArrayStatement(this.type, prng.uniqueId(), newBytes);
+      return new ArrayStatement(
+        this.type,
+        prng.uniqueId(),
+        children
+      );
     } else {
-      return sampler.sampleArgument(depth, this.type)
+      return sampler.sampleArgument(
+        depth,
+        this.type
+      );
+
     }
+  }
+
+  override hasChildren(): boolean {
+    // since every object function call has an instance there must be atleast one child
+    return this._elements.length > 0;
+  }
+
+  override getChildren(): Statement[] {
+    return [...this._elements];
+  }
+
+  setChild(index: number, newChild: Statement) {
+    if (!newChild) {
+      throw new Error("Invalid new child!");
+    }
+
+    if (index < 0 || index >= this._elements.length) {
+      throw new Error(shouldNeverHappen(`Invalid index used index: ${index}`));
+    }
+
+    this._elements[index] = newChild;
+  }
+
+  decode(context: ContextBuilder, exception: boolean): Decoding[] {
+    const childNames = this._elements.map((a) => context.getOrCreateVariableName(a.type)).join(", ");
+
+    const childDecodings: Decoding[] = this._elements.flatMap((a) => a.decode(context, exception))
+
+    const decoded = `const ${context.getOrCreateVariableName(this.type)} = [${childNames}];`
+
+    return [
+      ...childDecodings,
+      {
+        decoded: decoded,
+        reference: this,
+      },
+    ];
   }
 }

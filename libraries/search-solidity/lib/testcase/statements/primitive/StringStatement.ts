@@ -21,6 +21,8 @@ import { StringType } from "@syntest/analysis-solidity";
 import { PrimitiveStatement } from "./PrimitiveStatement";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { Statement } from "../Statement";
+import { ContextBuilder } from "../../../testbuilding/ContextBuilder";
+import { Decoding } from "../../../testbuilding/Decoding";
 
 /**
  * String statement
@@ -135,5 +137,22 @@ export class StringStatement extends PrimitiveStatement<string, StringType> {
 
   copy(): StringStatement {
     return new StringStatement(this.type, this.uniqueId, this.value);
+  }
+
+  override decode(context: ContextBuilder): Decoding[] {
+    let value = this.value;
+
+    value = value.replaceAll(/\\/g, "\\\\");
+    value = value.replaceAll(/\n/g, "\\n");
+    value = value.replaceAll(/\r/g, "\\r");
+    value = value.replaceAll(/\t/g, "\\t");
+    value = value.replaceAll(/"/g, '\\"');
+
+    return [
+      {
+        decoded: `const ${context.getOrCreateVariableName(this.type)} = "${value}";`,
+        reference: this,
+      },
+    ];
   }
 }

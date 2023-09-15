@@ -21,7 +21,7 @@ import { Parameter } from "@syntest/analysis-solidity";
 
 import { SolidityTestCase } from "../SolidityTestCase";
 import { ConstructorCall } from "../statements/action/ConstructorCall";
-import { ObjectFunctionCall } from "../statements/action/ObjectFunctionCall";
+import { ContractFunctionCall } from "../statements/action/ContractFunctionCall";
 import { Statement } from "../statements/Statement";
 import { SoliditySubject } from "../../search/SoliditySubject";
 import { ConstantPool, RootContext } from "@syntest/analysis-solidity";
@@ -32,6 +32,8 @@ import { IntegerStatement } from "../statements/primitive/IntegerStatement";
 import { StringStatement } from "../statements/primitive/StringStatement";
 import { FixedSizeByteArrayStatement } from "../statements/primitive/FixedSizeByteArrayStatement";
 import { DynamicSizeByteArrayStatement } from "../statements/primitive/DynamicSizeByteArrayStatement";
+import { ActionStatement } from "../statements/action/ActionStatement";
+import { StatementPool } from "../StatementPool";
 
 /**
  * SolidityRandomSampler class
@@ -108,11 +110,13 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
     this._statementPool = statementPool;
   }
 
-  abstract sampleConstructor(depth: number): ConstructorCall;
-  abstract sampleContractFunction(
+  abstract sampleRoot(): ActionStatement;
+
+  abstract sampleConstructorCall(depth: number, type: Parameter): ConstructorCall;
+  abstract sampleContractFunctionCall(
     depth: number,
-    root: ConstructorCall
-  ): ObjectFunctionCall;
+    type: Parameter
+  ): ContractFunctionCall;
 
   abstract sampleArgument(depth: number, type: Parameter): Statement;
 

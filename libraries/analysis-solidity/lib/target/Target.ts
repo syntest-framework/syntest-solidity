@@ -43,6 +43,7 @@ export type ContractTarget = CoreSubTarget & {
 export type FunctionTarget = CoreSubTarget & {
   type: TargetType.FUNCTION;
   id: string;
+  contractId: string;
   name: string;
 
   /**
@@ -94,4 +95,9 @@ export enum ContractKind {
   Contract = "contract",
   Library = "library",
   Interface = "interface",
+}
+
+
+export function isExternal(target: SubTarget) {
+  return target.type === TargetType.FUNCTION && target.visibility === Visibility.External
 }

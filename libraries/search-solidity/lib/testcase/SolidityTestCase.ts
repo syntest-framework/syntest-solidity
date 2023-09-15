@@ -17,9 +17,11 @@
  */
 
 import { Encoding, Decoder } from "@syntest/search";
-import { ConstructorCall } from "./statements/action/ConstructorCall";
 import { SoliditySampler } from "./sampling/SoliditySampler";
 import { Logger, getLogger } from "@syntest/logging";
+import { ActionStatement } from "./statements/action/ActionStatement";
+import { prng } from "@syntest/prng";
+import { StatementPool } from "./StatementPool";
 /**
  * SolidityTestCase class
  *
@@ -28,24 +30,67 @@ import { Logger, getLogger } from "@syntest/logging";
  */
 export class SolidityTestCase extends Encoding {
   protected static LOGGER: Logger;
-  private _root: ConstructorCall;
+
+  private _roots: ActionStatement[];
+
+  private _statementPool: StatementPool;
 
   /**
    * Constructor.
    *
    * @param root The root of the tree chromosome of the test case
    */
-  constructor(root: ConstructorCall) {
+  constructor(roots: ActionStatement[]) {
     super();
     SolidityTestCase.LOGGER = getLogger("SolidityTestCase");
-    this._root = root;
+   
+    this._roots = roots.map((value) => value.copy());
+
+    if (roots.length === 0) {
+      throw new Error("Requires atleast one root action statement");
+    }
+
+    this._statementPool = new StatementPool(roots);
+
   }
 
   mutate(sampler: SoliditySampler) {
     SolidityTestCase.LOGGER.debug(`Mutating test case: ${this._id}`);
-    return new SolidityTestCase(
-      (this._root as ConstructorCall).mutate(sampler, 0)
-    );
+
+    sampler.statementPool = this._statementPool;
+    const roots = this._roots.map((action) => action.copy());
+
+    const choice = prng.nextDouble();
+
+    if (roots.length > 1) {
+      if (choice < 0.33) {
+        // 33% chance to add a root on this position
+        const index = prng.nextInt(0, roots.length);
+        roots.splice(index, 0, sampler.sampleRoot());
+      } else if (choice < 0.66) {
+        // 33% chance to delete the root
+        const index = prng.nextInt(0, roots.length - 1);
+        roots.splice(index, 1);
+      } else {
+        // 33% chance to just mutate the root
+        const index = prng.nextInt(0, roots.length - 1);
+        roots.splice(index, 1, roots[index].mutate(sampler, 1));
+      }
+    } else {
+      if (choice < 0.5) {
+        // 50% chance to add a root on this position
+        const index = prng.nextInt(0, roots.length);
+        roots.splice(index, 0, sampler.sampleRoot());
+      } else {
+        // 50% chance to just mutate the root
+        const index = prng.nextInt(0, roots.length - 1);
+        roots.splice(index, 1, roots[index].mutate(sampler, 1));
+      }
+    }
+
+    sampler.statementPool = undefined;
+
+    return new SolidityTestCase(roots);
   }
 
   hashCode(decoder: Decoder<Encoding, string>): number {
@@ -60,14 +105,14 @@ export class SolidityTestCase extends Encoding {
   }
 
   copy(): SolidityTestCase {
-    return new SolidityTestCase(this.root.copy());
+    return new SolidityTestCase(this._roots.map((root) => root.copy()))
   }
 
   getLength(): number {
-    return (this.root as ConstructorCall).getMethodCalls().length;
+    return this._roots.length;
   }
 
-  get root(): ConstructorCall {
-    return this._root;
+  get roots(): ActionStatement[] {
+    return this._roots.map((value) => value.copy());
   }
 }

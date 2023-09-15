@@ -20,6 +20,9 @@ import { prng } from "@syntest/prng";
 import { Address, Parameter } from "@syntest/analysis-solidity";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { PrimitiveStatement } from "./PrimitiveStatement";
+import { Statement } from "../Statement";
+import { ContextBuilder } from "../../../testbuilding/ContextBuilder";
+import { Decoding } from "../../../testbuilding/Decoding";
 
 /**
  * Special statement specific to solidity contracts
@@ -28,7 +31,7 @@ export class AddressStatement extends PrimitiveStatement<string, Address> {
   private readonly _account: number;
 
   constructor(
-    type: Parameter,
+    type: Parameter<Address>,
     uniqueId: string,
     value: string,
     account: number
@@ -37,7 +40,7 @@ export class AddressStatement extends PrimitiveStatement<string, Address> {
     this._account = account;
   }
 
-  mutate(sampler: SoliditySampler, depth: number): AddressStatement {
+  mutate(sampler: SoliditySampler, depth: number): Statement {
     if (prng.nextBoolean(sampler.deltaMutationProbability)) {
       if (this.value.startsWith("0x")) {
         const newAccount = prng.nextBoolean(0.5)
@@ -66,7 +69,7 @@ export class AddressStatement extends PrimitiveStatement<string, Address> {
             this._account - 1
           );
     } else {
-      return <AddressStatement>sampler.sampleArgument(depth, this.types);
+      return sampler.sampleArgument(depth, this.type);
     }
   }
 
@@ -83,16 +86,24 @@ export class AddressStatement extends PrimitiveStatement<string, Address> {
     return this._account;
   }
 
-  public toCode(): string {
-    if (this.value.startsWith("0x"))
-      return `const ${this.varName} = "${this.value}"`;
-
-    return `const ${this.varName} = ${this.value}`;
-  }
 
   public getValue(): string {
     if (this.value.startsWith("0x")) return `"${this.value}"`;
 
     return `${this.value}`;
+  }
+
+  decode(context: ContextBuilder): Decoding[] {
+    const variableName = context.getOrCreateVariableName(this.type)
+    let decoded = `const ${variableName} = ${this.value};`
+    if (this.value.startsWith('0x')) {
+      decoded = `const ${variableName} = "${this.value}";`
+    }
+    return [
+      {
+        decoded: decoded,
+        reference: this,
+      },
+    ];
   }
 }

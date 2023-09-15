@@ -15,9 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { getUserInterface } from "@syntest/search";
-import * as TruffleProvider from "@truffle/provider";
-import TruffleConfig = require("@truffle/config");
+// eslint-disable-next-line unicorn/prefer-module, @typescript-eslint/no-var-requires
+const TruffleProvider = require("@truffle/provider");
 
 /**
  * Configures the network. Runs before the server is launched.
@@ -30,8 +29,8 @@ import TruffleConfig = require("@truffle/config");
  * @param {TruffleConfig}      config
  * @param {SolidityCoverage} api
  */
-// eslint-disable-next-line
-export function setNetwork(config: TruffleConfig, api: any): void {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function setNetwork(config: any, api: any): void {
   // --network <network-name>
   if (config.network) {
     const network = config.networks[config.network];
@@ -42,7 +41,7 @@ export function setNetwork(config: TruffleConfig, api: any): void {
     }
 
     // Check network id
-    if (isNaN(Number.parseInt(network.network_id))) {
+    if (Number.isNaN(Number.parseInt(network.network_id))) {
       network.network_id = "*";
     } else {
       // Warn: non-matching provider options id and network id
@@ -50,7 +49,7 @@ export function setNetwork(config: TruffleConfig, api: any): void {
         api.providerOptions.network_id &&
         api.providerOptions.network_id !== Number.parseInt(network.network_id)
       ) {
-        getUserInterface().info(
+        console.info(
           "id-clash " + [Number.parseInt(network.network_id)]
         );
       }
@@ -61,13 +60,13 @@ export function setNetwork(config: TruffleConfig, api: any): void {
 
     // Check port: use solcoverjs || default if undefined
     if (!network.port) {
-      getUserInterface().info("no-port " + [api.port]);
+      console.info("no-port " + [api.port]);
       network.port = api.port;
     }
 
     // Warn: port conflicts
     if (api.port !== api.defaultPort && api.port !== network.port) {
-      getUserInterface().info("port-clash " + [network.port]);
+      console.info("port-clash " + [network.port]);
     }
 
     // Prefer network port if defined;
@@ -95,12 +94,12 @@ export function setNetwork(config: TruffleConfig, api: any): void {
 
 // Truffle complains that these outer keys *are not* set when running plugin fn directly.
 // But throws saying they *cannot* be manually set when running as truffle command.
-// eslint-disable-next-line
 export function setOuterConfigKeys(
-  config: TruffleConfig,
-  // eslint-disable-next-line
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   api: any,
-  // eslint-disable-next-line
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   id: any
 ): void {
   try {
@@ -120,8 +119,8 @@ export function setOuterConfigKeys(
  * @param {TruffleConfig} config
  * @param {Array}         accounts
  */
-// eslint-disable-next-line
-export function setNetworkFrom(config: TruffleConfig, accounts: any[]): void {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function setNetworkFrom(config: any, accounts: any[]): void {
   if (!config.networks[config.network].from) {
     config.networks[config.network].from = accounts[0];
   }

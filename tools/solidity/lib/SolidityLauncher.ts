@@ -61,8 +61,7 @@ import {
 } from "@syntest/search-solidity";
 
 import * as path from "node:path";
-import TruffleConfig = require("@truffle/config");
-import API = require("./api");
+
 
 import { createTruffleConfig } from "./util/fileSystem";
 
@@ -78,6 +77,12 @@ import {
   TargetFactory,
   Target,
 } from "@syntest/analysis-solidity";
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
+const TruffleConfig = require("@truffle/config");
+// eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
+const API = require("./api");
+// eslint-disable-next-line @typescript-eslint/no-var-requires, unicorn/prefer-module
 const Web3 = require("web3");
 
 export type SolidityArguments = ArgumentsObject & TestCommandOptions;
@@ -97,9 +102,12 @@ export class SolidityLauncher extends Launcher {
   private decoder: SolidityDecoder;
   private runner: SolidityRunner;
 
-  private api;
-  private config;
-  private truffle;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private api: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private config: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private truffle: any;
 
   constructor(
     arguments_: SolidityArguments,
@@ -116,6 +124,8 @@ export class SolidityLauncher extends Launcher {
       userInterface
     );
     SolidityLauncher.LOGGER = getLogger("SolidityLauncher");
+
+    this.dependencyMap = new Map()
   }
 
   async initialize(): Promise<void> {
@@ -305,7 +315,7 @@ export class SolidityLauncher extends Launcher {
 
     const startTargetSelection = Date.now();
     const targetSelector = new TargetSelector(this.rootContext);
-    this.targets = targetSelector.loadTargets(
+    this.targets = <Target[]>targetSelector.loadTargets(
       this.arguments_.targetInclude,
       this.arguments_.targetExclude
     );
@@ -458,13 +468,17 @@ export class SolidityLauncher extends Launcher {
       `${timeInMs}`
     );
 
+    for (const target of this.targets) {
+      this.dependencyMap.set(target.name, this.rootContext.getDependencies(target.path))
+    }
+
     this.decoder = new SolidityDecoder(
-      this.arguments_.targetRootDirectory,
       path.join(
         this.arguments_.tempSyntestDirectory,
         this.arguments_.fid,
         this.arguments_.logDirectory
-      )
+      ),
+      this.dependencyMap
     );
 
     this.runner = new SolidityRunner(
@@ -510,10 +524,7 @@ export class SolidityLauncher extends Launcher {
       this.storageManager,
       this.decoder,
       this.runner,
-      this.arguments_.logDirectory,
-      this.api,
-      this.truffle,
-      this.config
+      this.arguments_.logDirectory
     );
 
     const reducedArchive = suiteBuilder.reduceArchive(this.archive);
@@ -712,7 +723,7 @@ export class SolidityLauncher extends Launcher {
       this.arguments_.stringAlphabet
     );
 
-    const rootTargets = currentSubject.getPossibleActions();
+    const rootTargets = currentSubject.getActionableTargets();
 
     if (rootTargets.length === 0) {
       SolidityLauncher.LOGGER.info(
@@ -739,7 +750,8 @@ export class SolidityLauncher extends Launcher {
       this.arguments_.stringAlphabet,
       this.arguments_.stringMaxLength,
       this.arguments_.deltaMutationProbability,
-      this.arguments_.exploreIllegalValues
+      this.arguments_.exploreIllegalValues,
+      (<SolidityArguments>this.arguments_).numericDecimals
     );
     sampler.rootContext = rootContext;
 

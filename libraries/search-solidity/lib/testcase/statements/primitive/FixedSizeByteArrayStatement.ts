@@ -21,6 +21,9 @@ import { PrimitiveStatement } from "../primitive/PrimitiveStatement";
 import { FixedSizeByteArray, Parameter } from "@syntest/analysis-solidity";
 import { SoliditySampler } from "../../sampling/SoliditySampler";
 import { Statement } from "../Statement";
+import { Decoding } from "../../../testbuilding/Decoding";
+import { ContextBuilder } from "../../../testbuilding/ContextBuilder";
+import * as web3_utils from "web3-utils";
 
 /**
  * Special statement specific to solidity contracts
@@ -32,7 +35,7 @@ export class FixedSizeByteArrayStatement extends PrimitiveStatement<
   public static upper_bound = 256;
   public static lower_bound = 0;
 
-  constructor(type: Parameter, uniqueId: string, bytes: number[]) {
+  constructor(type: Parameter<FixedSizeByteArray>, uniqueId: string, bytes: number[]) {
     super(type, uniqueId, bytes);
   }
 
@@ -67,5 +70,16 @@ export class FixedSizeByteArrayStatement extends PrimitiveStatement<
     } else {
       return sampler.sampleArgument(depth, this.type);
     }
+  }
+
+  decode(context: ContextBuilder): Decoding[] {
+    const bytes = web3_utils.bytesToHex(this.value);
+
+    return [
+      {
+        decoded: `const ${context.getOrCreateVariableName(this.type)} = "${bytes}";`,
+        reference: this,
+      },
+    ];
   }
 }
