@@ -24,8 +24,10 @@ import { SolidityTestCase } from "../../SolidityTestCase";
 /**
  * PrimitiveStatement
  */
-export abstract class PrimitiveStatement<T, X extends Type> extends Statement<X> {
-
+export abstract class PrimitiveStatement<
+  T,
+  X extends Type
+> extends Statement<X> {
   get value(): T {
     return this._value;
   }
@@ -52,6 +54,6 @@ export abstract class PrimitiveStatement<T, X extends Type> extends Statement<X>
   }
 
   override setChild(): void {
-    throw new Error(`Cannot set child of PrimitiveStatement!`)
+    throw new Error(`Cannot set child of PrimitiveStatement!`);
   }
 }

@@ -71,7 +71,7 @@ export abstract class Statement<T extends Type = Type> {
    */
   abstract getChildren(): Statement[];
 
-   /**
+  /**
    * Set a new child at a specified position
    *
    * WARNING: This function has side effects
@@ -84,8 +84,5 @@ export abstract class Statement<T extends Type = Type> {
   /**
    * Decodes the statement
    */
-    abstract decode(
-      context: ContextBuilder,
-      exception: boolean
-    ): Decoding[];
+  abstract decode(context: ContextBuilder, exception: boolean): Decoding[];
 }

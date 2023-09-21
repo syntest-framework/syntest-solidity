@@ -38,7 +38,7 @@ const mockSampler = new SolidityRandomSampler(
 );
 
 function getRandom() {
-  return new StringStatement(undefined, "0000", "abcde")
+  return new StringStatement(undefined, "0000", "abcde");
 }
 
 describe("StringStatement", () => {
@@ -76,5 +76,4 @@ describe("StringStatement", () => {
 
     expect(statement.value).to.equal(copy.value);
   });
-
 });

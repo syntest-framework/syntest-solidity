@@ -28,15 +28,23 @@ import { shouldNeverHappen } from "@syntest/search";
  * Special statement specific to solidity contracts
  */
 export class ArrayStatement extends Statement<ArrayType> {
-  private _elements: Statement[]
+  private _elements: Statement[];
 
-  constructor(type: Parameter<ArrayType>, uniqueId: string, elements: Statement[]) {
-    super(type, uniqueId, );
-    this._elements = elements
+  constructor(
+    type: Parameter<ArrayType>,
+    uniqueId: string,
+    elements: Statement[]
+  ) {
+    super(type, uniqueId);
+    this._elements = elements;
   }
 
   copy() {
-    return new ArrayStatement(this.type, this.uniqueId, this._elements.map((element) => element.copy()));
+    return new ArrayStatement(
+      this.type,
+      this.uniqueId,
+      this._elements.map((element) => element.copy())
+    );
   }
 
   mutate(sampler: SoliditySampler, depth: number): Statement {
@@ -54,7 +62,7 @@ export class ArrayStatement extends Statement<ArrayType> {
             0,
             sampler.sampleArgument(depth + 1, {
               name: `${index}`,
-              type: this.type.type.baseType
+              type: this.type.type.baseType,
             })
           );
         } else if (choice < 0.66) {
@@ -69,7 +77,7 @@ export class ArrayStatement extends Statement<ArrayType> {
             1,
             sampler.sampleArgument(depth + 1, {
               name: `${index}`,
-              type: this.type.type.baseType
+              type: this.type.type.baseType,
             })
           );
         }
@@ -78,22 +86,14 @@ export class ArrayStatement extends Statement<ArrayType> {
         children.push(
           sampler.sampleArgument(depth + 1, {
             name: `${0}`,
-            type: this.type.type.baseType
+            type: this.type.type.baseType,
           })
         );
       }
 
-      return new ArrayStatement(
-        this.type,
-        prng.uniqueId(),
-        children
-      );
+      return new ArrayStatement(this.type, prng.uniqueId(), children);
     } else {
-      return sampler.sampleArgument(
-        depth,
-        this.type
-      );
-
+      return sampler.sampleArgument(depth, this.type);
     }
   }
 
@@ -119,11 +119,17 @@ export class ArrayStatement extends Statement<ArrayType> {
   }
 
   decode(context: ContextBuilder, exception: boolean): Decoding[] {
-    const childNames = this._elements.map((a) => context.getOrCreateVariableName(a.type)).join(", ");
+    const childNames = this._elements
+      .map((a) => context.getOrCreateVariableName(a.type))
+      .join(", ");
 
-    const childDecodings: Decoding[] = this._elements.flatMap((a) => a.decode(context, exception))
+    const childDecodings: Decoding[] = this._elements.flatMap((a) =>
+      a.decode(context, exception)
+    );
 
-    const decoded = `const ${context.getOrCreateVariableName(this.type)} = [${childNames}];`
+    const decoded = `const ${context.getOrCreateVariableName(
+      this.type
+    )} = [${childNames}];`;
 
     return [
       ...childDecodings,

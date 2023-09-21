@@ -67,7 +67,10 @@ export class TreeCrossover extends Crossover<SolidityTestCase> {
           throw new Error("All statements require a type!");
         }
 
-        if (typeToString(swapA.child.type.type) === typeToString(swapB.child.type.type)) {
+        if (
+          typeToString(swapA.child.type.type) ===
+          typeToString(swapB.child.type.type)
+        ) {
           crossoverOptions.push({
             parentA: swapA,
             parentB: swapB,

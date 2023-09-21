@@ -97,7 +97,9 @@ export enum ContractKind {
   Interface = "interface",
 }
 
-
 export function isExternal(target: SubTarget) {
-  return target.type === TargetType.FUNCTION && target.visibility === Visibility.External
+  return (
+    target.type === TargetType.FUNCTION &&
+    target.visibility === Visibility.External
+  );
 }

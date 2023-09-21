@@ -31,9 +31,12 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
   private tempLogDirectory: string;
   private contractDependencies: Map<string, string[]>;
 
-  constructor(temporaryLogDirectory: string, contractDependencies: Map<string, string[]>) {
+  constructor(
+    temporaryLogDirectory: string,
+    contractDependencies: Map<string, string[]>
+  ) {
     this.tempLogDirectory = temporaryLogDirectory;
-    this.contractDependencies = contractDependencies
+    this.contractDependencies = contractDependencies;
   }
 
   generateAssertions(ind: SolidityTestCase): string[] {
@@ -80,7 +83,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       testCases = [testCases];
     }
 
-    const context = new ContextBuilder(this.contractDependencies)
+    const context = new ContextBuilder(this.contractDependencies);
 
     const tests: string[] = [];
 
@@ -94,7 +97,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       if (decodings.length === 0) {
         throw new Error("No statements in test case");
       }
-      
+
       const testString = [];
 
       if (addLogs) {
@@ -201,26 +204,27 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
           `\n\t\t// Test\n` +
           `${body.join("\n\n")}`
       );
-      
     }
 
     const [imports, linkings] = context.getImports();
     const importsString = imports.join("\n") + `\n\n`;
-    const linkingsString = '\t\t' + linkings.join("\n\t\t") + '\n\n'
+    const linkingsString = "\t\t" + linkings.join("\n\t\t") + "\n\n";
 
-    return `// Imports\n` +
-    importsString +
-    `contract('${targetName}', function(accounts) {\n\t` +
-    tests
-      .map(
-        (test) =>
-          `\tit('test for ${targetName}', async () => {\n` +
-          '\t\t// Linkings\n' +
-          linkingsString +  
-          test +
-          `\n\t});`
-      )
-      .join("\n\n") +
-    `\n})`
+    return (
+      `// Imports\n` +
+      importsString +
+      `contract('${targetName}', function(accounts) {\n\t` +
+      tests
+        .map(
+          (test) =>
+            `\tit('test for ${targetName}', async () => {\n` +
+            "\t\t// Linkings\n" +
+            linkingsString +
+            test +
+            `\n\t});`
+        )
+        .join("\n\n") +
+      `\n})`
+    );
   }
 }

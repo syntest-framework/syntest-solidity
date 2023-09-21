@@ -59,8 +59,8 @@ export class ContractFunctionCall extends ActionStatement<FunctionType> {
   mutate(sampler: SoliditySampler, depth: number): ContractFunctionCall {
     if (prng.nextBoolean(sampler.deltaMutationProbability)) {
       const arguments_ = this.arguments_.map((a: Statement) => a.copy());
-      let constructor_ = this._constructor.copy()
-      let sender = this._sender.copy()
+      let constructor_ = this._constructor.copy();
+      let sender = this._sender.copy();
 
       const index = prng.nextInt(0, arguments_.length + 1);
 
@@ -69,7 +69,7 @@ export class ContractFunctionCall extends ActionStatement<FunctionType> {
       } else if (index === arguments_.length) {
         constructor_ = constructor_.mutate(sampler, depth + 1);
       } else {
-        sender = <AddressStatement>sender.mutate(sampler, depth + 1)
+        sender = <AddressStatement>sender.mutate(sampler, depth + 1);
       }
 
       return new ContractFunctionCall(
@@ -82,7 +82,7 @@ export class ContractFunctionCall extends ActionStatement<FunctionType> {
       );
     } else {
       // resample the gene
-      return sampler.sampleContractFunctionCall(depth, this.type)
+      return sampler.sampleContractFunctionCall(depth, this.type);
     }
   }
 
@@ -133,22 +133,44 @@ export class ContractFunctionCall extends ActionStatement<FunctionType> {
   }
 
   decode(context: ContextBuilder, exception: boolean): Decoding[] {
-    const constructorName = context.getOrCreateVariableName(this._constructor.type)
-    const senderName = context.getOrCreateVariableName(this._sender.type)
-    const argumentNames = this.arguments_.map((a) => context.getOrCreateVariableName(a.type)).join(", ");
+    const constructorName = context.getOrCreateVariableName(
+      this._constructor.type
+    );
+    const senderName = context.getOrCreateVariableName(this._sender.type);
+    const argumentNames = this.arguments_
+      .map((a) => context.getOrCreateVariableName(a.type))
+      .join(", ");
 
-    const returnValues: string[] = this.type.type.returns.map((returnValue) => context.getOrCreateVariableName(returnValue))
-    const senderString = argumentNames == "" ? `{ from: ${senderName} }` : `, { from: ${senderName} }`
+    const returnValues: string[] = this.type.type.returns.map((returnValue) =>
+      context.getOrCreateVariableName(returnValue)
+    );
+    const senderString =
+      argumentNames == ""
+        ? `{ from: ${senderName} }`
+        : `, { from: ${senderName} }`;
 
-    const constructorDecoding: Decoding[] = this._constructor.decode(context, exception)
-    const senderDecoding: Decoding[] = this._sender.decode(context)
-    const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) => a.decode(context, exception))
+    const constructorDecoding: Decoding[] = this._constructor.decode(
+      context,
+      exception
+    );
+    const senderDecoding: Decoding[] = this._sender.decode(context);
+    const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) =>
+      a.decode(context, exception)
+    );
 
-    let decoded: string
+    let decoded: string;
     if (exception) {
-      decoded = returnValues.length > 0 ? `await expect(${constructorName}.${this._functionName}.call(${argumentNames}${senderString})).to.be.rejectedWith(Error);` : `await expect(${constructorName}.${this._functionName}.call(${argumentNames}${senderString})).to.be.rejectedWith(Error);`;
+      decoded =
+        returnValues.length > 0
+          ? `await expect(${constructorName}.${this._functionName}.call(${argumentNames}${senderString})).to.be.rejectedWith(Error);`
+          : `await expect(${constructorName}.${this._functionName}.call(${argumentNames}${senderString})).to.be.rejectedWith(Error);`;
     } else {
-      decoded = returnValues.length > 0 ? `const [${returnValues.join(', ') }] = await ${constructorName}.${this._functionName}.call(${argumentNames}${senderString});` : `await ${constructorName}.${this._functionName}.call(${argumentNames}${senderString});`;
+      decoded =
+        returnValues.length > 0
+          ? `const [${returnValues.join(", ")}] = await ${constructorName}.${
+              this._functionName
+            }.call(${argumentNames}${senderString});`
+          : `await ${constructorName}.${this._functionName}.call(${argumentNames}${senderString});`;
     }
 
     return [

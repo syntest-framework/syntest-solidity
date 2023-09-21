@@ -129,7 +129,8 @@ class Instrumenter {
     returnValue.runnableLines = contract.runnableLines;
     returnValue.contract = contract.instrumented;
     returnValue.contractName = contract.contractName;
-    returnValue.contracts = root.length > 0 ? root.map((n) => n.name) : undefined;
+    returnValue.contracts =
+      root.length > 0 ? root.map((n) => n.name) : undefined;
     return returnValue;
   }
 }

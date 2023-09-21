@@ -1,18 +1,10 @@
 name: publish-release
 
-on:
-  pull_request:
-    types: [closed]
-    branches:
-      - main
+on: workflow_dispatch
 
 jobs:
   publish-release:
     name: Release - Publish
-    # Only run when merging a release branch
-    if: >
-      (github.event.pull_request.merged == true) &&
-      startsWith(github.head_ref, 'release/')
     runs-on: ubuntu-latest
     steps:
       # Cloning
@@ -50,6 +42,13 @@ jobs:
       # Building
       - name: Solidity - Build
         run: npm run build
+
+
+      # Versioning
+      - name: "Solidity - Version"
+        env:
+          GH_TOKEN: ${{ secrets.SYNTEST_CI }}
+        run: npx lerna version --conventional-commits --conventional-graduate --changelog-preset conventionalcommits --create-release github --yes --loglevel silly
 
       # Publishing
       - name: "Solidity - Publish"

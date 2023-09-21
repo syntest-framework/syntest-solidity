@@ -111,7 +111,9 @@ export class NumericStatement extends PrimitiveStatement<
     const asString = this.value.toString();
     return [
       {
-        decoded: `const ${context.getOrCreateVariableName(this.type)} = BigNumber(${asString});`,
+        decoded: `const ${context.getOrCreateVariableName(
+          this.type
+        )} = BigNumber(${asString});`,
         reference: this,
       },
     ];

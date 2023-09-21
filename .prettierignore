@@ -9,3 +9,5 @@ link.sh
 **/coverage
 **/nyc_output
 **/*.md
+*.md
+tools/solidity/CHANGELOG.md

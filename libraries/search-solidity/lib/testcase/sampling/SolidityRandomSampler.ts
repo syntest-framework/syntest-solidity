@@ -114,11 +114,11 @@ export class SolidityRandomSampler extends SoliditySampler {
 
     const action = prng.pickOne(
       targets.filter(
-        (target) => 
-          (target.type === TargetType.CLASS) ||
+        (target) =>
+          target.type === TargetType.CLASS ||
           (target.type === TargetType.FUNCTION && isExternal(target))
       )
-    )
+    );
 
     switch (action.type) {
       case TargetType.CLASS: {
@@ -126,9 +126,9 @@ export class SolidityRandomSampler extends SoliditySampler {
           name: action.name,
           type: {
             type: TypeEnum.CONTRACT,
-            id: action.id
-          }
-        })
+            id: action.id,
+          },
+        });
       }
       case TargetType.FUNCTION: {
         if (action.isConstructor) {
@@ -136,9 +136,9 @@ export class SolidityRandomSampler extends SoliditySampler {
             name: action.name,
             type: {
               type: TypeEnum.CONTRACT,
-              id: action.id
-            }
-          })
+              id: action.id,
+            },
+          });
         }
         return this.sampleContractFunctionCall(0, {
           name: action.name,
@@ -147,9 +147,9 @@ export class SolidityRandomSampler extends SoliditySampler {
             parameters: action.parameters,
             returns: action.returnParameters,
             visibility: action.visibility,
-            stateMutability: action.mutability
-          }
-        })
+            stateMutability: action.mutability,
+          },
+        });
       }
     }
   }
@@ -160,7 +160,7 @@ export class SolidityRandomSampler extends SoliditySampler {
   ): ContractFunctionCall {
     const actions = (<SoliditySubject>this._subject)
       .getActionableTargetsByType(TargetType.FUNCTION)
-      .filter((x) => (<FunctionTarget>x).name !== "constructor")
+      .filter((x) => (<FunctionTarget>x).name !== "constructor");
 
     if (actions.length === 0) {
       throw new Error("There are no functions to test!");
@@ -169,7 +169,7 @@ export class SolidityRandomSampler extends SoliditySampler {
     const action = <FunctionTarget>prng.pickOne(actions);
     const contractTarget = (<SoliditySubject>this._subject)
       .getActionableTargetsByType(TargetType.FUNCTION)
-      .find((x) => x.id === action.contractId)
+      .find((x) => x.id === action.contractId);
 
     const arguments_: Statement[] = [];
 
@@ -183,27 +183,30 @@ export class SolidityRandomSampler extends SoliditySampler {
       action.name,
       arguments_,
       this.sampleAddressStatement(depth + 1, {
-        name: 'address',
+        name: "address",
         type: {
           type: TypeEnum.ADDRESS,
-          stateMutability: undefined
-        }
+          stateMutability: undefined,
+        },
       }),
-      this.sampleConstructorCall(depth +1, {
+      this.sampleConstructorCall(depth + 1, {
         name: contractTarget.name,
         type: {
           type: TypeEnum.CONTRACT,
-          id: contractTarget.id
-        }
+          id: contractTarget.id,
+        },
       })
     );
   }
 
-  sampleConstructorCall(depth: number, type: Parameter<Contract>): ConstructorCall {
+  sampleConstructorCall(
+    depth: number,
+    type: Parameter<Contract>
+  ): ConstructorCall {
     const constructors = (<SoliditySubject>this._subject)
       .getActionableTargetsByType(TargetType.FUNCTION)
       .filter((x) => (<FunctionTarget>x).name === "constructor")
-      .filter((x) => (<FunctionTarget>x).contractId === type.type.id)
+      .filter((x) => (<FunctionTarget>x).contractId === type.type.id);
 
     if (constructors.length > 0) {
       const action = <FunctionTarget>prng.pickOne(constructors);
@@ -218,11 +221,11 @@ export class SolidityRandomSampler extends SoliditySampler {
         prng.uniqueId(),
         arguments_,
         this.sampleAddressStatement(depth + 1, {
-          name: 'address',
+          name: "address",
           type: {
             type: TypeEnum.ADDRESS,
-            stateMutability: undefined
-          }
+            stateMutability: undefined,
+          },
         })
       );
     } else {
@@ -232,11 +235,11 @@ export class SolidityRandomSampler extends SoliditySampler {
         prng.uniqueId(),
         [],
         this.sampleAddressStatement(depth + 1, {
-          name: 'address',
+          name: "address",
           type: {
             type: TypeEnum.ADDRESS,
-            stateMutability: undefined
-          }
+            stateMutability: undefined,
+          },
         })
       );
     }

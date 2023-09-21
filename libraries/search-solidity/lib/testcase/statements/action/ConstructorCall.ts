@@ -54,19 +54,19 @@ export class ConstructorCall extends ActionStatement<Contract> {
   mutate(sampler: SoliditySampler, depth: number) {
     if (sampler.deltaMutationProbability) {
       const arguments_ = this.arguments_.map((a: Statement) => a.copy());
-      let sender = this._sender.copy()
+      let sender = this._sender.copy();
 
       if (arguments_.length > 0) {
         const index = prng.nextInt(0, arguments_.length + 1);
         if (arguments_[index] === undefined) {
-          sender = <AddressStatement>sender.mutate(sampler, depth + 1)
+          sender = <AddressStatement>sender.mutate(sampler, depth + 1);
         } else {
           arguments_[index] = arguments_[index].mutate(sampler, depth + 1);
         }
       } else {
-        sender = <AddressStatement>sender.mutate(sampler, depth + 1)
+        sender = <AddressStatement>sender.mutate(sampler, depth + 1);
       }
-  
+
       return new ConstructorCall(
         this.type,
         prng.uniqueId(),
@@ -74,7 +74,7 @@ export class ConstructorCall extends ActionStatement<Contract> {
         sender
       );
     } else {
-      return sampler.sampleConstructorCall(depth, this.type)
+      return sampler.sampleConstructorCall(depth, this.type);
     }
   }
 
@@ -117,15 +117,26 @@ export class ConstructorCall extends ActionStatement<Contract> {
   }
 
   decode(context: ContextBuilder, exception: boolean): Decoding[] {
-    const senderName = context.getOrCreateVariableName(this._sender.type)
-    const argumentNames = this.arguments_.map((a) => context.getOrCreateVariableName(a.type)).join(", ");
+    const senderName = context.getOrCreateVariableName(this._sender.type);
+    const argumentNames = this.arguments_
+      .map((a) => context.getOrCreateVariableName(a.type))
+      .join(", ");
 
-    const senderString = argumentNames == "" ? `{ from: ${senderName} }` : `, { from: ${senderName} }`
+    const senderString =
+      argumentNames == ""
+        ? `{ from: ${senderName} }`
+        : `, { from: ${senderName} }`;
 
-    const senderDecoding: Decoding[] = this._sender.decode(context)
-    const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) => a.decode(context, exception))
+    const senderDecoding: Decoding[] = this._sender.decode(context);
+    const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) =>
+      a.decode(context, exception)
+    );
 
-    const decoded = exception ? `await expect(${this.type.name}.new(${argumentNames}${senderString})).to.be.rejectedWith(Error);` : `const ${context.getOrCreateVariableName(this.type)} = await ${this.type.name}.new(${argumentNames}${senderString});`;
+    const decoded = exception
+      ? `await expect(${this.type.name}.new(${argumentNames}${senderString})).to.be.rejectedWith(Error);`
+      : `const ${context.getOrCreateVariableName(this.type)} = await ${
+          this.type.name
+        }.new(${argumentNames}${senderString});`;
 
     return [
       ...senderDecoding,

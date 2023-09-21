@@ -35,7 +35,11 @@ export class FixedSizeByteArrayStatement extends PrimitiveStatement<
   public static upper_bound = 256;
   public static lower_bound = 0;
 
-  constructor(type: Parameter<FixedSizeByteArray>, uniqueId: string, bytes: number[]) {
+  constructor(
+    type: Parameter<FixedSizeByteArray>,
+    uniqueId: string,
+    bytes: number[]
+  ) {
     super(type, uniqueId, bytes);
   }
 
@@ -77,7 +81,9 @@ export class FixedSizeByteArrayStatement extends PrimitiveStatement<
 
     return [
       {
-        decoded: `const ${context.getOrCreateVariableName(this.type)} = "${bytes}";`,
+        decoded: `const ${context.getOrCreateVariableName(
+          this.type
+        )} = "${bytes}";`,
         reference: this,
       },
     ];

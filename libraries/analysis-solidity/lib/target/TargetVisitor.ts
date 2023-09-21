@@ -117,7 +117,7 @@ export class TargetVisitor extends AbstractSyntaxTreeVisitor {
       return functionParameter;
     });
 
-    const visibility = getVisibility(path.node.visibility)
+    const visibility = getVisibility(path.node.visibility);
     const mutability = getStateMutability(path.node.stateMutability);
 
     const overrides = path.node.override

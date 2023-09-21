@@ -35,7 +35,7 @@ export class BoolStatement extends PrimitiveStatement<boolean, Bool> {
   mutate(sampler: SoliditySampler, depth: number): Statement {
     return prng.nextBoolean(sampler.deltaMutationProbability)
       ? new BoolStatement(this.type, this.uniqueId, !this.value)
-      : sampler.sampleArgument(depth, this.type)
+      : sampler.sampleArgument(depth, this.type);
   }
 
   copy() {
@@ -45,7 +45,9 @@ export class BoolStatement extends PrimitiveStatement<boolean, Bool> {
   decode(context: ContextBuilder): Decoding[] {
     return [
       {
-        decoded: `const ${context.getOrCreateVariableName(this.type)} = ${this.value};`,
+        decoded: `const ${context.getOrCreateVariableName(this.type)} = ${
+          this.value
+        };`,
         reference: this,
       },
     ];

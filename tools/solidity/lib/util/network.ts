@@ -49,9 +49,7 @@ export function setNetwork(config: any, api: any): void {
         api.providerOptions.network_id &&
         api.providerOptions.network_id !== Number.parseInt(network.network_id)
       ) {
-        console.info(
-          "id-clash " + [Number.parseInt(network.network_id)]
-        );
+        console.info("id-clash " + [Number.parseInt(network.network_id)]);
       }
 
       // Prefer network defined id.
@@ -95,7 +93,7 @@ export function setNetwork(config: any, api: any): void {
 // Truffle complains that these outer keys *are not* set when running plugin fn directly.
 // But throws saying they *cannot* be manually set when running as truffle command.
 export function setOuterConfigKeys(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config: any,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   api: any,

@@ -37,49 +37,40 @@ export class ContextBuilder {
   private logsPresent: boolean;
   private assertionsPresent: boolean;
 
-  // old var -> new var
-  private variableMap: Map<string, string>;
-  // var -> count
-  private variableCount: Map<string, number>;
-
-
-  private statementVariableNameMap: Map<Parameter, string>
-  private variableNameCount: Map<string, number>
+  private statementVariableNameMap: Map<Parameter, string>;
+  private variableNameCount: Map<string, number>;
 
   constructor(contractDependencies: Map<string, string[]>) {
-    this.contractDependencies = contractDependencies
+    this.contractDependencies = contractDependencies;
 
     this.imports = new Map();
 
     this.logsPresent = false;
     this.assertionsPresent = false;
-
-    this.variableMap = new Map();
-    this.variableCount = new Map();
-
-    this.statementVariableNameMap = new Map()
-    this.variableNameCount = new Map()
+    
+    this.statementVariableNameMap = new Map();
+    this.variableNameCount = new Map();
   }
 
   getOrCreateVariableName(parameter: Parameter): string {
     // to camelcase
 
     if (this.statementVariableNameMap.has(parameter)) {
-      return this.statementVariableNameMap.get(parameter)
+      return this.statementVariableNameMap.get(parameter);
     }
 
-    let variableName = ''
+    let variableName = "" + parameter.name;
 
     if (this.variableNameCount.has(variableName)) {
-        const count = this.variableNameCount.get(variableName)
-        this.variableNameCount.set(variableName, count + 1)
-        variableName += count
+      const count = this.variableNameCount.get(variableName);
+      this.variableNameCount.set(variableName, count + 1);
+      variableName += count;
     } else {
-        this.variableNameCount.set(variableName, 1)
+      this.variableNameCount.set(variableName, 1);
     }
 
-    this.statementVariableNameMap.set(parameter, variableName)
-    return variableName
+    this.statementVariableNameMap.set(parameter, variableName);
+    return variableName;
   }
 
   addDecoding(decoding: Decoding) {
@@ -89,25 +80,6 @@ export class ContextBuilder {
       const import_ = this._addImport(decoding.reference.type.name);
       const newName = import_.renamed ? import_.renamedTo : import_.name;
       decoding.decoded = decoding.decoded.replaceAll(import_.name, newName);
-    }
-
-    const variableName = this.getOrCreateVariableName(decoding.reference.type);
-    if (this.variableMap.has(variableName)) {
-      this.variableCount.set(
-        variableName,
-        this.variableCount.get(variableName) + 1
-      );
-    } else {
-      this.variableCount.set(variableName, 0);
-    }
-
-    this.variableMap.set(
-      variableName,
-      variableName + this.variableCount.get(variableName)
-    );
-
-    for (const [oldVariable, newVariable] of this.variableMap.entries()) {
-      decoding.decoded = decoding.decoded.replaceAll(oldVariable, newVariable);
     }
   }
 
@@ -129,38 +101,44 @@ export class ContextBuilder {
       return this.imports.get(name);
     }
 
-    this.imports.set(name, import_)
+    this.imports.set(name, import_);
     return import_;
   }
 
   // TODO we could gather all the imports of a certain path together into one import
   private _getImportString(name: string): string {
-    return `const ${name} = artifacts.require("${name}")`
+    return `const ${name} = artifacts.require("${name}")`;
   }
 
-  private getLinkingStrings(contract: string, dependency: string, count: number): string[] {
+  private getLinkingStrings(
+    contract: string,
+    dependency: string,
+    count: number
+  ): string[] {
     return [
       `const lib${count} = await ${dependency}.new();`,
-      `await ${contract}.link('${dependency}', lib${count}.address);`
-    ]
+      `await ${contract}.link('${dependency}', lib${count}.address);`,
+    ];
   }
 
   getImports(): [string[], string[]] {
     const imports: string[] = [];
-    const linkings: string[] = []
+    const linkings: string[] = [];
 
-    let count = 0
+    let count = 0;
     for (const import_ of this.imports.values()) {
       // TODO remove unused imports
-        const dependencies = this.contractDependencies.get(import_.name)
-        
-        for (const dependency of dependencies) {
-          linkings.push(...this.getLinkingStrings(import_.name, dependency, count))
+      const dependencies = this.contractDependencies.get(import_.name);
 
-          count++;
-        }
+      for (const dependency of dependencies) {
+        linkings.push(
+          ...this.getLinkingStrings(import_.name, dependency, count)
+        );
 
-        imports.push(this._getImportString(import_.name));
+        count++;
+      }
+
+      imports.push(this._getImportString(import_.name));
     }
 
     if (this.assertionsPresent) {
@@ -176,15 +154,14 @@ export class ContextBuilder {
       imports.push(`import * as fs from 'fs'`);
     }
     // TODO other post processing?
-    return [(
+    return [
       imports
         // remove duplicates
         // there should not be any in theory but lets do it anyway
         .filter((value, index, self) => self.indexOf(value) === index)
         // sort
-        .sort()
-    ), (
-      linkings
-    )];
+        .sort(),
+      linkings,
+    ];
   }
 }

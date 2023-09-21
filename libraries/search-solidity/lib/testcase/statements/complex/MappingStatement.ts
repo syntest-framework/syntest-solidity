@@ -32,11 +32,15 @@ type MappingType = {
   [key: string]: Statement | undefined;
 };
 export class MappingStatement extends Statement<Mapping> {
-  private _mapping: MappingType
+  private _mapping: MappingType;
 
-  constructor(type: Parameter<Mapping>, uniqueId: string, mapping: MappingType) {
+  constructor(
+    type: Parameter<Mapping>,
+    uniqueId: string,
+    mapping: MappingType
+  ) {
     super(type, uniqueId);
-    this._mapping = mapping
+    this._mapping = mapping;
   }
 
   mutate(sampler: SoliditySampler, depth: number): Statement {
@@ -47,11 +51,7 @@ export class MappingStatement extends Statement<Mapping> {
       const keys = Object.keys(this._mapping);
 
       if (keys.length === 0) {
-        return new MappingStatement(
-          this.type,
-          prng.uniqueId(),
-          object
-        );
+        return new MappingStatement(this.type, prng.uniqueId(), object);
       }
 
       const availableKeys = [];
@@ -71,13 +71,10 @@ export class MappingStatement extends Statement<Mapping> {
           // 33% chance to add a child on this position
           const index = prng.nextInt(0, keys.length - 1);
           const key = keys[index];
-          object[key] = sampler.sampleArgument(
-            depth + 1,
-            {
-              name: key,
-              type: this.type.type.valueType
-            }
-          );
+          object[key] = sampler.sampleArgument(depth + 1, {
+            name: key,
+            type: this.type.type.valueType,
+          });
         } else if (choice < 0.66) {
           // 33% chance to remove a child on this position
           const key = prng.pickOne(availableKeys);
@@ -91,25 +88,15 @@ export class MappingStatement extends Statement<Mapping> {
         // no keys available so we add one
         const index = prng.nextInt(0, keys.length - 1);
         const key = keys[index];
-        object[key] = sampler.sampleArgument(
-          depth + 1,
-          {
-            name: key,
-            type: this.type.type.valueType
-          }
-        );
+        object[key] = sampler.sampleArgument(depth + 1, {
+          name: key,
+          type: this.type.type.valueType,
+        });
       }
 
-      return new MappingStatement(
-        this.type,
-        prng.uniqueId(),
-        object
-      );
+      return new MappingStatement(this.type, prng.uniqueId(), object);
     } else {
-      return sampler.sampleArgument(
-        depth,
-        this.type
-      );
+      return sampler.sampleArgument(depth, this.type);
     }
   }
 
@@ -129,11 +116,7 @@ export class MappingStatement extends Statement<Mapping> {
       mapping[key] = this._mapping[key].copy();
     }
 
-    return new MappingStatement(
-      this.type,
-      this.uniqueId,
-      mapping
-    );  
+    return new MappingStatement(this.type, this.uniqueId, mapping);
   }
 
   getChildren(): Statement[] {
@@ -163,21 +146,25 @@ export class MappingStatement extends Statement<Mapping> {
 
     this._mapping[key] = child;
   }
-  
-  decode(
-    context: ContextBuilder,
-    exception: boolean
-  ): Decoding[] {
+
+  decode(context: ContextBuilder, exception: boolean): Decoding[] {
     const childNames = Object.keys(this._mapping)
       .filter((key) => this._mapping[key] !== undefined)
-      .map((key) => `\t\t\t"${key}": ${context.getOrCreateVariableName(this._mapping[key].type)}`)
+      .map(
+        (key) =>
+          `\t\t\t"${key}": ${context.getOrCreateVariableName(
+            this._mapping[key].type
+          )}`
+      )
       .join(",\n");
 
     const childDecodings: Decoding[] = Object.values(this._mapping)
       .filter((a) => a !== undefined)
       .flatMap((a) => a.decode(context, exception));
 
-    const decoded = `const ${context.getOrCreateVariableName(this.type)} = {\n${childNames}\n\t\t}`;
+    const decoded = `const ${context.getOrCreateVariableName(
+      this.type
+    )} = {\n${childNames}\n\t\t}`;
 
     return [
       ...childDecodings,

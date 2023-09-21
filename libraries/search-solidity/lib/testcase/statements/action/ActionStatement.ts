@@ -23,7 +23,9 @@ import { Parameter, Type } from "@syntest/analysis-solidity";
 /**
  * ActionStatement
  */
-export abstract class ActionStatement<T extends Type = Type> extends Statement<T> {
+export abstract class ActionStatement<
+  T extends Type = Type
+> extends Statement<T> {
   private _arguments_: Statement[];
 
   protected constructor(
@@ -35,8 +37,11 @@ export abstract class ActionStatement<T extends Type = Type> extends Statement<T
     this._arguments_ = arguments_;
   }
 
-  abstract override mutate(sampler: SoliditySampler, depth: number): ActionStatement<T>
-  abstract override copy(): ActionStatement<T>
+  abstract override mutate(
+    sampler: SoliditySampler,
+    depth: number
+  ): ActionStatement<T>;
+  abstract override copy(): ActionStatement<T>;
 
   hasChildren(): boolean {
     return this._arguments_.length > 0;

@@ -46,7 +46,7 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
   protected api: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected truffle: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected config: any;
 
   constructor(
@@ -56,12 +56,12 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     executionTimeout: number,
     testTimeout: number,
     silenceTestOutput: boolean,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  api: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  truffle: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    api: any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    truffle: any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    config: any
   ) {
     SolidityRunner.LOGGER = getLogger(SolidityRunner.name);
     this.storageManager = storageManager;

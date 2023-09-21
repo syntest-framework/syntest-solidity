@@ -19,8 +19,7 @@
 import { Statement } from "../testcase/statements/Statement";
 
 export type Decoding = {
-    decoded: string;
-    
-    reference: Statement;
-  }
-  
+  decoded: string;
+
+  reference: Statement;
+};

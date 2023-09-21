@@ -86,7 +86,6 @@ export class AddressStatement extends PrimitiveStatement<string, Address> {
     return this._account;
   }
 
-
   public getValue(): string {
     if (this.value.startsWith("0x")) return `"${this.value}"`;
 
@@ -94,10 +93,10 @@ export class AddressStatement extends PrimitiveStatement<string, Address> {
   }
 
   decode(context: ContextBuilder): Decoding[] {
-    const variableName = context.getOrCreateVariableName(this.type)
-    let decoded = `const ${variableName} = ${this.value};`
-    if (this.value.startsWith('0x')) {
-      decoded = `const ${variableName} = "${this.value}";`
+    const variableName = context.getOrCreateVariableName(this.type);
+    let decoded = `const ${variableName} = ${this.value};`;
+    if (this.value.startsWith("0x")) {
+      decoded = `const ${variableName} = "${this.value}";`;
     }
     return [
       {

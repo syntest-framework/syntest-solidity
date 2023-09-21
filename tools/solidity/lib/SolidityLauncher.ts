@@ -62,7 +62,6 @@ import {
 
 import * as path from "node:path";
 
-
 import { createTruffleConfig } from "./util/fileSystem";
 
 import { setNetwork, setNetworkFrom } from "./util/network";
@@ -102,11 +101,11 @@ export class SolidityLauncher extends Launcher {
   private decoder: SolidityDecoder;
   private runner: SolidityRunner;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private api: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private config: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private truffle: any;
 
   constructor(
@@ -125,7 +124,7 @@ export class SolidityLauncher extends Launcher {
     );
     SolidityLauncher.LOGGER = getLogger("SolidityLauncher");
 
-    this.dependencyMap = new Map()
+    this.dependencyMap = new Map();
   }
 
   async initialize(): Promise<void> {
@@ -315,9 +314,11 @@ export class SolidityLauncher extends Launcher {
 
     const startTargetSelection = Date.now();
     const targetSelector = new TargetSelector(this.rootContext);
-    this.targets = <Target[]>targetSelector.loadTargets(
-      this.arguments_.targetInclude,
-      this.arguments_.targetExclude
+    this.targets = <Target[]>(
+      targetSelector.loadTargets(
+        this.arguments_.targetInclude,
+        this.arguments_.targetExclude
+      )
     );
     let timeInMs = (Date.now() - startTargetSelection) / 1000;
     this.metricManager.recordProperty(
@@ -469,7 +470,10 @@ export class SolidityLauncher extends Launcher {
     );
 
     for (const target of this.targets) {
-      this.dependencyMap.set(target.name, this.rootContext.getDependencies(target.path))
+      this.dependencyMap.set(
+        target.name,
+        this.rootContext.getDependencies(target.path)
+      );
     }
 
     this.decoder = new SolidityDecoder(

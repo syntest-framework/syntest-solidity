@@ -15,6 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* eslint-disable @typescript-eslint/no-this-alias */
+/* eslint-disable unicorn/no-this-assignment */
+/* eslint-disable unicorn/no-null */
+/* eslint-disable @typescript-eslint/no-empty-function */
+/* eslint-disable unicorn/prefer-module */
+/* eslint-disable @typescript-eslint/no-var-requires */
 const fs = require("node:fs");
 const path = require("node:path");
 const istanbul = require("sc-istanbul");

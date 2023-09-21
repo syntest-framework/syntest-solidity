@@ -107,11 +107,7 @@ export class SoliditySuiteBuilder {
     } else {
       for (const key of archive.keys()) {
         for (const testCase of archive.get(key)) {
-          const decodedTest = this.decoder.decode(
-            testCase,
-            "",
-            addLogs
-          );
+          const decodedTest = this.decoder.decode(testCase, "", addLogs);
           const testPath = this.storageManager.store(
             [testDirectory],
             `test${key}${testCase.id}.spec.js`,

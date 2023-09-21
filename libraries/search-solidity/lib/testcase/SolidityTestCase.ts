@@ -43,7 +43,7 @@ export class SolidityTestCase extends Encoding {
   constructor(roots: ActionStatement[]) {
     super();
     SolidityTestCase.LOGGER = getLogger("SolidityTestCase");
-   
+
     this._roots = roots.map((value) => value.copy());
 
     if (roots.length === 0) {
@@ -51,7 +51,6 @@ export class SolidityTestCase extends Encoding {
     }
 
     this._statementPool = new StatementPool(roots);
-
   }
 
   mutate(sampler: SoliditySampler) {
@@ -105,7 +104,7 @@ export class SolidityTestCase extends Encoding {
   }
 
   copy(): SolidityTestCase {
-    return new SolidityTestCase(this._roots.map((root) => root.copy()))
+    return new SolidityTestCase(this._roots.map((root) => root.copy()));
   }
 
   getLength(): number {

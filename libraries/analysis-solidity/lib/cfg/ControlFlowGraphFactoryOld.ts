@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-console.log()
+console.log();
 // /*
 //  * Copyright 2020-2022 Delft University of Technology and SynTest contributors
 //  *

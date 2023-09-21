@@ -17,5 +17,5 @@
  */
 //TODO
 export class HexStatement {
-    // TODO
+  // TODO
 }

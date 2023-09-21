@@ -145,5 +145,5 @@
 //     return this._type;
 //   }
 // }
-console.log()
+console.log();
 //TODO

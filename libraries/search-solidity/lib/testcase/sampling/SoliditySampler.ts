@@ -112,7 +112,10 @@ export abstract class SoliditySampler extends EncodingSampler<SolidityTestCase> 
 
   abstract sampleRoot(): ActionStatement;
 
-  abstract sampleConstructorCall(depth: number, type: Parameter): ConstructorCall;
+  abstract sampleConstructorCall(
+    depth: number,
+    type: Parameter
+  ): ConstructorCall;
   abstract sampleContractFunctionCall(
     depth: number,
     type: Parameter

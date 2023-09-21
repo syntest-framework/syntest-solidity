@@ -23,11 +23,9 @@ import { typeToString } from "@syntest/analysis-solidity";
 import { Type } from "@syntest/analysis-solidity";
 import { ContractFunctionCall } from "./statements/action/ContractFunctionCall";
 
-
 export class StatementPool {
   // type -> statement array
   private pool: Map<string, Statement[]>;
-
 
   constructor(roots: ActionStatement[]) {
     this.pool = new Map();
@@ -58,11 +56,11 @@ export class StatementPool {
         let types: Parameter[] = [statement.type];
 
         if (statement instanceof ContractFunctionCall) {
-          types = statement.type.type.returns
+          types = statement.type.type.returns;
         }
 
         for (const type of types) {
-          const typeAsString = typeToString(type.type)
+          const typeAsString = typeToString(type.type);
           if (!this.pool.has(typeAsString)) {
             this.pool.set(typeAsString, []);
           }
