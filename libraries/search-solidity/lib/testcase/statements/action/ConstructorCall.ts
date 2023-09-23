@@ -116,10 +116,16 @@ export class ConstructorCall extends ActionStatement<Contract> {
     }
   }
 
-  decode(context: ContextBuilder, exception: boolean): Decoding[] {
-    const senderName = context.getOrCreateVariableName(this._sender.type);
+  decode(context: ContextBuilder): Decoding[] {
+    const importName = context.getOrCreateImportName(this.type)
+    const senderDecoding: Decoding[] = this._sender.decode(context);
+    const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) =>
+      a.decode(context)
+    );
+
+    const senderName = context.getOrCreateVariableName(this._sender, this._sender.type);
     const argumentNames = this.arguments_
-      .map((a) => context.getOrCreateVariableName(a.type))
+      .map((a) => context.getOrCreateVariableName(a, a.type))
       .join(", ");
 
     const senderString =
@@ -127,15 +133,8 @@ export class ConstructorCall extends ActionStatement<Contract> {
         ? `{ from: ${senderName} }`
         : `, { from: ${senderName} }`;
 
-    const senderDecoding: Decoding[] = this._sender.decode(context);
-    const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) =>
-      a.decode(context, exception)
-    );
-
-    const decoded = exception
-      ? `await expect(${this.type.name}.new(${argumentNames}${senderString})).to.be.rejectedWith(Error);`
-      : `const ${context.getOrCreateVariableName(this.type)} = await ${
-          this.type.name
+    const decoded = `const ${context.getOrCreateVariableName(this, this.type)} = await ${
+          importName
         }.new(${argumentNames}${senderString});`;
 
     return [

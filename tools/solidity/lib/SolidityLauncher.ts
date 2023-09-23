@@ -92,7 +92,7 @@ export class SolidityLauncher extends Launcher {
   private targets: Target[];
 
   private rootContext: RootContext;
-  private archive: Archive<SolidityTestCase>;
+  private archives: Map<Target, Archive<SolidityTestCase>>;
 
   private dependencyMap: Map<string, string[]>;
 
@@ -125,6 +125,7 @@ export class SolidityLauncher extends Launcher {
     SolidityLauncher.LOGGER = getLogger("SolidityLauncher");
 
     this.dependencyMap = new Map();
+    this.archives = new Map()
   }
 
   async initialize(): Promise<void> {
@@ -477,11 +478,6 @@ export class SolidityLauncher extends Launcher {
     }
 
     this.decoder = new SolidityDecoder(
-      path.join(
-        this.arguments_.tempSyntestDirectory,
-        this.arguments_.fid,
-        this.arguments_.logDirectory
-      ),
       this.dependencyMap
     );
 
@@ -503,7 +499,6 @@ export class SolidityLauncher extends Launcher {
   async process(): Promise<void> {
     SolidityLauncher.LOGGER.info("Processing started");
     const start = Date.now();
-    this.archive = new Archive<SolidityTestCase>();
     this.dependencyMap = new Map();
 
     for (const target of this.targets) {
@@ -511,7 +506,7 @@ export class SolidityLauncher extends Launcher {
       const archive = await this.testTarget(this.rootContext, target);
 
       const dependencies = this.rootContext.getDependencies(target.path);
-      this.archive.merge(archive);
+      this.archives.set(target, archive)
 
       this.dependencyMap.set(target.name, dependencies);
     }
@@ -524,50 +519,47 @@ export class SolidityLauncher extends Launcher {
     SolidityLauncher.LOGGER.info("Postprocessing started");
     const start = Date.now();
 
-    const suiteBuilder = new SoliditySuiteBuilder(
-      this.storageManager,
-      this.decoder,
-      this.runner,
-      this.arguments_.logDirectory
+
+    let count = 0
+    const finalEncodings = new Map<Target, SolidityTestCase[]>(
+      [...this.archives.entries()].map(([target, archive]) => (count += archive.size, [
+        target,
+        archive.getEncodings(),
+      ]))
     );
 
-    const reducedArchive = suiteBuilder.reduceArchive(this.archive);
-
-    if (this.archive.size === 0) {
+    if (count === 0) {
       throw new Error("Zero tests were created");
     }
 
+    const suiteBuilder = new SoliditySuiteBuilder(
+      this.storageManager,
+      this.decoder,
+      this.runner
+    );
+
+
     // TODO fix hardcoded paths
-    let paths = suiteBuilder.createSuite(
-      reducedArchive,
+    suiteBuilder.runSuite(
+      finalEncodings,
       "../instrumented",
       this.arguments_.testDirectory,
       true,
       false
     );
-    this.config.test_files = paths;
-    await suiteBuilder.runSuite(paths, this.archive.size);
 
     // reset states
     this.storageManager.clearTemporaryDirectory([
       this.arguments_.testDirectory,
     ]);
 
-    // run with assertions and report results
-    for (const key of reducedArchive.keys()) {
-      suiteBuilder.gatherAssertions(reducedArchive.get(key));
-    }
 
-    paths = suiteBuilder.createSuite(
-      reducedArchive,
+    const { stats, instrumentationData } = await suiteBuilder.runSuite(
+      finalEncodings,
       "../instrumented",
       this.arguments_.testDirectory,
       false,
       true
-    );
-    const { stats, instrumentationData } = await suiteBuilder.runSuite(
-      paths,
-      this.archive.size
     );
 
     if (stats.failures > 0) {
@@ -664,11 +656,11 @@ export class SolidityLauncher extends Launcher {
     // other results
     this.metricManager.recordProperty(
       PropertyName.ARCHIVE_SIZE,
-      `${this.archive.size}`
+      `${this.archives.size}`
     );
     this.metricManager.recordProperty(
       PropertyName.MINIMIZED_ARCHIVE_SIZE,
-      `${this.archive.size}`
+      `${this.archives.size}`
     );
 
     overall["statement"] /= totalStatements;
@@ -697,8 +689,8 @@ export class SolidityLauncher extends Launcher {
     this.userInterface.printTable("Coverage", table);
 
     // create final suite
-    suiteBuilder.createSuite(
-      reducedArchive,
+    suiteBuilder.runSuite(
+      finalEncodings,
       originalSourceDirectory,
       this.arguments_.testDirectory,
       false,
@@ -759,7 +751,7 @@ export class SolidityLauncher extends Launcher {
     );
     sampler.rootContext = rootContext;
 
-    const secondaryObjectives = new Set(
+    const secondaryObjectives = 
       this.arguments_.secondaryObjectives.map((secondaryObjective) => {
         return (<SecondaryObjectivePlugin<SolidityTestCase>>(
           this.moduleManager.getPlugin(
@@ -768,7 +760,7 @@ export class SolidityLauncher extends Launcher {
           )
         )).createSecondaryObjective();
       })
-    );
+    
 
     const objectiveManager = (<ObjectiveManagerPlugin<SolidityTestCase>>(
       this.moduleManager.getPlugin(
@@ -778,6 +770,7 @@ export class SolidityLauncher extends Launcher {
     )).createObjectiveManager({
       runner: this.runner,
       secondaryObjectives: secondaryObjectives,
+      exceptionObjectivesEnabled: this.arguments_.exceptionObjectives
     });
 
     const crossover = (<CrossoverPlugin<SolidityTestCase>>(

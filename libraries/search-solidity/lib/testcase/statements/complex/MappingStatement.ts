@@ -147,22 +147,23 @@ export class MappingStatement extends Statement<Mapping> {
     this._mapping[key] = child;
   }
 
-  decode(context: ContextBuilder, exception: boolean): Decoding[] {
+  decode(context: ContextBuilder): Decoding[] {
+    const childDecodings: Decoding[] = Object.values(this._mapping)
+      .filter((a) => a !== undefined)
+      .flatMap((a) => a.decode(context));
+
     const childNames = Object.keys(this._mapping)
       .filter((key) => this._mapping[key] !== undefined)
       .map(
         (key) =>
           `\t\t\t"${key}": ${context.getOrCreateVariableName(
-            this._mapping[key].type
+            this._mapping[key], this._mapping[key].type
           )}`
       )
       .join(",\n");
 
-    const childDecodings: Decoding[] = Object.values(this._mapping)
-      .filter((a) => a !== undefined)
-      .flatMap((a) => a.decode(context, exception));
-
     const decoded = `const ${context.getOrCreateVariableName(
+      this,
       this.type
     )} = {\n${childNames}\n\t\t}`;
 

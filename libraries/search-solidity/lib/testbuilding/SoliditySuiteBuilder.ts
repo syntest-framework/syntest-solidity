@@ -18,12 +18,11 @@
 
 import { Archive } from "@syntest/search";
 
-import { readdirSync, readFileSync } from "node:fs";
-import * as path from "node:path";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
 import { SolidityDecoder } from "./SolidityDecoder";
 import { SolidityRunner } from "../testcase/execution/SolidityRunner";
 import { StorageManager } from "@syntest/storage";
+import { Target } from "@syntest/analysis";
 /**
  * @author Dimitri Stallenberg
  */
@@ -31,18 +30,15 @@ export class SoliditySuiteBuilder {
   private storageManager: StorageManager;
   private decoder: SolidityDecoder;
   private runner: SolidityRunner;
-  private tempLogDirectory: string;
 
   constructor(
     storageManager: StorageManager,
     decoder: SolidityDecoder,
-    runner: SolidityRunner,
-    temporaryLogDirectory: string
+    runner: SolidityRunner
   ) {
     this.storageManager = storageManager;
     this.decoder = decoder;
     this.runner = runner;
-    this.tempLogDirectory = temporaryLogDirectory;
   }
 
   reduceArchive(
@@ -78,39 +74,40 @@ export class SoliditySuiteBuilder {
     return reducedArchive;
   }
 
-  createSuite(
-    archive: Map<string, SolidityTestCase[]>,
+  async runSuite(
+    archive: Map<Target, SolidityTestCase[]>,
     sourceDirectory: string,
     testDirectory: string,
-    addLogs: boolean,
+    gatherAssertionData: boolean,
     compact: boolean,
     final = false
-  ): string[] {
+  ) {
     const paths: string[] = [];
 
-    // write the test cases with logs to know what to assert
+    let totalAmount = 0;
     if (compact) {
-      for (const key of archive.keys()) {
+      for (const target of archive.keys()) {
+        totalAmount += archive.get(target).length;
         const decodedTest = this.decoder.decode(
-          archive.get(key),
-          `${key}`,
-          addLogs
+          archive.get(target),
+          gatherAssertionData
         );
         const testPath = this.storageManager.store(
           [testDirectory],
-          `test-${key}.spec.js`,
+          `test-${target}.spec.js`,
           decodedTest,
           !final
         );
         paths.push(testPath);
       }
     } else {
-      for (const key of archive.keys()) {
-        for (const testCase of archive.get(key)) {
-          const decodedTest = this.decoder.decode(testCase, "", addLogs);
+      for (const target of archive.keys()) {
+        totalAmount += archive.get(target).length;
+        for (const testCase of archive.get(target)) {
+          const decodedTest = this.decoder.decode(testCase, gatherAssertionData);
           const testPath = this.storageManager.store(
             [testDirectory],
-            `test${key}${testCase.id}.spec.js`,
+            `test${target}${testCase.id}.spec.js`,
             decodedTest,
             !final
           );
@@ -120,46 +117,27 @@ export class SoliditySuiteBuilder {
       }
     }
 
-    return paths;
-  }
+    if (final) {
+      // eslint-disable-next-line unicorn/no-null
+      return null;
+    }
 
-  async runSuite(paths: string[], amount: number) {
-    const { stats, instrumentationData } = await this.runner.run(paths, amount);
-    // TODO use the results of the tests to show some statistics
+    const { stats, instrumentationData, assertionData } = await this.runner.run(paths, totalAmount * 2);
+
+    if (assertionData) {
+      // put assertion data on testCases
+      for (const [id, data] of Object.entries(assertionData)) {
+        const testCase = [...archive.values()].flat().find((x) => x.id === id);
+        if (!testCase) {
+          throw new Error("invalid id");
+        }
+
+        testCase.assertionData = data;
+      }
+    }
+
+        // TODO use the results of the tests to show some statistics
 
     return { stats, instrumentationData };
-  }
-
-  async gatherAssertions(testCases: SolidityTestCase[]): Promise<void> {
-    for (const testCase of testCases) {
-      const assertions = new Map<string, string>();
-      try {
-        // extract the log statements
-        const logDiretory = await readdirSync(
-          path.join(this.tempLogDirectory, testCase.id)
-        );
-
-        for (const file of logDiretory) {
-          const assertionValue = await readFileSync(
-            path.join(this.tempLogDirectory, testCase.id, file),
-            "utf8"
-          );
-          assertions.set(file, assertionValue);
-        }
-      } catch {
-        continue;
-      }
-
-      this.storageManager.clearTemporaryDirectory([
-        this.tempLogDirectory,
-        testCase.id,
-      ]);
-      this.storageManager.deleteTemporaryDirectory([
-        this.tempLogDirectory,
-        testCase.id,
-      ]);
-
-      testCase.assertions = assertions;
-    }
   }
 }

@@ -113,13 +113,19 @@ export class Instrumenter {
       instrumented: code,
       contractName: undefined,
       runnableLines: [],
-      fnMap: {},
+
       fnId: 0,
-      branchMap: {},
       branchId: 0,
-      statementMap: {},
       statementId: 0,
       injectionPoints: {},
+
+      fnMap: {},
+      branchMap: {},
+      statementMap: {},
+
+      s: {},
+      f: {},
+      b: {}
     };
 
     parse.configureStatementCoverage(true);

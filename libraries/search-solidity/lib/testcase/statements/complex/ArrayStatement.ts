@@ -118,16 +118,17 @@ export class ArrayStatement extends Statement<ArrayType> {
     this._elements[index] = newChild;
   }
 
-  decode(context: ContextBuilder, exception: boolean): Decoding[] {
-    const childNames = this._elements
-      .map((a) => context.getOrCreateVariableName(a.type))
-      .join(", ");
-
+  decode(context: ContextBuilder): Decoding[] {
     const childDecodings: Decoding[] = this._elements.flatMap((a) =>
-      a.decode(context, exception)
+      a.decode(context)
     );
 
+    const childNames = this._elements
+    .map((a) => context.getOrCreateVariableName(a, a.type))
+    .join(", ");
+
     const decoded = `const ${context.getOrCreateVariableName(
+      this,
       this.type
     )} = [${childNames}];`;
 

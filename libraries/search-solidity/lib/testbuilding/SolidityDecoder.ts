@@ -18,66 +18,27 @@
 
 import { Decoder } from "@syntest/search";
 
-import * as path from "node:path";
 import { SolidityTestCase } from "../testcase/SolidityTestCase";
 import { ContextBuilder } from "./ContextBuilder";
 import { ActionStatement } from "../testcase/statements/action/ActionStatement";
 import { Decoding } from "./Decoding";
+import { ContractFunctionCall } from "../testcase/statements/action/ContractFunctionCall";
 
 /**
  * Solidity Decoder
  */
 export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
-  private tempLogDirectory: string;
   private contractDependencies: Map<string, string[]>;
 
   constructor(
-    temporaryLogDirectory: string,
     contractDependencies: Map<string, string[]>
   ) {
-    this.tempLogDirectory = temporaryLogDirectory;
     this.contractDependencies = contractDependencies;
-  }
-
-  generateAssertions(ind: SolidityTestCase): string[] {
-    const assertions: string[] = [];
-    if (ind.assertions.size > 0) {
-      for (const variableName of ind.assertions.keys()) {
-        if (variableName === "error") {
-          continue;
-        }
-
-        if (ind.assertions.get(variableName) === "[object Object]") continue;
-
-        if (variableName.includes("string")) {
-          assertions.push(
-            `\t\tassert.equal(${variableName}, "${ind.assertions.get(
-              variableName
-            )}")`
-          );
-        } else if (variableName.includes("int")) {
-          assertions.push(
-            `\t\tassert.equal(${variableName}, BigInt("${ind.assertions.get(
-              variableName
-            )}"))`
-          );
-        } else {
-          assertions.push(
-            `\t\tassert.equal(${variableName}, ${ind.assertions.get(
-              variableName
-            )})`
-          );
-        }
-      }
-    }
-
-    return assertions;
   }
 
   decode(
     testCases: SolidityTestCase | SolidityTestCase[],
-    targetName: string,
-    addLogs = false
+    gatherAssertionData = false
   ): string {
     if (testCases instanceof SolidityTestCase) {
       testCases = [testCases];
@@ -85,146 +46,203 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
 
     const context = new ContextBuilder(this.contractDependencies);
 
-    const tests: string[] = [];
+    const tests: string[][] = [];
 
+    let assertionsPresent = false;
     for (const testCase of testCases) {
+      if (testCase.assertionData) {
+        assertionsPresent = true;
+      }
+      context.nextTestCase();
       const roots: ActionStatement[] = testCase.roots;
 
       let decodings: Decoding[] = roots.flatMap((root) =>
-        root.decode(context, false)
+        root.decode(context)
       );
 
       if (decodings.length === 0) {
         throw new Error("No statements in test case");
       }
 
-      const testString = [];
-
-      if (addLogs) {
-        testString.push(
-          `\t\tawait fs.mkdirSync('${path.join(
-            this.tempLogDirectory,
-            testCase.id
-          )}', { recursive: true })\n
-          \t\tlet count = 0;
-          \t\ttry {\n`
-        );
-      }
-
-      if (testCase.assertions.size > 0 && testCase.assertions.has("error")) {
-        const index = Number.parseInt(testCase.assertions.get("error"));
-
-        // TODO does not work
-        //  the .to.throw stuff does not work somehow
-        // const decoded = statements[index].reference instanceof MethodCall
-        //   ? (<MethodCall>statements[index].reference).decodeWithObject(testCase.id, { addLogs, exception: true }, statements[index].objectVariable)
-        //   : statements[index].reference.decode(testCase.id, { addLogs, exception: true })
-        // statements[index] = decoded.find((x) => x.reference === statements[index].reference)
+      let errorDecoding: Decoding;
+      if (testCase.assertionData && testCase.assertionData.error) {
+        const index = testCase.assertionData.error.count;
 
         // delete statements after
-        decodings = decodings.slice(0, index + 1);
+        errorDecoding = decodings[index];
+        decodings = decodings.slice(0, index);
       }
 
       if (decodings.length === 0) {
         throw new Error("No statements in test case after error reduction");
       }
 
-      for (const [index, value] of decodings.entries()) {
-        context.addDecoding(value);
-        const asString = "\t\t" + value.decoded.replace("\n", "\n\t\t");
-        if (testString.includes(asString)) {
-          // skip repeated statements
-          continue;
+      const metaCommentBlock = this.generateMetaComments(testCase);
+
+      const testLines: string[] = this.generateTestLines(
+        context,
+        testCase,
+        decodings,
+        gatherAssertionData
+      );
+
+      const assertions: string[] = this.generateAssertions(
+        testCase,
+        errorDecoding
+      );
+
+      tests.push([...metaCommentBlock, ...testLines, ...assertions]);
+    }
+
+    const {imports, linkings} = context.getImports(assertionsPresent);
+
+    const lines = [
+      "// Imports",
+      ...imports,
+      // gatherAssertionData ? assertionFunction : "",
+      `contract('SynTest Test Suite', function(accounts) {`,
+      ...tests.flatMap((testLines: string[], index) => [
+        `\tit("Test ${index + 1}", async () => {`,
+        `\t\t// Linkings`,
+        ...linkings.map((line) => `\t\t${line}`),
+        ...testLines.map((line) => `\t\t${line}`),
+        index === tests.length - 1 ? "\t})" : "\t})\n",
+      ]),
+      "})",
+    ]
+
+    return lines.join("\n")
+  }
+
+
+  generateMetaComments(testCase: SolidityTestCase) {
+    const metaCommentBlock = [];
+    for (const metaComment of testCase.metaComments) {
+      metaCommentBlock.push(`// ${metaComment}`);
+    }
+
+    if (metaCommentBlock.length > 0) {
+      metaCommentBlock.splice(0, 0, "// Meta information");
+      metaCommentBlock.push("");
+    }
+
+    return metaCommentBlock;
+  }
+
+  generateTestLines(
+    context: ContextBuilder,
+    testCase: SolidityTestCase,
+    decodings: Decoding[],
+    gatherAssertionData: boolean
+  ) {
+    const testLines: string[] = [];
+    if (gatherAssertionData) {
+      testLines.push("let count = 0;", "try {");
+    }
+
+    for (const [index, value] of decodings.entries()) {
+      const asString = value.decoded;
+      if (testLines.includes(asString)) {
+        // skip repeated statements
+        continue;
+      }
+
+      testLines.push(asString);
+
+      if (gatherAssertionData) {
+        // add log per statement
+        testLines.push(`count = ${index + 1};`);
+
+        if (
+          value.reference instanceof ContractFunctionCall
+        ) {
+          for (const parameter of value.reference.type.type.returns) {
+            const variableName = context.getOrCreateVariableName(value.reference, parameter);
+
+            testLines.push(
+              `addAssertion('${testCase.id}', '${variableName}', ${variableName})`
+            );
+          }
         }
-
-        if (addLogs) {
-          // add log per statement
-          testString.push("\t\t" + `count = ${index};`);
-        }
-
-        testString.push(asString);
       }
+    }
 
-      if (addLogs) {
-        testString.push(
-          `} catch (e) {`,
-          `await fs.writeFileSync('${path.join(
-            this.tempLogDirectory,
-            testCase.id,
-            "error"
-          )}', '' + count)`, // TODO we could add the error here and assert that that is the error message we expect
-          "}"
-        );
-      }
-
-      if (addLogs) {
-        context.addLogs();
-      }
-
-      if (testCase.assertions.size > 0) {
-        context.addAssertions();
-      }
-
-      const assertions: string[] = this.generateAssertions(testCase);
-
-      if (assertions.length > 0) {
-        assertions.splice(0, 0, "\n\t\t// Assertions");
-      }
-
-      const body = [];
-
-      if (testString.length > 0) {
-        let errorStatement: string;
-        if (testCase.assertions.size > 0 && testCase.assertions.has("error")) {
-          errorStatement = testString.pop();
-        }
-
-        body.push(`${testString.join("\n")}`, `${assertions.join("\n")}`);
-
-        if (errorStatement) {
-          body.push(
-            `\t\ttry {\n\t${errorStatement}\n\t\t} catch (e) {\n\t\t\texpect(e).to.be.an('error')\n\t\t}`
-          );
-        }
-      }
-
-      const metaCommentBlock = [];
-
-      for (const metaComment of testCase.metaComments) {
-        metaCommentBlock.push(`\t\t// ${metaComment}`);
-      }
-
-      if (metaCommentBlock.length > 0) {
-        metaCommentBlock.splice(0, 0, "\n\t\t// Meta information");
-      }
-
-      // TODO instead of using the targetName use the function call or a better description of the test
-      tests.push(
-        `${metaCommentBlock.join("\n")}\n` +
-          `\n\t\t// Test\n` +
-          `${body.join("\n\n")}`
+    if (gatherAssertionData) {
+      testLines.push(
+        `} catch (e) {`,
+        `\tsetError('${testCase.id}', e, count)`,
+        "}"
       );
     }
 
-    const [imports, linkings] = context.getImports();
-    const importsString = imports.join("\n") + `\n\n`;
-    const linkingsString = "\t\t" + linkings.join("\n\t\t") + "\n\n";
+    if (testLines.length > 0) {
+      testLines.splice(0, 0, "// Test");
+      testLines.push("");
+    }
 
-    return (
-      `// Imports\n` +
-      importsString +
-      `contract('${targetName}', function(accounts) {\n\t` +
-      tests
-        .map(
-          (test) =>
-            `\tit('test for ${targetName}', async () => {\n` +
-            "\t\t// Linkings\n" +
-            linkingsString +
-            test +
-            `\n\t});`
-        )
-        .join("\n\n") +
-      `\n})`
-    );
+    return testLines;
+  }
+
+  generateAssertions(
+    testCase: SolidityTestCase,
+    errorDecoding: Decoding
+  ): string[] {
+    const assertions: string[] = [];
+    if (testCase.assertionData) {
+      for (const [variableName, assertion] of Object.entries(
+        testCase.assertionData.assertions
+      )) {
+        const original = assertion.value;
+        let stringified = assertion.stringified;
+        if (original === "undefined") {
+          assertions.push(`assert.equal(${variableName}, ${original})`);
+          continue;
+        }
+
+        // TODO dirty hack because json.parse does not allow undefined/NaN
+        // TODO undefined/NaN can happen in arrays
+        stringified = stringified.replace("undefined", "null");
+        stringified = stringified.replace("NaN", "null");
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const value = JSON.parse(stringified);
+
+        if (variableName.includes('int')) {
+          assertions.push(`assert.equal(${variableName}, BigInt${stringified}));`);
+        } else if (variableName.includes('fixed')) {
+          assertions.push(`assert.equal(${variableName}, BigNumber(${stringified}));`);
+        } else if (variableName.includes('string')) {
+          assertions.push(`assert.equal(${variableName}, "${stringified}");`);
+        }else if (typeof value === "object" || typeof value === "function") {
+          assertions.push(
+            `expect(JSON.parse(JSON.stringify(${variableName}))).to.deep.equal(${stringified})`
+          );
+        } else {
+          assertions.push(`expect(${variableName}).to.equal(${stringified})`);
+        }
+      }
+    }
+
+    if (errorDecoding) {
+      let value = testCase.assertionData.error.error.message;
+
+      value = value.replaceAll(/\\/g, "\\\\");
+      value = value.replaceAll(/\n/g, "\\n");
+      value = value.replaceAll(/\r/g, "\\r");
+      value = value.replaceAll(/\t/g, "\\t");
+      value = value.replaceAll(/"/g, '\\"');
+
+      assertions.push(
+        `await expect((async () => {`,
+        `\t${errorDecoding.decoded.split(" = ")[1]}`,
+        `})()).to.be.rejectedWith("${value}")`
+      );
+    }
+
+    if (assertions.length > 0) {
+      assertions.splice(0, 0, "// Assertions");
+    }
+
+    return assertions;
   }
 }

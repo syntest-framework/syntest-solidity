@@ -16,18 +16,29 @@
  * limitations under the License.
  */
 
-import { Runner } from "mocha";
+import { Runner, Suite } from "mocha";
 import {
   SolidityExecutionResult,
   SolidityExecutionStatus,
 } from "../../search/SolidityExecutionResult";
-import { SoliditySubject } from "../../search/SoliditySubject";
 import { SolidityDecoder } from "../../testbuilding/SolidityDecoder";
 import { SolidityTestCase } from "../SolidityTestCase";
-import { EncodingRunner, ExecutionResult } from "@syntest/search";
+import { EncodingRunner, ExecutionResult, Trace } from "@syntest/search";
 import { Logger, getLogger } from "@syntest/logging";
 import { StorageManager } from "@syntest/storage";
 import path = require("node:path");
+import { AssertionData } from "./AssertionData";
+import { InstrumentationData, InstrumentationDataMap, MetaData } from "@syntest/analysis-solidity";
+import { MetaDataMap } from "@syntest/analysis-solidity";
+
+export type Result = {
+  suites: Suite[];
+  stats: Mocha.Stats;
+  instrumentationData: InstrumentationDataMap;
+  metaData: MetaDataMap;
+  assertionData?: AssertionData;
+  error?: string;
+};
 
 export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
   protected static LOGGER: Logger;
@@ -76,7 +87,7 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     this.config = config;
   }
 
-  async run(paths: string[], amount = 1) {
+  async run(paths: string[], amount = 1): Promise<Result> {
     if (amount < 1) {
       throw new Error(`Amount of tests cannot be smaller than 1`);
     }
@@ -119,16 +130,16 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
       stats: stats,
       instrumentationData: instrumentationData,
       metaData: {}, // TODO
+      assertionData: {} // TODO
     };
   }
 
   async execute(
-    subject: SoliditySubject,
     testCase: SolidityTestCase
   ): Promise<ExecutionResult> {
     SolidityRunner.LOGGER.silly("Executing test case");
 
-    const decodedTestCase = this.decoder.decode(testCase, subject.name, false);
+    const decodedTestCase = this.decoder.decode(testCase);
 
     const testPath = this.storageManager.store(
       [this.tempTestDirectory],
@@ -137,13 +148,9 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
       true
     );
 
-    const { suites, stats, instrumentationData } = await this.run([testPath]);
+    const { suites, stats, instrumentationData, metaData } = await this.run([testPath]);
 
-    const traces = [];
-    for (const key of Object.keys(instrumentationData)) {
-      if (instrumentationData[key].path.includes(subject.name))
-        traces.push(instrumentationData[key]);
-    }
+    const traces: Trace[] = this.extractTraces(instrumentationData, metaData)
 
     // Retrieve execution information
     let executionResult: SolidityExecutionResult;
@@ -185,5 +192,103 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     );
 
     return executionResult;
+  }
+
+  extractTraces(
+    instrumentationData: InstrumentationDataMap,
+    metaData: MetaDataMap
+  ): Trace[] {
+    const traces: Trace[] = []
+
+    
+    for (const key of Object.keys(instrumentationData)) {
+      for (const functionKey of Object.keys(instrumentationData[key].fnMap)) {
+        const function_ = instrumentationData[key].fnMap[functionKey];
+        const hits = instrumentationData[key].f[functionKey];
+
+        traces.push({
+          id: function_.decl.id,
+          type: "function",
+          path: key,
+          location: function_.decl,
+
+          hits: hits,
+        });
+      }
+
+      for (const statementKey of Object.keys(
+        instrumentationData[key].statementMap
+      )) {
+        const statement = instrumentationData[key].statementMap[statementKey];
+        const hits = instrumentationData[key].s[statementKey];
+
+        traces.push({
+          id: statement.id,
+          type: "statement",
+          path: key,
+          location: statement,
+
+          hits: hits,
+        });
+      }
+
+      traces.push(
+        ...this._extractBranchTraces(
+          key,
+          instrumentationData[key],
+          metaData !== undefined && key in metaData ? metaData[key] : undefined
+        )
+      );
+    }
+
+    return traces
+  }
+
+
+  private _extractBranchTraces(
+    key: string,
+    instrumentationData: InstrumentationData,
+    metaData: MetaData
+  ): Trace[] {
+    const traces: Trace[] = [];
+    for (const branchKey of Object.keys(instrumentationData.branchMap)) {
+      const branch = instrumentationData.branchMap[branchKey];
+      const hits = <number[]>instrumentationData.b[branchKey];
+      let meta;
+
+      if (metaData !== undefined) {
+        const metaMeta = metaData.meta;
+        meta = metaMeta[branchKey.toString()];
+      }
+
+      for (const [index, location] of branch.locations.entries()) {
+        traces.push({
+          id: location.id,
+          path: key,
+          type: "branch",
+          location: branch.locations[index],
+
+          hits: hits[index],
+
+          condition: meta?.condition,
+          variables: meta?.variables,
+        });
+      }
+
+      if (
+        !(
+          branch.locations.length > 2 || // more than 2 means switch
+          branch.locations.length === 2 || // equal to 2 means if statement (or small switch)
+          (branch.locations.length === 1 && branch.type === "default-arg")
+        ) // equal to 1 means default arg
+      ) {
+        // otherwise something is wrong
+        throw new Error(
+          `Invalid number of locations for branch type: ${branch.type}`
+        );
+      }
+    }
+
+    return traces;
   }
 }

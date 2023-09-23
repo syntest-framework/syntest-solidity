@@ -112,6 +112,7 @@ export class IntegerStatement extends PrimitiveStatement<
     return [
       {
         decoded: `const ${context.getOrCreateVariableName(
+          this,
           this.type
         )} = BigInt(${asString});`,
         reference: this,

@@ -93,7 +93,7 @@ export class AddressStatement extends PrimitiveStatement<string, Address> {
   }
 
   decode(context: ContextBuilder): Decoding[] {
-    const variableName = context.getOrCreateVariableName(this.type);
+    const variableName = context.getOrCreateVariableName(this, this.type);
     let decoded = `const ${variableName} = ${this.value};`;
     if (this.value.startsWith("0x")) {
       decoded = `const ${variableName} = "${this.value}";`;

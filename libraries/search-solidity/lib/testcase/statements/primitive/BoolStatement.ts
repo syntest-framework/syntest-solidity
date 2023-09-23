@@ -45,7 +45,7 @@ export class BoolStatement extends PrimitiveStatement<boolean, Bool> {
   decode(context: ContextBuilder): Decoding[] {
     return [
       {
-        decoded: `const ${context.getOrCreateVariableName(this.type)} = ${
+        decoded: `const ${context.getOrCreateVariableName(this, this.type)} = ${
           this.value
         };`,
         reference: this,

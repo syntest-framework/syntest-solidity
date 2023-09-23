@@ -15,10 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+export type MetaData = {
+  hash: string;
+  meta: {
+    [id: string]: {
+      condition_ast: string;
+      condition: string;
+      variables: {
+        [id: string]: unknown;
+      };
+    };
+  };
+};
 
-import { Statement } from "../testcase/statements/Statement";
-
-export type Decoding = {
-  decoded: string;
-  reference: Statement;
+export type MetaDataMap = {
+  [path: string]: MetaData;
 };

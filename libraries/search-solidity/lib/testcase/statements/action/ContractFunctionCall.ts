@@ -132,47 +132,38 @@ export class ContractFunctionCall extends ActionStatement<FunctionType> {
     }
   }
 
-  decode(context: ContextBuilder, exception: boolean): Decoding[] {
-    const constructorName = context.getOrCreateVariableName(
-      this._constructor.type
+  decode(context: ContextBuilder): Decoding[] {
+    const constructorDecoding: Decoding[] = this._constructor.decode(
+      context
     );
-    const senderName = context.getOrCreateVariableName(this._sender.type);
+    const senderDecoding: Decoding[] = this._sender.decode(context);
+    const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) =>
+      a.decode(context)
+    );
+
+    const constructorName = context.getOrCreateVariableName(
+      this._constructor, this._constructor.type
+    );
+    const senderName = context.getOrCreateVariableName(this._sender, this._sender.type);
     const argumentNames = this.arguments_
-      .map((a) => context.getOrCreateVariableName(a.type))
+      .map((a) => context.getOrCreateVariableName(a, a.type))
       .join(", ");
 
     const returnValues: string[] = this.type.type.returns.map((returnValue) =>
-      context.getOrCreateVariableName(returnValue)
+      context.getOrCreateVariableName(this, returnValue)
     );
     const senderString =
       argumentNames == ""
         ? `{ from: ${senderName} }`
         : `, { from: ${senderName} }`;
 
-    const constructorDecoding: Decoding[] = this._constructor.decode(
-      context,
-      exception
-    );
-    const senderDecoding: Decoding[] = this._sender.decode(context);
-    const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) =>
-      a.decode(context, exception)
-    );
-
-    let decoded: string;
-    if (exception) {
-      decoded =
-        returnValues.length > 0
-          ? `await expect(${constructorName}.${this._functionName}.call(${argumentNames}${senderString})).to.be.rejectedWith(Error);`
-          : `await expect(${constructorName}.${this._functionName}.call(${argumentNames}${senderString})).to.be.rejectedWith(Error);`;
-    } else {
-      decoded =
+    const decoded =
         returnValues.length > 0
           ? `const [${returnValues.join(", ")}] = await ${constructorName}.${
               this._functionName
             }.call(${argumentNames}${senderString});`
           : `await ${constructorName}.${this._functionName}.call(${argumentNames}${senderString});`;
-    }
-
+    
     return [
       ...constructorDecoding,
       ...senderDecoding,

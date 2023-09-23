@@ -1,7 +1,7 @@
 /*
  * Copyright 2020-2023 Delft University of Technology and SynTest contributors
  *
- * This file is part of SynTest Framework - SynTest Solidity.
+ * This file is part of SynTest Framework - SynTest JavaScript.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+export type AssertionData = {
+  [path: string]: AssertionDataTestCase;
+};
 
-import { Statement } from "../testcase/statements/Statement";
-
-export type Decoding = {
-  decoded: string;
-  reference: Statement;
+export type AssertionDataTestCase = {
+  assertions: {
+    [varName: string]: {
+      value: unknown;
+      stringified: string;
+    };
+  };
+  error?: {
+    error: Error;
+    count: number;
+  };
 };

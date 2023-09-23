@@ -82,6 +82,7 @@ export class DynamicSizeByteArrayStatement extends PrimitiveStatement<
     return [
       {
         decoded: `const ${context.getOrCreateVariableName(
+          this,
           this.type
         )} = "${bytes}";`,
         reference: this,

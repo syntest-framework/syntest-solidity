@@ -84,5 +84,5 @@ export abstract class Statement<T extends Type = Type> {
   /**
    * Decodes the statement
    */
-  abstract decode(context: ContextBuilder, exception: boolean): Decoding[];
+  abstract decode(context: ContextBuilder): Decoding[];
 }

@@ -151,6 +151,7 @@ export class StringStatement extends PrimitiveStatement<string, StringType> {
     return [
       {
         decoded: `const ${context.getOrCreateVariableName(
+          this,
           this.type
         )} = "${value}";`,
         reference: this,

@@ -22,11 +22,10 @@ import { Logger, getLogger } from "@syntest/logging";
 import { ActionStatement } from "./statements/action/ActionStatement";
 import { prng } from "@syntest/prng";
 import { StatementPool } from "./StatementPool";
+import { AssertionDataTestCase } from "./execution/AssertionData";
+
 /**
  * SolidityTestCase class
- *
- * @author Dimitri Stallenberg
- * @author Mitchell Olsthoorn
  */
 export class SolidityTestCase extends Encoding {
   protected static LOGGER: Logger;
@@ -34,6 +33,8 @@ export class SolidityTestCase extends Encoding {
   private _roots: ActionStatement[];
 
   private _statementPool: StatementPool;
+
+  private _assertionData: AssertionDataTestCase | undefined;
 
   /**
    * Constructor.
@@ -93,7 +94,7 @@ export class SolidityTestCase extends Encoding {
   }
 
   hashCode(decoder: Decoder<Encoding, string>): number {
-    const string = decoder.decode(this, `${this.id}`);
+    const string = decoder.decode(this);
     let hash = 0;
     for (let index = 0; index < string.length; index++) {
       const character = string.codePointAt(index);
@@ -113,5 +114,13 @@ export class SolidityTestCase extends Encoding {
 
   get roots(): ActionStatement[] {
     return this._roots.map((value) => value.copy());
+  }
+
+  get assertionData(): AssertionDataTestCase {
+    return this._assertionData;
+  }
+
+  set assertionData(data: AssertionDataTestCase) {
+    this._assertionData = data;
   }
 }

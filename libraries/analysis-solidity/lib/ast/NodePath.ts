@@ -142,7 +142,7 @@ function isASTNode(node: unknown): node is ASTNode {
     Object.prototype.hasOwnProperty.call(nodeAsASTNode, "type") &&
     typeof nodeAsASTNode.type === "string"
   ) {
-    return astNodeTypes.includes(nodeAsASTNode.type);
+    return nodeAsASTNode.type in astNodeTypes;
   }
 
   return false;

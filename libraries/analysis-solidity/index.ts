@@ -29,6 +29,7 @@ export * from "./lib/dependency/DependencyFactory";
 export * from "./lib/dependency/DependencyVisitor";
 
 export * from "./lib/instrumentation/datastructures/InstrumentationData";
+export * from "./lib/instrumentation/datastructures/MetaData";
 export * from "./lib/instrumentation/Instrumenter";
 
 export * from "./lib/target/Target";
