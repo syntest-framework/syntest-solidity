@@ -30,9 +30,7 @@ import { ContractFunctionCall } from "../testcase/statements/action/ContractFunc
 export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
   private contractDependencies: Map<string, string[]>;
 
-  constructor(
-    contractDependencies: Map<string, string[]>
-  ) {
+  constructor(contractDependencies: Map<string, string[]>) {
     this.contractDependencies = contractDependencies;
   }
 
@@ -56,9 +54,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       context.nextTestCase();
       const roots: ActionStatement[] = testCase.roots;
 
-      let decodings: Decoding[] = roots.flatMap((root) =>
-        root.decode(context)
-      );
+      let decodings: Decoding[] = roots.flatMap((root) => root.decode(context));
 
       if (decodings.length === 0) {
         throw new Error("No statements in test case");
@@ -94,7 +90,7 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
       tests.push([...metaCommentBlock, ...testLines, ...assertions]);
     }
 
-    const {imports, linkings} = context.getImports(assertionsPresent);
+    const { imports, linkings } = context.getImports(assertionsPresent);
 
     const lines = [
       "// Imports",
@@ -109,11 +105,10 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
         index === tests.length - 1 ? "\t})" : "\t})\n",
       ]),
       "})",
-    ]
+    ];
 
-    return lines.join("\n")
+    return lines.join("\n");
   }
-
 
   generateMetaComments(testCase: SolidityTestCase) {
     const metaCommentBlock = [];
@@ -153,11 +148,12 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
         // add log per statement
         testLines.push(`count = ${index + 1};`);
 
-        if (
-          value.reference instanceof ContractFunctionCall
-        ) {
+        if (value.reference instanceof ContractFunctionCall) {
           for (const parameter of value.reference.type.type.returns) {
-            const variableName = context.getOrCreateVariableName(value.reference, parameter);
+            const variableName = context.getOrCreateVariableName(
+              value.reference,
+              parameter
+            );
 
             testLines.push(
               `addAssertion('${testCase.id}', '${variableName}', ${variableName})`
@@ -207,13 +203,17 @@ export class SolidityDecoder implements Decoder<SolidityTestCase, string> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const value = JSON.parse(stringified);
 
-        if (variableName.includes('int')) {
-          assertions.push(`assert.equal(${variableName}, BigInt${stringified}));`);
-        } else if (variableName.includes('fixed')) {
-          assertions.push(`assert.equal(${variableName}, BigNumber(${stringified}));`);
-        } else if (variableName.includes('string')) {
+        if (variableName.includes("int")) {
+          assertions.push(
+            `assert.equal(${variableName}, BigInt${stringified}));`
+          );
+        } else if (variableName.includes("fixed")) {
+          assertions.push(
+            `assert.equal(${variableName}, BigNumber(${stringified}));`
+          );
+        } else if (variableName.includes("string")) {
           assertions.push(`assert.equal(${variableName}, "${stringified}");`);
-        }else if (typeof value === "object" || typeof value === "function") {
+        } else if (typeof value === "object" || typeof value === "function") {
           assertions.push(
             `expect(JSON.parse(JSON.stringify(${variableName}))).to.deep.equal(${stringified})`
           );

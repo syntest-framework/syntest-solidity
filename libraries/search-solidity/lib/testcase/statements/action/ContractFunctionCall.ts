@@ -133,18 +133,20 @@ export class ContractFunctionCall extends ActionStatement<FunctionType> {
   }
 
   decode(context: ContextBuilder): Decoding[] {
-    const constructorDecoding: Decoding[] = this._constructor.decode(
-      context
-    );
+    const constructorDecoding: Decoding[] = this._constructor.decode(context);
     const senderDecoding: Decoding[] = this._sender.decode(context);
     const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) =>
       a.decode(context)
     );
 
     const constructorName = context.getOrCreateVariableName(
-      this._constructor, this._constructor.type
+      this._constructor,
+      this._constructor.type
     );
-    const senderName = context.getOrCreateVariableName(this._sender, this._sender.type);
+    const senderName = context.getOrCreateVariableName(
+      this._sender,
+      this._sender.type
+    );
     const argumentNames = this.arguments_
       .map((a) => context.getOrCreateVariableName(a, a.type))
       .join(", ");
@@ -158,12 +160,12 @@ export class ContractFunctionCall extends ActionStatement<FunctionType> {
         : `, { from: ${senderName} }`;
 
     const decoded =
-        returnValues.length > 0
-          ? `const [${returnValues.join(", ")}] = await ${constructorName}.${
-              this._functionName
-            }.call(${argumentNames}${senderString});`
-          : `await ${constructorName}.${this._functionName}.call(${argumentNames}${senderString});`;
-    
+      returnValues.length > 0
+        ? `const [${returnValues.join(", ")}] = await ${constructorName}.${
+            this._functionName
+          }.call(${argumentNames}${senderString});`
+        : `await ${constructorName}.${this._functionName}.call(${argumentNames}${senderString});`;
+
     return [
       ...constructorDecoding,
       ...senderDecoding,

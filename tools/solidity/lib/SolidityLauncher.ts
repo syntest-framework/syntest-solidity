@@ -125,7 +125,7 @@ export class SolidityLauncher extends Launcher {
     SolidityLauncher.LOGGER = getLogger("SolidityLauncher");
 
     this.dependencyMap = new Map();
-    this.archives = new Map()
+    this.archives = new Map();
   }
 
   async initialize(): Promise<void> {
@@ -477,9 +477,7 @@ export class SolidityLauncher extends Launcher {
       );
     }
 
-    this.decoder = new SolidityDecoder(
-      this.dependencyMap
-    );
+    this.decoder = new SolidityDecoder(this.dependencyMap);
 
     this.runner = new SolidityRunner(
       this.storageManager,
@@ -506,7 +504,7 @@ export class SolidityLauncher extends Launcher {
       const archive = await this.testTarget(this.rootContext, target);
 
       const dependencies = this.rootContext.getDependencies(target.path);
-      this.archives.set(target, archive)
+      this.archives.set(target, archive);
 
       this.dependencyMap.set(target.name, dependencies);
     }
@@ -519,13 +517,13 @@ export class SolidityLauncher extends Launcher {
     SolidityLauncher.LOGGER.info("Postprocessing started");
     const start = Date.now();
 
-
-    let count = 0
+    let count = 0;
     const finalEncodings = new Map<Target, SolidityTestCase[]>(
-      [...this.archives.entries()].map(([target, archive]) => (count += archive.size, [
-        target,
-        archive.getEncodings(),
-      ]))
+      [...this.archives.entries()].map(
+        ([target, archive]) => (
+          (count += archive.size), [target, archive.getEncodings()]
+        )
+      )
     );
 
     if (count === 0) {
@@ -537,7 +535,6 @@ export class SolidityLauncher extends Launcher {
       this.decoder,
       this.runner
     );
-
 
     // TODO fix hardcoded paths
     suiteBuilder.runSuite(
@@ -552,7 +549,6 @@ export class SolidityLauncher extends Launcher {
     this.storageManager.clearTemporaryDirectory([
       this.arguments_.testDirectory,
     ]);
-
 
     const { stats, instrumentationData } = await suiteBuilder.runSuite(
       finalEncodings,
@@ -751,16 +747,16 @@ export class SolidityLauncher extends Launcher {
     );
     sampler.rootContext = rootContext;
 
-    const secondaryObjectives = 
-      this.arguments_.secondaryObjectives.map((secondaryObjective) => {
+    const secondaryObjectives = this.arguments_.secondaryObjectives.map(
+      (secondaryObjective) => {
         return (<SecondaryObjectivePlugin<SolidityTestCase>>(
           this.moduleManager.getPlugin(
             PluginType.SecondaryObjective,
             secondaryObjective
           )
         )).createSecondaryObjective();
-      })
-    
+      }
+    );
 
     const objectiveManager = (<ObjectiveManagerPlugin<SolidityTestCase>>(
       this.moduleManager.getPlugin(
@@ -770,7 +766,7 @@ export class SolidityLauncher extends Launcher {
     )).createObjectiveManager({
       runner: this.runner,
       secondaryObjectives: secondaryObjectives,
-      exceptionObjectivesEnabled: this.arguments_.exceptionObjectives
+      exceptionObjectivesEnabled: this.arguments_.exceptionObjectives,
     });
 
     const crossover = (<CrossoverPlugin<SolidityTestCase>>(

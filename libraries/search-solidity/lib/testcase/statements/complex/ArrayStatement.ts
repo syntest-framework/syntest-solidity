@@ -124,8 +124,8 @@ export class ArrayStatement extends Statement<ArrayType> {
     );
 
     const childNames = this._elements
-    .map((a) => context.getOrCreateVariableName(a, a.type))
-    .join(", ");
+      .map((a) => context.getOrCreateVariableName(a, a.type))
+      .join(", ");
 
     const decoded = `const ${context.getOrCreateVariableName(
       this,

@@ -125,7 +125,7 @@ export class Instrumenter {
 
       s: {},
       f: {},
-      b: {}
+      b: {},
     };
 
     parse.configureStatementCoverage(true);

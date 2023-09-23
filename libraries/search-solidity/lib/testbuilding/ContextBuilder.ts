@@ -19,7 +19,7 @@
 import { Parameter } from "@syntest/analysis-solidity";
 import { Logger, getLogger } from "@syntest/logging";
 import { Statement } from "../testcase/statements/Statement";
-import { ContractFunctionCall } from "../testcase/statements/action/ContractFunctionCall"
+import { ContractFunctionCall } from "../testcase/statements/action/ContractFunctionCall";
 
 type Import = RegularImport | RenamedImport;
 
@@ -40,15 +40,15 @@ export class ContextBuilder {
 
   private contractDependencies: Map<string, string[]>;
 
-    // name -> count
-    private globalNameCount: Map<string, number>;
-    // name -> count
-    private testNameCount: Map<string, number>;
+  // name -> count
+  private globalNameCount: Map<string, number>;
+  // name -> count
+  private testNameCount: Map<string, number>;
 
   // name -> import
   private imports: Map<string, Import>;
 
-    // Parameter -> variableName
+  // Parameter -> variableName
   private statementVariableNameMap: Map<Parameter, string>;
 
   constructor(contractDependencies: Map<string, string[]>) {
@@ -58,7 +58,7 @@ export class ContextBuilder {
     this.globalNameCount = new Map();
     this.testNameCount = new Map();
 
-    this.imports = new Map();    
+    this.imports = new Map();
     this.statementVariableNameMap = new Map();
   }
 
@@ -75,52 +75,49 @@ export class ContextBuilder {
     let variableName = "" + parameter.name;
 
     variableName =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_".includes(
-      variableName[0]
-    )
-      ? variableName[0].toLowerCase() + variableName.slice(1)
-      : (ContextBuilder.LOGGER.warn(
-          `Found variable name starting with a non-alphabetic character, variable: '${variableName}'`
-        ),
-        "var" + variableName);
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_".includes(
+        variableName[0]
+      )
+        ? variableName[0].toLowerCase() + variableName.slice(1)
+        : (ContextBuilder.LOGGER.warn(
+            `Found variable name starting with a non-alphabetic character, variable: '${variableName}'`
+          ),
+          "var" + variableName);
 
-        // TODO reserverd keywords
-  // variableName =
-  //   reservedKeywords.has(variableName) || globalVariables.has(variableName)
-  //     ? "local" + variableName[0].toUpperCase() + variableName.slice(1)
-  //     : variableName;
+    // TODO reserverd keywords
+    // variableName =
+    //   reservedKeywords.has(variableName) || globalVariables.has(variableName)
+    //     ? "local" + variableName[0].toUpperCase() + variableName.slice(1)
+    //     : variableName;
 
-      if (
-        statement instanceof ContractFunctionCall
-      ) {
-        variableName += "ReturnValue";
-      }
+    if (statement instanceof ContractFunctionCall) {
+      variableName += "ReturnValue";
+    }
 
-    
-      let count = -1;
-      if (
-        this.globalNameCount.has(variableName) &&
-        this.testNameCount.has(variableName)
-      ) {
-        count = Math.max(
-          this.globalNameCount.get(variableName),
-          this.testNameCount.get(variableName)
-        );
-      } else if (this.globalNameCount.has(variableName)) {
-        count = this.globalNameCount.get(variableName);
-      } else if (this.testNameCount.has(variableName)) {
-        count = this.testNameCount.get(variableName);
-      }
-  
-      if (count === -1) {
-        this.testNameCount.set(variableName, 1);
-      } else {
-        this.testNameCount.set(variableName, count + 1);
-        variableName += count;
-      }
-  
-      this.statementVariableNameMap.set(parameter, variableName);
-      return variableName;
+    let count = -1;
+    if (
+      this.globalNameCount.has(variableName) &&
+      this.testNameCount.has(variableName)
+    ) {
+      count = Math.max(
+        this.globalNameCount.get(variableName),
+        this.testNameCount.get(variableName)
+      );
+    } else if (this.globalNameCount.has(variableName)) {
+      count = this.globalNameCount.get(variableName);
+    } else if (this.testNameCount.has(variableName)) {
+      count = this.testNameCount.get(variableName);
+    }
+
+    if (count === -1) {
+      this.testNameCount.set(variableName, 1);
+    } else {
+      this.testNameCount.set(variableName, count + 1);
+      variableName += count;
+    }
+
+    this.statementVariableNameMap.set(parameter, variableName);
+    return variableName;
   }
 
   getOrCreateImportName(parameter: Parameter): string {
@@ -130,7 +127,7 @@ export class ContextBuilder {
   }
 
   private _addImport(parameter: Parameter): Import {
-    const name = parameter.name
+    const name = parameter.name;
     if (this.imports.has(name)) {
       return this.imports.get(name);
     }
@@ -142,10 +139,7 @@ export class ContextBuilder {
 
     let count = -1;
     // same name new import
-    if (
-      this.globalNameCount.has(name) &&
-      this.testNameCount.has(name)
-    ) {
+    if (this.globalNameCount.has(name) && this.testNameCount.has(name)) {
       count = Math.max(
         this.globalNameCount.get(name),
         this.testNameCount.get(name)
@@ -166,7 +160,7 @@ export class ContextBuilder {
       import_ = {
         name: name,
         renamed: true,
-        renamedTo: newName
+        renamedTo: newName,
       };
     }
 
@@ -190,7 +184,10 @@ export class ContextBuilder {
     ];
   }
 
-  getImports(assertionsPresent: boolean): { imports: string[], linkings: string[] } {
+  getImports(assertionsPresent: boolean): {
+    imports: string[];
+    linkings: string[];
+  } {
     let imports: string[] = [];
     const linkings: string[] = [];
 
@@ -211,11 +208,11 @@ export class ContextBuilder {
     }
 
     imports = imports
-        // remove duplicates
-        // there should not be any in theory but lets do it anyway
-        .filter((value, index, self) => self.indexOf(value) === index)
-        // sort
-        .sort()
+      // remove duplicates
+      // there should not be any in theory but lets do it anyway
+      .filter((value, index, self) => self.indexOf(value) === index)
+      // sort
+      .sort();
 
     if (assertionsPresent) {
       imports.push(

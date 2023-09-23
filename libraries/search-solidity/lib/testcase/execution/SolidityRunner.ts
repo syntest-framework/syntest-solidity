@@ -28,7 +28,11 @@ import { Logger, getLogger } from "@syntest/logging";
 import { StorageManager } from "@syntest/storage";
 import path = require("node:path");
 import { AssertionData } from "./AssertionData";
-import { InstrumentationData, InstrumentationDataMap, MetaData } from "@syntest/analysis-solidity";
+import {
+  InstrumentationData,
+  InstrumentationDataMap,
+  MetaData,
+} from "@syntest/analysis-solidity";
 import { MetaDataMap } from "@syntest/analysis-solidity";
 
 export type Result = {
@@ -130,13 +134,11 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
       stats: stats,
       instrumentationData: instrumentationData,
       metaData: {}, // TODO
-      assertionData: {} // TODO
+      assertionData: {}, // TODO
     };
   }
 
-  async execute(
-    testCase: SolidityTestCase
-  ): Promise<ExecutionResult> {
+  async execute(testCase: SolidityTestCase): Promise<ExecutionResult> {
     SolidityRunner.LOGGER.silly("Executing test case");
 
     const decodedTestCase = this.decoder.decode(testCase);
@@ -148,9 +150,11 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
       true
     );
 
-    const { suites, stats, instrumentationData, metaData } = await this.run([testPath]);
+    const { suites, stats, instrumentationData, metaData } = await this.run([
+      testPath,
+    ]);
 
-    const traces: Trace[] = this.extractTraces(instrumentationData, metaData)
+    const traces: Trace[] = this.extractTraces(instrumentationData, metaData);
 
     // Retrieve execution information
     let executionResult: SolidityExecutionResult;
@@ -198,9 +202,8 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
     instrumentationData: InstrumentationDataMap,
     metaData: MetaDataMap
   ): Trace[] {
-    const traces: Trace[] = []
+    const traces: Trace[] = [];
 
-    
     for (const key of Object.keys(instrumentationData)) {
       for (const functionKey of Object.keys(instrumentationData[key].fnMap)) {
         const function_ = instrumentationData[key].fnMap[functionKey];
@@ -241,9 +244,8 @@ export class SolidityRunner implements EncodingRunner<SolidityTestCase> {
       );
     }
 
-    return traces
+    return traces;
   }
-
 
   private _extractBranchTraces(
     key: string,

@@ -52,7 +52,6 @@ export type FunctionMap = {
   };
 };
 
-
 export type InstrumentationData = {
   source: string;
   instrumented: string;

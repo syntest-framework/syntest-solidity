@@ -157,7 +157,8 @@ export class MappingStatement extends Statement<Mapping> {
       .map(
         (key) =>
           `\t\t\t"${key}": ${context.getOrCreateVariableName(
-            this._mapping[key], this._mapping[key].type
+            this._mapping[key],
+            this._mapping[key].type
           )}`
       )
       .join(",\n");

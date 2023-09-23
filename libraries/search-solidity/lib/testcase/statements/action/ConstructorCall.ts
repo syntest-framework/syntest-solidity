@@ -117,13 +117,16 @@ export class ConstructorCall extends ActionStatement<Contract> {
   }
 
   decode(context: ContextBuilder): Decoding[] {
-    const importName = context.getOrCreateImportName(this.type)
+    const importName = context.getOrCreateImportName(this.type);
     const senderDecoding: Decoding[] = this._sender.decode(context);
     const argumentDecodings: Decoding[] = this.arguments_.flatMap((a) =>
       a.decode(context)
     );
 
-    const senderName = context.getOrCreateVariableName(this._sender, this._sender.type);
+    const senderName = context.getOrCreateVariableName(
+      this._sender,
+      this._sender.type
+    );
     const argumentNames = this.arguments_
       .map((a) => context.getOrCreateVariableName(a, a.type))
       .join(", ");
@@ -133,9 +136,10 @@ export class ConstructorCall extends ActionStatement<Contract> {
         ? `{ from: ${senderName} }`
         : `, { from: ${senderName} }`;
 
-    const decoded = `const ${context.getOrCreateVariableName(this, this.type)} = await ${
-          importName
-        }.new(${argumentNames}${senderString});`;
+    const decoded = `const ${context.getOrCreateVariableName(
+      this,
+      this.type
+    )} = await ${importName}.new(${argumentNames}${senderString});`;
 
     return [
       ...senderDecoding,

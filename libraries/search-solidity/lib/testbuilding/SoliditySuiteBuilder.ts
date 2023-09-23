@@ -104,7 +104,10 @@ export class SoliditySuiteBuilder {
       for (const target of archive.keys()) {
         totalAmount += archive.get(target).length;
         for (const testCase of archive.get(target)) {
-          const decodedTest = this.decoder.decode(testCase, gatherAssertionData);
+          const decodedTest = this.decoder.decode(
+            testCase,
+            gatherAssertionData
+          );
           const testPath = this.storageManager.store(
             [testDirectory],
             `test${target}${testCase.id}.spec.js`,
@@ -122,7 +125,10 @@ export class SoliditySuiteBuilder {
       return null;
     }
 
-    const { stats, instrumentationData, assertionData } = await this.runner.run(paths, totalAmount * 2);
+    const { stats, instrumentationData, assertionData } = await this.runner.run(
+      paths,
+      totalAmount * 2
+    );
 
     if (assertionData) {
       // put assertion data on testCases
@@ -136,7 +142,7 @@ export class SoliditySuiteBuilder {
       }
     }
 
-        // TODO use the results of the tests to show some statistics
+    // TODO use the results of the tests to show some statistics
 
     return { stats, instrumentationData };
   }
