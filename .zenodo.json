@@ -1,0 +1,49 @@
+{
+  "upload_type": "software",
+  "creators": [
+    {
+      "orcid": "0000-0003-0551-6690",
+      "affiliation": "Delft University of Technology",
+      "name": "Olsthoorn, Mitchell"
+    },
+    {
+      "orcid": "0009-0003-7843-2372",
+      "affiliation": "Delft University of Technology",
+      "name": "Stallenberg, Dimitri"
+    },
+    {
+      "orcid": "0000-0002-7395-3588",
+      "affiliation": "Delft University of Technology",
+      "name": "Panichella, Annibale"
+    }
+  ],
+  "access_right": "open",
+  "license": "Apache-2.0",
+  "keywords": [
+    "syntest",
+    "syntest-framework",
+    "testing",
+    "search-based-software-engineering",
+    "search-based-software-testing",
+    "automated-test-generation"
+  ],
+  "related_identifiers": [
+    {
+      "scheme": "doi",
+      "identifier": "10.1145/3510454.3516869",
+      "relation": "isDocumentedBy",
+      "resource_type": "publication-article"
+    },
+    {
+      "scheme": "doi",
+      "identifier": "10.1109/ICSME55016.2022.00023",
+      "relation": "isDocumentedBy",
+      "resource_type": "publication-article"
+    }
+  ],
+  "communities": [
+    {
+      "identifier": "syntest"
+    }
+  ]
+}
