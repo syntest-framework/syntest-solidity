@@ -1,3 +1,6 @@
 .nyc_output/
 dist/
 node_modules/
+.*
+*.jpg
+NOTICE

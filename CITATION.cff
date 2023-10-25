@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+title: SynTest-Solidity
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - family-names: Olsthoorn
+    given-names: Mitchell
+    orcid: "https://orcid.org/0000-0003-0551-6690"
+    affiliation: Delft University of Technology
+  - given-names: Dimitri
+    family-names: Stallenberg
+    orcid: "https://orcid.org/0009-0003-7843-2372"
+    affiliation: Delft University of Technology
+  - orcid: "https://orcid.org/0000-0002-7395-3588"
+    given-names: Annibale
+    family-names: Panichella
+    affiliation: Delft University of Technology
+identifiers:
+  - type: doi
+    value: 10.1145/3510454.3516869
+    description: The tool demonstration for this work
+repository-code: "https://github.com/syntest-framework/syntest-solidity"
+url: "https://syntest.org"
+keywords:
+  - syntest
+  - syntest-framework
+  - testing
+  - search-based-software-engineering
+  - search-based-software-testing
+  - automated-test-generation
+license: Apache-2.0
