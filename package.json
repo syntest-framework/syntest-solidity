@@ -67,7 +67,7 @@
     "solidity-coverage": "^0.7.16",
     "truffle": "5.1.65",
     "web3": "1.8.1",
-    "web3-utils": "1.8.1"
+    "web3-utils": "4.2.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.4.2",
